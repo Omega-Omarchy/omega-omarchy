@@ -48,6 +48,14 @@ from .sim import (
     CANNON_MAX_CHARGE_TICKS,
     ITEMS,
     INTENT_COUNTERS,
+    LEVEL_INTRO_BUILD_TICKS,
+    LEVEL_INTRO_EXIT_FADE_TICKS,
+    LEVEL_INTRO_HOLD_TICKS,
+    LEVEL_INTRO_LEVEL_FADE_TICKS,
+    LEVEL_INTRO_MAP_FADE_TICKS,
+    LEVEL_INTRO_TICKS,
+    LEVEL_INTRO_WHITE_HOLD_TICKS,
+    LEVEL_INTRO_WORLD_REVEAL_TICK,
     NETWORK_TICKS,
     OMEGA_LETTERS,
     PROLOGUE_BEATS,
@@ -322,6 +330,8 @@ class Renderer:
             self._prologue(surf, sim)
         elif sim.scene == "stage-map":
             self._stage_map(surf, sim)
+        elif sim.scene == "level-intro":
+            self._level_intro(surf, sim)
         elif sim.scene == "pause":
             self._world(surf, sim)
             self._pause(surf, sim)
@@ -1012,7 +1022,34 @@ class Renderer:
             min_size=4,
         )
 
-    def _stage_map(self, surf: Surface, sim: GameSim) -> None:
+    def _stage_title(self) -> Surface:
+        title_font = self._omarchy_font(12)
+        title = title_font.render("Omega Omarchy", True, PALETTE["bright_green"])
+        max_title = self._lr(18, 4, 284, 15)
+        if title.get_width() > max_title.width or title.get_height() > max_title.height:
+            ratio = min(
+                max_title.width / title.get_width(),
+                max_title.height / title.get_height(),
+            )
+            title = pygame.transform.smoothscale(
+                title,
+                (
+                    max(1, round(title.get_width() * ratio)),
+                    max(1, round(title.get_height() * ratio)),
+                ),
+            )
+        return title
+
+    def _stage_emblem(self, diameter: int) -> Surface:
+        emblem = self._load("ui/omega-omarchy-icon.png")
+        bounds = emblem.get_bounding_rect(min_alpha=8)
+        if bounds.width and bounds.height:
+            emblem = emblem.subsurface(bounds).copy()
+        return self._fit(emblem, (diameter, diameter))
+
+    def _stage_map(
+        self, surf: Surface, sim: GameSim, *, omit_intro_identity: bool = False
+    ) -> None:
         """Render boss nodes directly over their distinct world regions."""
 
         transition = max(0, int(getattr(sim, "stage_map_transition_ticks", 0)))
@@ -1041,22 +1078,10 @@ class Renderer:
         shade = Surface((self._iw, self._ih), pygame.SRCALPHA)
         shade.fill((0, 0, 8, 30))
         surf.blit(shade, (0, 0))
-        title_font = self._omarchy_font(12)
-        title = title_font.render("Omega Omarchy", True, PALETTE["bright_green"])
-        max_title = self._lr(18, 4, 284, 15)
-        if title.get_width() > max_title.width or title.get_height() > max_title.height:
-            ratio = min(
-                max_title.width / title.get_width(),
-                max_title.height / title.get_height(),
-            )
-            title = pygame.transform.smoothscale(
-                title,
-                (
-                    max(1, round(title.get_width() * ratio)),
-                    max(1, round(title.get_height() * ratio)),
-                ),
-            )
-        surf.blit(title, (max_title.centerx - title.get_width() // 2, max_title.y))
+        if not omit_intro_identity:
+            title = self._stage_title()
+            max_title = self._lr(18, 4, 284, 15)
+            surf.blit(title, (max_title.centerx - title.get_width() // 2, max_title.y))
         unlocked = set(sim.unlocked_stage_indices())
         for index, (spec, (x, y)) in enumerate(zip(CAMPAIGN_ROSTER, STAGE_NODE_POSITIONS)):
             selected = index == sim.stage_cursor
@@ -1066,15 +1091,11 @@ class Renderer:
             radius = 17 if selected else 14
             pygame.draw.circle(surf, (4, 7, 12), self._lp(x, y), radius * self._vs)
             pygame.draw.circle(surf, ring, self._lp(x, y), radius * self._vs, max(1, self._vs))
-            if selected:
+            if selected and not omit_intro_identity:
                 pulse = radius + 3 + ((sim.tick // 5) % 3)
                 try:
-                    emblem = self._load("ui/omega-omarchy-icon.png")
-                    bounds = emblem.get_bounding_rect(min_alpha=8)
-                    if bounds.width and bounds.height:
-                        emblem = emblem.subsurface(bounds).copy()
                     diameter = pulse * 2 * self._vs
-                    emblem = self._fit(emblem, (diameter, diameter))
+                    emblem = self._stage_emblem(diameter)
                     surf.blit(emblem, (x * self._vs - diameter // 2, y * self._vs - diameter // 2))
                 except Exception:
                     pygame.draw.circle(
@@ -1085,6 +1106,8 @@ class Renderer:
                         max(1, self._vs),
                     )
             try:
+                if selected and omit_intro_identity:
+                    continue
                 suffix = "-converted" if converted else ""
                 boss = self._fid(sim, f"bosses/{spec.boss.id}{suffix}.png")
                 bh = (27 if selected else 23) * self._vs
@@ -1123,6 +1146,278 @@ class Renderer:
             alpha = round(255 * (1.0 - fade_elapsed / max(1, STAGE_MAP_FLASH_OUT_TICKS)))
             whiteout = Surface((self._iw, self._ih), pygame.SRCALPHA)
             whiteout.fill((255, 255, 255, max(0, min(255, alpha))))
+            surf.blit(whiteout, (0, 0))
+
+    @staticmethod
+    def _intro_ease(value: float) -> float:
+        value = max(0.0, min(1.0, value))
+        return 1.0 - (1.0 - value) ** 3
+
+    def _intro_rotated_rect(
+        self,
+        surf: Surface,
+        color: tuple[int, int, int],
+        center: tuple[float, float],
+        size: tuple[float, float],
+        angle: float,
+    ) -> None:
+        block = Surface(
+            (max(1, round(size[0] * self._vs)), max(1, round(size[1] * self._vs))),
+            pygame.SRCALPHA,
+        )
+        block.fill((*color, 255))
+        rotated = pygame.transform.rotate(block, angle)
+        destination = rotated.get_rect(
+            center=(round(center[0] * self._vs), round(center[1] * self._vs))
+        )
+        surf.blit(rotated, destination)
+
+    def _level_intro_backdrop(self, surf: Surface, progress: float, *, reduced: bool) -> None:
+        """Assemble a geometric title-card field out of the white transition."""
+
+        progress = 1.0 if reduced else self._intro_ease(progress)
+        surf.fill((250, 250, 252))
+        width = round(self._iw * progress)
+        if not width:
+            return
+
+        design = Surface((self._iw, self._ih))
+        design.fill((5, 8, 18))
+        grid_color = (19, 31, 45)
+        for x in range(12, 320, 24):
+            pygame.draw.line(
+                design, grid_color, self._lp(x, 0), self._lp(x, 180), max(1, self._vs)
+            )
+        for y in range(12, 180, 24):
+            pygame.draw.line(
+                design, grid_color, self._lp(0, y), self._lp(320, y), max(1, self._vs)
+            )
+        pygame.draw.rect(design, (9, 15, 28), self._lr(7, 7, 306, 166))
+        pygame.draw.rect(design, BRONZE, self._lr(7, 7, 306, 166), max(1, self._vs))
+        pygame.draw.rect(design, (12, 26, 34), self._lr(12, 138, 296, 30))
+        pygame.draw.line(
+            design, SHIFT_CYAN, self._lp(12, 138), self._lp(308, 138), max(1, self._vs)
+        )
+
+        # Structural bars settle into a circuit-board-like frame while a few
+        # smaller shards overshoot the viewport during construction.
+        bars = (
+            ((82, 42), (142, 8), -18.0, BRONZE),
+            ((118, 113), (210, 11), 8.0, (28, 75, 70)),
+            ((223, 151), (188, 7), -10.0, SHIFT_CYAN),
+        )
+        for index, (target, size, target_angle, color) in enumerate(bars):
+            local = self._intro_ease(max(0.0, min(1.0, progress * 1.35 - index * 0.16)))
+            start_x = -size[0]
+            center = (
+                start_x + (target[0] - start_x) * local,
+                target[1] + (index - 1) * 28 * (1.0 - local),
+            )
+            self._intro_rotated_rect(
+                design,
+                color,
+                center,
+                size,
+                -68.0 + (target_angle + 68.0) * local,
+            )
+
+        triangle_progress = self._intro_ease(max(0.0, min(1.0, progress * 1.5 - 0.2)))
+        for index, (target_x, target_y, color) in enumerate(
+            ((22, 119, LIME_MARK), (145, 30, SHIFT_CYAN), (286, 130, BRONZE))
+        ):
+            cx = -28 + (target_x + 28) * triangle_progress
+            cy = target_y + math.sin((index + 1) * 1.7) * 18 * (1.0 - triangle_progress)
+            angle = math.radians((1.0 - triangle_progress) * 210 + index * 120)
+            radius = (8 + index * 2) * self._vs
+            center_x, center_y = cx * self._vs, cy * self._vs
+            points = [
+                (
+                    round(center_x + math.cos(angle + point * math.tau / 3) * radius),
+                    round(center_y + math.sin(angle + point * math.tau / 3) * radius),
+                )
+                for point in range(3)
+            ]
+            pygame.draw.polygon(design, color, points, max(1, self._vs))
+
+        if not reduced and progress < 0.98:
+            fly = progress * 390 - 45
+            for index in range(3):
+                x = fly - index * 72
+                pygame.draw.polygon(
+                    design,
+                    (230, 234, 241),
+                    [
+                        self._lp(round(x), 19 + index * 34),
+                        self._lp(round(x - 18), 28 + index * 34),
+                        self._lp(round(x), 37 + index * 34),
+                    ],
+                )
+        left = self._iw - width
+        surf.blit(design, (left, 0), pygame.Rect(left, 0, width, self._ih))
+
+    def _level_intro_identity(
+        self,
+        surf: Surface,
+        sim: GameSim,
+        motion_progress: float,
+        detail_progress: float,
+    ) -> None:
+        """Move the selected route-map identity into the finished title card."""
+
+        target = max(0, min(sim.level_intro_target, len(CAMPAIGN_ROSTER) - 1))
+        spec = CAMPAIGN_ROSTER[target]
+        node_x, node_y = STAGE_NODE_POSITIONS[target]
+        motion = self._intro_ease(motion_progress)
+        detail = self._intro_ease(detail_progress)
+
+        title = self._stage_title()
+        title_start = ((self._iw - title.get_width()) // 2, 4 * self._vs)
+        title_end = (49 * self._vs, 12 * self._vs)
+        title_position = (
+            round(title_start[0] + (title_end[0] - title_start[0]) * motion),
+            round(title_start[1] + (title_end[1] - title_start[1]) * motion),
+        )
+        surf.blit(title, title_position)
+
+        start_diameter = 40.0
+        end_diameter = 34.0
+        diameter = max(1, round((start_diameter + (end_diameter - start_diameter) * motion) * self._vs))
+        emblem = self._stage_emblem(diameter)
+        emblem_center = (
+            node_x + (27 - node_x) * motion,
+            node_y + (25 - node_y) * motion,
+        )
+        surf.blit(
+            emblem,
+            (
+                round(emblem_center[0] * self._vs - diameter / 2),
+                round(emblem_center[1] * self._vs - diameter / 2),
+            ),
+        )
+
+        suffix = "-converted" if spec.boss.id in sim.converted else ""
+        try:
+            boss = self._fid(sim, f"bosses/{spec.boss.id}{suffix}.png")
+            boss_height = max(1, round((27 + (102 - 27) * motion) * self._vs))
+            boss_width = max(1, round(boss.get_width() / max(1, boss.get_height()) * boss_height))
+            boss = self._fit(boss, (boss_width, boss_height))
+            boss_center = (
+                node_x + (239 - node_x) * motion,
+                node_y + (78 - node_y) * motion,
+            )
+            surf.blit(
+                boss,
+                (
+                    round(boss_center[0] * self._vs - boss_width / 2),
+                    round(boss_center[1] * self._vs - boss_height / 2),
+                ),
+            )
+        except Exception:
+            pass
+
+        if detail <= 0.0:
+            return
+        detail_x = round(-155 + 170 * detail)
+        self.fit_text(
+            surf,
+            f"INSTALLATION {target + 1:02d}",
+            (detail_x, 50, 158, 10),
+            SHIFT_CYAN,
+            max_size=8,
+            min_size=6,
+            bold=True,
+        )
+        self.fit_text(
+            surf,
+            f"BOSS // {spec.boss.title.upper()}",
+            (detail_x, 67, 164, 10),
+            PALETTE["yellow"],
+            max_size=8,
+            min_size=5,
+            bold=True,
+        )
+        self.fit_text(
+            surf,
+            f"RECOVER // {spec.boss.capability.replace('-', ' ').upper()}",
+            (detail_x, 84, 168, 10),
+            PALETTE.get("muted", PALETTE["fg"]),
+            max_size=7,
+            min_size=5,
+        )
+
+        level_x = round(-308 + 320 * detail)
+        self.fit_text(
+            surf,
+            spec.name.upper(),
+            (level_x, 145, 290, 21),
+            PALETTE["bright_green"],
+            max_size=16,
+            min_size=8,
+            bold=True,
+        )
+
+        name = self._font(logical_size=8, bold=True).render(
+            spec.boss.name.upper(), True, (238, 240, 246)
+        )
+        limit = 116 * self._vs
+        if name.get_width() > limit:
+            scale = limit / name.get_width()
+            name = pygame.transform.smoothscale(
+                name,
+                (limit, max(1, round(name.get_height() * scale))),
+            )
+        name = pygame.transform.rotate(name, 90)
+        name_x = 302 * self._vs - name.get_width() // 2
+        name_target_y = 16 * self._vs
+        name_y = round(self._ih + (name_target_y - self._ih) * detail)
+        surf.blit(name, (name_x, name_y))
+
+    def _level_intro(self, surf: Surface, sim: GameSim) -> None:
+        """Bridge route selection to play with a constructed boss title card."""
+
+        tick = max(0, min(int(sim.level_intro_ticks), LEVEL_INTRO_TICKS))
+        reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)
+        map_end = LEVEL_INTRO_MAP_FADE_TICKS + LEVEL_INTRO_WHITE_HOLD_TICKS
+        build_end = map_end + LEVEL_INTRO_BUILD_TICKS
+        hold_end = build_end + LEVEL_INTRO_HOLD_TICKS
+        motion = 1.0 if reduced else tick / max(1, build_end)
+
+        if tick < map_end:
+            if tick < LEVEL_INTRO_MAP_FADE_TICKS:
+                self._stage_map(surf, sim, omit_intro_identity=True)
+                alpha = round(
+                    255 * tick / max(1, LEVEL_INTRO_MAP_FADE_TICKS - 1)
+                )
+                whiteout = Surface((self._iw, self._ih), pygame.SRCALPHA)
+                whiteout.fill((255, 255, 255, max(0, min(255, alpha))))
+                surf.blit(whiteout, (0, 0))
+            else:
+                surf.fill((255, 255, 255))
+            if not reduced:
+                self._level_intro_identity(surf, sim, motion, 0.0)
+            return
+
+        if tick >= LEVEL_INTRO_WORLD_REVEAL_TICK:
+            self._world(surf, sim)
+            self._hud(surf, sim)
+            reveal = (tick - LEVEL_INTRO_WORLD_REVEAL_TICK) / max(
+                1, LEVEL_INTRO_LEVEL_FADE_TICKS
+            )
+            alpha = round(255 * (1.0 - max(0.0, min(1.0, reveal))))
+            whiteout = Surface((self._iw, self._ih), pygame.SRCALPHA)
+            whiteout.fill((255, 255, 255, alpha))
+            surf.blit(whiteout, (0, 0))
+            return
+
+        build = max(0.0, min(1.0, (tick - map_end) / max(1, LEVEL_INTRO_BUILD_TICKS)))
+        self._level_intro_backdrop(surf, build, reduced=reduced)
+        self._level_intro_identity(surf, sim, motion, build)
+
+        if tick >= hold_end:
+            fade = (tick - hold_end) / max(1, LEVEL_INTRO_EXIT_FADE_TICKS)
+            alpha = round(255 * max(0.0, min(1.0, fade)))
+            whiteout = Surface((self._iw, self._ih), pygame.SRCALPHA)
+            whiteout.fill((255, 255, 255, alpha))
             surf.blit(whiteout, (0, 0))
 
     def _installer(self, surf: Surface, sim: GameSim) -> None:

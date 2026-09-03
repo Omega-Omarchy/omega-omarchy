@@ -10,6 +10,9 @@ from omega_omarchy.sim import (
     CANNON_MAX_CHARGE_TICKS,
     COW_LEVEL_FLOOR,
     GOLIATH_FIRE_INTERVAL_MULTIPLIER,
+    LEVEL_INTRO_HOLD_TICKS,
+    LEVEL_INTRO_TICKS,
+    LEVEL_INTRO_WORLD_REVEAL_TICK,
     PROLOGUE_BEAT_TICKS,
     OMEGA_LETTERS,
     PROLOGUE_BEATS,
@@ -53,6 +56,9 @@ def test_install_completion_opens_skippable_animated_prologue():
     for _ in range(STAGE_MAP_INPUT_LOCK_TICKS):
         sim.step(InputState())
     sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "level-intro"
+    for _ in range(LEVEL_INTRO_TICKS):
+        sim.step(InputState())
     assert sim.scene == "action"
 
 
@@ -138,6 +144,9 @@ def test_stage_map_uses_spatial_navigation_and_non_linear_unlocks():
     assert sim.unlocked_stage_indices() == (0, 1, 2, 3)
     sim.stage_cursor = 3
     sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "level-intro"
+    for _ in range(LEVEL_INTRO_TICKS):
+        sim.step(InputState())
     assert sim.scene == "action"
     assert sim.chapter_index == 3
 
@@ -145,6 +154,37 @@ def test_stage_map_uses_spatial_navigation_and_non_linear_unlocks():
     assert sim.unlocked_stage_indices() == (0, 1, 2, 3, 4)
     sim.converted.append(CAMPAIGN_ROSTER[4].boss.id)
     assert sim.unlocked_stage_indices() == (0, 1, 2, 3, 4, 5)
+
+
+def test_level_intro_holds_selection_then_reveals_the_loaded_level_under_white():
+    sim = GameSim.from_play_now()
+    sim.converted.append(CAMPAIGN_ROSTER[0].boss.id)
+    sim._open_stage_map(3, transition=False)
+    sim.stage_map_input_lock_ticks = 0
+    sim.step(InputState(jump_pressed=True))
+
+    assert sim.scene == "level-intro"
+    assert sim.level_intro_target == 3
+    assert sim.pending_chapter == 3
+    assert sim.chapter_index == 0
+    assert LEVEL_INTRO_HOLD_TICKS == 120
+
+    for _ in range(LEVEL_INTRO_WORLD_REVEAL_TICK - 1):
+        sim.step(InputState(jump_pressed=True, pause=True))
+    assert sim.scene == "level-intro"
+    assert sim.chapter_index == 0
+    assert sim.level_intro_loaded is False
+
+    sim.step(InputState())
+    assert sim.scene == "level-intro"
+    assert sim.chapter_index == 3
+    assert sim.level_intro_loaded is True
+
+    for _ in range(LEVEL_INTRO_TICKS - LEVEL_INTRO_WORLD_REVEAL_TICK):
+        sim.step(InputState())
+    assert sim.scene == "action"
+    assert sim.pending_chapter is None
+    assert sim.messages[-1] == "ROUTE MOUNTED · The Walled Garden"
 
 
 def test_boss_fifteen_warps_use_boss_geometry_for_current_and_goliath_levels():

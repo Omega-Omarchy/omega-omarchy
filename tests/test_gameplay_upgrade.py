@@ -498,6 +498,34 @@ def test_stage_selection_uses_powered_artifact_emblem_and_shorter_side_meter():
     pygame.quit()
 
 
+def test_level_intro_reuses_selected_logo_and_boss_in_finished_title_card():
+    from omega_omarchy.sim import (
+        LEVEL_INTRO_BUILD_TICKS,
+        LEVEL_INTRO_MAP_FADE_TICKS,
+        LEVEL_INTRO_WHITE_HOLD_TICKS,
+    )
+
+    pygame.init()
+    pygame.display.set_mode((320, 180))
+    sim = GameSim.from_play_now()
+    sim._open_stage_map(0, transition=False)
+    renderer = Renderer()
+    map_frame = renderer.frame(sim)
+    sim._begin_level_intro(0)
+    sim.level_intro_ticks = (
+        LEVEL_INTRO_MAP_FADE_TICKS
+        + LEVEL_INTRO_WHITE_HOLD_TICKS
+        + LEVEL_INTRO_BUILD_TICKS
+    )
+    title_card = renderer.frame(sim)
+
+    assert map_frame.get_size() == title_card.get_size()
+    assert pygame.image.tobytes(map_frame, "RGB") != pygame.image.tobytes(title_card, "RGB")
+    assert "ui/omega-omarchy-icon.png" in renderer.cache
+    assert "fidelity/ultra/bosses/package-bureaucrat.png" in renderer.cache
+    pygame.quit()
+
+
 def test_hud_uses_penguin_art_instead_of_a_letter_counter_prefix():
     pygame.init()
     pygame.display.set_mode((320, 180))

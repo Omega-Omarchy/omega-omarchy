@@ -80,6 +80,22 @@ STAGE_MAP_TRANSITION_TICKS = (
     + STAGE_MAP_FLASH_OUT_TICKS
 )
 STAGE_MAP_INPUT_LOCK_TICKS = 10
+LEVEL_INTRO_MAP_FADE_TICKS = 18
+LEVEL_INTRO_WHITE_HOLD_TICKS = 6
+LEVEL_INTRO_BUILD_TICKS = 72
+LEVEL_INTRO_HOLD_TICKS = 120
+LEVEL_INTRO_EXIT_FADE_TICKS = 18
+LEVEL_INTRO_EXIT_HOLD_TICKS = 8
+LEVEL_INTRO_LEVEL_FADE_TICKS = 24
+LEVEL_INTRO_WORLD_REVEAL_TICK = (
+    LEVEL_INTRO_MAP_FADE_TICKS
+    + LEVEL_INTRO_WHITE_HOLD_TICKS
+    + LEVEL_INTRO_BUILD_TICKS
+    + LEVEL_INTRO_HOLD_TICKS
+    + LEVEL_INTRO_EXIT_FADE_TICKS
+    + LEVEL_INTRO_EXIT_HOLD_TICKS
+)
+LEVEL_INTRO_TICKS = LEVEL_INTRO_WORLD_REVEAL_TICK + LEVEL_INTRO_LEVEL_FADE_TICKS
 PROLOGUE_PASSWORD = "OMEGA-MOUNTS-PERSONAL-WILL-000001"
 GUST_INFLUENCE_TILES = 1.4
 GUST_MAX_PULL = 1.15
@@ -389,6 +405,9 @@ class GameSim:
     story_transition_ticks: int = 0
     stage_map_transition_ticks: int = 0
     stage_map_input_lock_ticks: int = 0
+    level_intro_target: int = 0
+    level_intro_ticks: int = 0
+    level_intro_loaded: bool = False
     gust_center_release: tuple[float, float] | None = None
     cannon_loaded: bool = False
     cannon_charge_ticks: int = 0
@@ -2160,6 +2179,7 @@ class GameSim:
             "installer",
             "prologue",
             "stage-map",
+            "level-intro",
             "chapter-complete",
             "chapter-credits",
             "reroll-confirm",
@@ -2202,6 +2222,9 @@ class GameSim:
             return
         if self.scene == "stage-map":
             self._step_stage_map(inp)
+            return
+        if self.scene == "level-intro":
+            self._step_level_intro()
             return
         if self.scene == "oligarchy":
             if inp.interact or inp.jump_pressed:
@@ -3958,6 +3981,33 @@ class GameSim:
         self.scene = "stage-map"
         self.note("ui")
 
+    def _begin_level_intro(self, target: int) -> None:
+        """Lock input while the selected map assembles into its title card."""
+
+        self.level_intro_target = max(0, min(target, len(CAMPAIGN_ROSTER) - 1))
+        self.level_intro_ticks = 0
+        self.level_intro_loaded = False
+        self.pending_chapter = self.level_intro_target
+        self.post_boss = False
+        self.scene = "level-intro"
+        self.note("ui")
+
+    def _step_level_intro(self) -> None:
+        self.level_intro_ticks += 1
+        if (
+            not self.level_intro_loaded
+            and self.level_intro_ticks >= LEVEL_INTRO_WORLD_REVEAL_TICK
+        ):
+            self._load_chapter(self.level_intro_target)
+            self.level_intro_loaded = True
+        if self.level_intro_ticks < LEVEL_INTRO_TICKS:
+            return
+        target = self.level_intro_target
+        self.pending_chapter = None
+        self.scene = "action"
+        self.messages.append(f"ROUTE MOUNTED · {CAMPAIGN_ROSTER[target].name}")
+        self.note("ui")
+
     def _step_stage_map(self, inp: InputState) -> None:
         if self.stage_map_transition_ticks > 0:
             self.stage_map_transition_ticks -= 1
@@ -3983,11 +4033,7 @@ class GameSim:
             self.note("hit")
             return
         self.pending_chapter = None
-        self.post_boss = False
-        self._load_chapter(target)
-        self.scene = "action"
-        self.messages.append(f"ROUTE MOUNTED · {CAMPAIGN_ROSTER[target].name}")
-        self.note("ui")
+        self._begin_level_intro(target)
 
     def dismiss_oligarchy(self) -> None:
         if self.scene != "oligarchy":

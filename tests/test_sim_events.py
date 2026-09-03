@@ -6,6 +6,7 @@ from omega_omarchy.combat import enter_turn_based
 from omega_omarchy.physics import TILE, InputState
 from omega_omarchy.sim import (
     FLIGHT_TICKS,
+    LEVEL_INTRO_TICKS,
     NETWORK_TICKS,
     STAGE_MAP_INPUT_LOCK_TICKS,
     STAGE_MAP_TRANSITION_TICKS,
@@ -23,6 +24,11 @@ def _drain_battle_timeline(sim: GameSim, limit: int = 240) -> None:
 
 def _drain_stage_entry(sim: GameSim) -> None:
     for _ in range(STAGE_MAP_TRANSITION_TICKS + STAGE_MAP_INPUT_LOCK_TICKS):
+        sim.step(InputState())
+
+
+def _drain_level_intro(sim: GameSim) -> None:
+    for _ in range(LEVEL_INTRO_TICKS):
         sim.step(InputState())
 
 
@@ -53,6 +59,8 @@ def test_recruiting_garden_gatekeeper_holds_oligarchy_until_dismiss():
     assert sim.stage_cursor == idx + 1
     _drain_stage_entry(sim)
     sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "level-intro"
+    _drain_level_intro(sim)
     assert sim.scene == "action"
     assert sim.chapter_index == idx + 1
 
@@ -144,6 +152,8 @@ def test_chapter_one_completion_is_terminal_until_development_opt_in():
     assert sim.chapter_index == 0
     _drain_stage_entry(sim)
     sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "level-intro"
+    _drain_level_intro(sim)
     assert sim.scene == "action"
     assert sim.chapter_index == 1
     assert not sim.post_boss

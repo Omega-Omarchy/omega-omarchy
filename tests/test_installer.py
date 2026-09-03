@@ -14,7 +14,7 @@ from omega_omarchy.installer import (
 )
 from omega_omarchy.physics import InputState
 from omega_omarchy.render import Renderer
-from omega_omarchy.sim import STAGE_MAP_INPUT_LOCK_TICKS, GameSim
+from omega_omarchy.sim import LEVEL_INTRO_TICKS, STAGE_MAP_INPUT_LOCK_TICKS, GameSim
 
 
 def test_completion_action_is_play_now_not_reboot_now():
@@ -111,6 +111,9 @@ def test_complete_screen_stays_until_fresh_confirm():
     for _ in range(STAGE_MAP_INPUT_LOCK_TICKS):
         sim.step(InputState())
     sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "level-intro"
+    for _ in range(LEVEL_INTRO_TICKS):
+        sim.step(InputState())
     assert sim.scene == "action"
     assert sim.messages
     assert sim.messages[0] == "The installer finished. The world did not."

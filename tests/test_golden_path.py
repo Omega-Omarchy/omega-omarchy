@@ -1,7 +1,12 @@
 """Ordinary-input first-chapter playthrough. No private skips."""
 
 from omega_omarchy.physics import TILE, InputState
-from omega_omarchy.sim import PROLOGUE_SKIP_HOLD_TICKS, STAGE_MAP_INPUT_LOCK_TICKS, GameSim
+from omega_omarchy.sim import (
+    LEVEL_INTRO_TICKS,
+    PROLOGUE_SKIP_HOLD_TICKS,
+    STAGE_MAP_INPUT_LOCK_TICKS,
+    GameSim,
+)
 
 
 def _confirm(sim: GameSim) -> None:
@@ -58,6 +63,9 @@ def test_ordinary_keys_from_greeter_to_chapter_one_completion():
     for _ in range(STAGE_MAP_INPUT_LOCK_TICKS):
         sim.step(InputState())
     sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "level-intro"
+    for _ in range(LEVEL_INTRO_TICKS):
+        sim.step(InputState())
     assert sim.scene == "action"
     assert sim.world is not None
     assert sim.settings.get("limitlessEnabled") is True
