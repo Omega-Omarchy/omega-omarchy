@@ -22,7 +22,7 @@ from .accessibility import (
 from .physics import InputState
 from .render import INTERNAL, Renderer, save_surface
 from .runtime_assets import asset_dir
-from .sim import GameSim
+from .sim import CHAPTER_COMPLETE_TALLY_TICKS, GameSim
 
 SCALE = 4
 
@@ -487,6 +487,7 @@ def _inspect(sim: GameSim, renderer: Renderer, dest: Path) -> None:
         save_surface(renderer.frame(inst), dest / f"ending-{preset}.png")
         inst.scene = "chapter-complete"
         inst.post_boss = True
+        inst.post_boss_ticks = CHAPTER_COMPLETE_TALLY_TICKS
         inst.pending_chapter = 1
         save_surface(renderer.frame(inst), dest / f"chapter-complete-{preset}.png")
         inst.scene = "chapter-credits"

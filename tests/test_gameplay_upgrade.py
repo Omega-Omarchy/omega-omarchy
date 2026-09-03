@@ -352,6 +352,21 @@ def test_enemy_contact_enters_turn_battle_and_foe_gets_a_visible_reply():
     assert {popup.get("side") for popup in sim.floaters if popup.get("space") == "battle"} >= {"player", "foe"}
 
 
+def test_cracked_tiles_break_when_hit_from_below():
+    sim = _flat_action_sim()
+    assert sim.body is not None
+    sim.tiles = [".......", ".D.....", ".......", ".......", "#######"]
+    sim.original_tiles = list(sim.tiles)
+    sim.body = replace(sim.body, x=TILE + 3, y=4 * TILE - 18, vx=0.0, vy=0.0, on_ground=True)
+    sim.step(InputState(jump=True, jump_pressed=True))
+    for _ in range(16):
+        if sim.tiles[1][1] == ".":
+            break
+        sim.step(InputState(jump=True))
+    assert sim.tiles[1][1] == "."
+    assert any("cracked access tile" in message for message in sim.messages)
+
+
 def test_kick_breaks_distinct_optional_tile_and_score_rises_at_source():
     sim = GameSim.from_play_now()
     assert sim.body is not None
@@ -1234,6 +1249,9 @@ def test_detractabot_ships_as_a_named_convertible_companion_and_commissar_matche
     foe = make_foe("detractabot")
     assert foe.name == "Detractabot"
     assert BOSSES["distro-commander"].name == "The Distro Commissar"
+    assert BOSSES["distro-commander"].converted_line == (
+        "Same kernel. Different stickers. Occasional drama. Sometimes the drama goes nuclear."
+    )
 
 
 def test_walk_interstitial_temporarily_uses_idle_pose():

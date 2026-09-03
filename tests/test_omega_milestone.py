@@ -427,6 +427,47 @@ def test_cow_cannon_loads_aims_charges_and_breaks_unbreakable_contacts():
     assert all("CANNON RUN COMPLETE" not in message for message in sim.messages)
 
 
+def test_cannon_launch_ends_when_landing_on_a_moving_platform():
+    sim = GameSim.from_play_now()
+    sim.tiles = ["........", "........", "........", "........", "........"]
+    sim.original_tiles = list(sim.tiles)
+    assert sim.body is not None
+    sim.body = replace(
+        sim.body,
+        x=2 * TILE,
+        y=TILE,
+        vx=0.0,
+        vy=2.4,
+        on_ground=False,
+    )
+    sim.entities = [
+        Entity(
+            "moving-platform",
+            1,
+            3,
+            extra={
+                "width": 4,
+                "axis": "vertical",
+                "range": 0,
+                "phase": 0.0,
+                "base_x": 1.0,
+                "base_y": 3.0,
+            },
+        )
+    ]
+    sim.cannon_launch_active = True
+    sim.cannon_launch_ticks = 5
+    for _ in range(20):
+        sim._step_action(InputState(right=True))
+        if not sim.cannon_launch_active:
+            break
+    assert not sim.cannon_launch_active
+    assert sim.body.on_ground
+    parked_x = sim.body.x
+    sim._step_action(InputState(right=True))
+    assert sim.body.x > parked_x, "ordinary run input must work after the launch ends"
+
+
 def test_all_generated_bosses_have_triple_field_health():
     sim = GameSim.from_play_now()
     for chapter_index in range(len(CAMPAIGN_ROSTER)):

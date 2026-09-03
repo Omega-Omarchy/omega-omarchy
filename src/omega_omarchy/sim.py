@@ -80,6 +80,7 @@ STAGE_MAP_TRANSITION_TICKS = (
     + STAGE_MAP_FLASH_OUT_TICKS
 )
 STAGE_MAP_INPUT_LOCK_TICKS = 10
+CHAPTER_COMPLETE_TALLY_TICKS = 42
 LEVEL_INTRO_MAP_FADE_TICKS = 18
 LEVEL_INTRO_WHITE_HOLD_TICKS = 6
 LEVEL_INTRO_BUILD_TICKS = 72
@@ -2619,6 +2620,19 @@ class GameSim:
         self.flash_ticks = 8
         self._spawn_particles(entity.x, entity.y, self.flash_kind)
 
+    def _break_cracked_tile(self, tx: int, ty: int) -> bool:
+        if not (0 <= ty < len(self.tiles) and 0 <= tx < len(self.tiles[0])):
+            return False
+        if self.tiles[ty][tx] != "D":
+            return False
+        row = list(self.tiles[ty])
+        row[tx] = "."
+        self.tiles[ty] = "".join(row)
+        self._spawn_particles(tx, ty, "combat")
+        self._award_score(75, "kick break", x=tx * TILE + 8, y=ty * TILE)
+        self.messages.append("The cracked access tile gives way.")
+        return True
+
     def _kick_breakable(self) -> bool:
         if self.body is None:
             return False
@@ -2637,15 +2651,8 @@ class GameSim:
         hit = False
         for ty in range(min_ty, max_ty + 1):
             for tx in range(min_tx, max_tx + 1):
-                if self.tiles[ty][tx] != "D":
-                    continue
-                row = list(self.tiles[ty])
-                row[tx] = "."
-                self.tiles[ty] = "".join(row)
-                self._spawn_particles(tx, ty, "combat")
-                self._award_score(75, "kick break", x=tx * TILE + 8, y=ty * TILE)
-                self.messages.append("The cracked access tile gives way.")
-                hit = True
+                if self._break_cracked_tile(tx, ty):
+                    hit = True
         for entity in self.entities:
             if entity.kind not in {"block", "omega-block"} or not entity.alive:
                 continue
@@ -3336,6 +3343,16 @@ class GameSim:
             row[tx] = "."
             self.tiles[ty] = "".join(row)
 
+    def _finish_cannon_launch_if_landed(self, previous: Body) -> None:
+        """Release ballistic lock once feet have a real landing, including lifts."""
+
+        if self.body is None or not self.cannon_launch_active:
+            return
+        if self.cannon_launch_ticks > 4 and self.body.on_ground and previous.vy >= 0:
+            self.cannon_launch_active = False
+            self.cannon_launch_ticks = 0
+            self.note("hit")
+
     def _step_action(self, inp: InputState) -> None:
         assert self.body is not None
         if self.combat is not None:
@@ -3403,14 +3420,12 @@ class GameSim:
         )
         if self.cannon_launch_active:
             self.cannon_launch_ticks += 1
-            if self.cannon_launch_ticks > 4 and self.body.on_ground and previous_body.vy >= 0:
-                self.cannon_launch_active = False
-                self.cannon_launch_ticks = 0
-                self.note("hit")
         if self._tick_omega_doors(inp):
+            self._finish_cannon_launch_if_landed(previous_body)
             return
         self._tick_boss_gates()
         self._resolve_traversal_platforms(previous_body)
+        self._finish_cannon_launch_if_landed(previous_body)
         self._apply_wind_columns(inp)
         self._tick_corruption_pit()
         portal_overlaps = [
@@ -3446,7 +3461,7 @@ class GameSim:
         if self.player_bs >= MAX_BS:
             self._enter_recovery()
             return
-        # Hit hardware blocks from below even after collision zeroes vy.
+        # Hit hardware blocks and cracked tiles from below even after collision zeroes vy.
         if prev_vy < 0 or (not self.body.on_ground and self.body.vy <= 0):
             visual_left = self.body.center[0] - max(self.body.width / 2, 5.0)
             visual_right = self.body.center[0] + max(self.body.width / 2, 5.0)
@@ -3463,6 +3478,21 @@ class GameSim:
                 vertical_hit = swept_top <= block_top + TILE + 1.0 and swept_bottom >= block_top - 1.0
                 if horizontal_hit and vertical_hit:
                     self._trigger_block(entity)
+            min_tx = max(0, int(visual_left // TILE))
+            max_tx = min(len(self.tiles[0]) - 1, int((visual_right - 0.01) // TILE))
+            # Collision settles on the cracked tile's bottom edge, so the
+            # integer sweep must include the cell whose underside was hit.
+            min_ty = max(0, int((swept_top - TILE - 1.0) // TILE))
+            max_ty = min(len(self.tiles) - 1, int(swept_bottom // TILE))
+            for ty in range(min_ty, max_ty + 1):
+                for tx in range(min_tx, max_tx + 1):
+                    if self.tiles[ty][tx] != "D":
+                        continue
+                    block_left, block_top = tx * TILE, ty * TILE
+                    horizontal_hit = visual_left < block_left + TILE and visual_right > block_left
+                    vertical_hit = swept_top <= block_top + TILE + 1.0 and swept_bottom >= block_top - 1.0
+                    if horizontal_hit and vertical_hit:
+                        self._break_cracked_tile(tx, ty)
         # Pickups use David's complete 36px visual footprint. Enemy contact
         # intentionally remains on the smaller, stable gameplay hitbox.
         for entity in self.entities:
@@ -3943,7 +3973,26 @@ class GameSim:
         self.scene = "chapter-complete"
         self.note("ui")
 
+    def chapter_complete_ready(self) -> bool:
+        return self.scene != "chapter-complete" or self.post_boss_ticks >= CHAPTER_COMPLETE_TALLY_TICKS
+
+    def _chapter_tally_amount(self, total: int) -> int:
+        if self.chapter_complete_ready():
+            return total
+        t = min(1.0, self.post_boss_ticks / max(1, CHAPTER_COMPLETE_TALLY_TICKS))
+        eased = 1.0 - (1.0 - t) ** 3
+        return int(total * eased + 0.5)
+
+    def chapter_tally_score(self) -> int:
+        return self._chapter_tally_amount(self.score)
+
+    def chapter_tally_penguins(self) -> int:
+        return self._chapter_tally_amount(self.penguins)
+
     def _step_chapter_complete(self, inp: InputState) -> None:
+        self.post_boss_ticks += 1
+        if not self.chapter_complete_ready():
+            return
         if inp.turn_pressed:
             self._continue_development_chapters()
             return

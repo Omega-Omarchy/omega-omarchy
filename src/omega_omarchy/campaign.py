@@ -54,7 +54,7 @@ BOSSES = {
         capability="faction-truce",
         goliath_fragment="banner-storm",
         opening_line="The flags still fly. Nobody remembers the bug.",
-        converted_line="Same kernel. Different stickers. Move.",
+        converted_line="Same kernel. Different stickers. Occasional drama. Sometimes the drama goes nuclear.",
     ),
     "garden-gatekeeper": BossSpec(
         id="garden-gatekeeper",

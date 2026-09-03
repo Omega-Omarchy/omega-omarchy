@@ -3039,27 +3039,29 @@ class Renderer:
         self.wrapped_text(
             surf,
             spec.boss.converted_line,
-            (46, 70, 228, 20),
+            (46, 68, 228, 32),
             PALETTE["fg"],
-            max_lines=2,
+            max_lines=4,
             logical_size=7,
         )
         self.fit_text(
             surf,
-            f"SCORE {sim.score:07d}   PENGUINS {sim.penguins:02d}",
-            (46, 92, 228, 12),
+            f"SCORE {sim.chapter_tally_score():07d}   PENGUINS {sim.chapter_tally_penguins():02d}",
+            (46, 102, 228, 12),
             PALETTE["yellow"],
             align="center",
             max_size=9,
             min_size=6,
         )
+        if not sim.chapter_complete_ready():
+            return
         jump = self._binding_pair(sim, "jump")
         action = self._binding_pair(sim, "action")
         turn = self._binding_pair(sim, "turn")
         self.fit_text(
             surf,
             f"{jump} credits   {action} save",
-            (46, 109, 228, 11),
+            (46, 116, 228, 11),
             PALETTE["fg"],
             align="center",
             max_size=8,
@@ -3072,7 +3074,7 @@ class Renderer:
                 if sim.web_chapter_one
                 else f"{turn} {'CONTINUE DEVELOPMENT CHAPTERS' if sim.chapter_index == 0 else 'RETURN TO ROUTE MAP'}"
             ),
-            (42, 123, 236, 11),
+            (42, 130, 236, 11),
             PALETTE["accent"],
             align="center",
             max_size=8,

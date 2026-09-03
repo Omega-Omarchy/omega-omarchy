@@ -5,6 +5,7 @@ from omega_omarchy.campaign import CAMPAIGN_ROSTER
 from omega_omarchy.combat import enter_turn_based
 from omega_omarchy.physics import TILE, InputState
 from omega_omarchy.sim import (
+    CHAPTER_COMPLETE_TALLY_TICKS,
     FLIGHT_TICKS,
     LEVEL_INTRO_TICKS,
     NETWORK_TICKS,
@@ -32,6 +33,11 @@ def _drain_level_intro(sim: GameSim) -> None:
         sim.step(InputState())
 
 
+def _drain_chapter_tally(sim: GameSim) -> None:
+    for _ in range(CHAPTER_COMPLETE_TALLY_TICKS):
+        sim.step(InputState())
+
+
 def test_recruiting_garden_gatekeeper_holds_oligarchy_until_dismiss():
     sim = GameSim.from_play_now()
     idx = next(i for i, chapter in enumerate(CAMPAIGN_ROSTER) if chapter.id == "walled-garden")
@@ -54,6 +60,7 @@ def test_recruiting_garden_gatekeeper_holds_oligarchy_until_dismiss():
     assert sim.chapter_index == idx
     sim.dismiss_oligarchy()
     assert sim.scene == "chapter-complete"
+    _drain_chapter_tally(sim)
     sim.step(InputState(turn_pressed=True))
     assert sim.scene == "stage-map"
     assert sim.stage_cursor == idx + 1
@@ -144,6 +151,9 @@ def test_chapter_one_completion_is_terminal_until_development_opt_in():
     assert sim.pending_chapter == 1
 
     sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "chapter-complete"
+    _drain_chapter_tally(sim)
+    sim.step(InputState(jump_pressed=True))
     assert sim.scene == "chapter-credits"
     sim.step(InputState(jump_pressed=True))
     assert sim.scene == "chapter-complete"
@@ -159,12 +169,32 @@ def test_chapter_one_completion_is_terminal_until_development_opt_in():
     assert not sim.post_boss
 
 
+def test_chapter_complete_counts_score_before_accepting_keys():
+    sim = GameSim.from_play_now()
+    sim.score = 1280
+    sim.penguins = 6
+    sim.converted.extend(["provenance-pass", "package-bureaucrat"])
+    sim._advance_after_boss("package-bureaucrat")
+    assert sim.chapter_tally_score() == 0
+    assert sim.chapter_tally_penguins() == 0
+    sim.step(InputState(jump_pressed=True, action_pressed=True, turn_pressed=True))
+    assert sim.scene == "chapter-complete"
+    assert sim.chapter_tally_score() < sim.score
+    _drain_chapter_tally(sim)
+    assert sim.chapter_tally_score() == 1280
+    assert sim.chapter_tally_penguins() == 6
+    assert sim.chapter_complete_ready()
+    sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "chapter-credits"
+
+
 def test_chapter_completion_save_restores_the_completion_boundary(tmp_path: Path):
     save_path = tmp_path / "chapter-one.json"
     sim = GameSim.from_play_now()
     sim.converted.extend(["provenance-pass", "package-bureaucrat"])
     sim._advance_after_boss("package-bureaucrat")
     sim.save_path = save_path
+    _drain_chapter_tally(sim)
     sim.step(InputState(action_pressed=True))
     assert save_path.is_file()
 
@@ -185,6 +215,7 @@ def test_later_chapter_end_screen_also_survives_save_restore(tmp_path: Path):
     sim.converted.append(spec.boss.id)
     sim._advance_after_boss(spec.boss.id)
     sim.save_path = save_path
+    _drain_chapter_tally(sim)
     sim.step(InputState(action_pressed=True))
 
     restored = GameSim.from_play_now()
