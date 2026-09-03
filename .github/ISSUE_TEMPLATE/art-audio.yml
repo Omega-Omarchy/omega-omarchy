@@ -1,0 +1,41 @@
+name: Art or audio contribution
+description: Propose original visual, animation, UI, music, or sound work with provenance.
+title: "[Art/Audio]: "
+labels: ["area: art-audio", "needs: triage"]
+body:
+  - type: dropdown
+    id: medium
+    attributes:
+      label: Medium
+      options: [Character art, Environment art, UI, Animation, Sound effect, Music, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope and in-game use
+    validations:
+      required: true
+  - type: textarea
+    id: fidelity
+    attributes:
+      label: Fidelity tiers and source workflow
+      description: Explain the Ultra source and derived lower tiers where applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Provenance and license
+      description: State authorship, tools/models, references, source files, licenses, and any names/likenesses/marks.
+    validations:
+      required: true
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: Rights confirmation
+      options:
+        - label: I have identified every source and have the right to contribute this material under its stated terms.
+          required: true
+        - label: I did not include private reference imagery or imply trademark/likeness permission.
+          required: true

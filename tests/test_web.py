@@ -1,0 +1,84 @@
+import shutil
+from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
+
+import pytest
+
+from omega_omarchy.web_build import (
+    WEB_BACKGROUNDS,
+    _encode_web_audio,
+    _repair_pygbag_launcher,
+    _store_web_archive,
+    _replace_directory,
+    stage_web,
+)
+
+
+def test_web_output_replacement_refuses_repository_root():
+    from omega_omarchy.web_build import ROOT
+
+    with pytest.raises(ValueError, match="unsafe web output"):
+        _replace_directory(ROOT)
+
+
+def test_web_stage_contains_authoritative_runtime_and_bounded_art(tmp_path):
+    stage = stage_web(tmp_path / "omega-omarchy", seed="browser-seed")
+    source = (stage / "main.py").read_text(encoding="utf-8")
+
+    assert "await run_game_async(seed='browser-seed')" in source
+    assert "import pygame" in source
+    assert (stage / "omega_omarchy" / "sim.py").is_file()
+    assert (stage / "omega_omarchy" / "render.py").is_file()
+    assert not (stage / "omega_omarchy" / "assets.py").exists()
+    assert not (stage / "assets" / "source").exists()
+    for fidelity in ("sixteen-bit", "high", "ultra"):
+        backgrounds = stage / "assets" / "fidelity" / fidelity / "bg"
+        assert {path.name for path in backgrounds.iterdir()} == set(WEB_BACKGROUNDS)
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is a web-build prerequisite")
+def test_web_audio_is_transcoded_to_browser_safe_ogg(tmp_path):
+    stage = stage_web(tmp_path / "omega-omarchy")
+    _encode_web_audio(stage)
+    audio = stage / "assets" / "audio"
+
+    assert not list(audio.glob("*.wav"))
+    encoded = sorted(audio.glob("*.ogg"))
+    assert encoded
+    assert all(path.read_bytes().startswith(b"OggS") for path in encoded)
+
+
+def test_launcher_workarounds_are_explicit_and_archive_is_stored(tmp_path):
+    built = tmp_path / "web"
+    built.mkdir()
+    (built / "index.html").write_text(
+        '<html><script src="https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js"></script>\n'
+        "appdir.mkdir()\n"
+        "    # unpack filesystem from compressed archive into work dir\n"
+        "    if platform.window.location.host.find('.itch.zone')>0:\n"
+        "    # preloader will change to work dir and prepend it to sys.path\n"
+        "    # wait preloading complete : that includes images and wasm compilation of bundled modules\n"
+        "    await shell.source(main, callback=ui_callback)\n"
+        "#7f7f7f background-color:powderblue;\n"
+        "background: green;\n            color: blue;\n"
+        "</html>",
+        encoding="utf-8",
+    )
+    apk = built / "omega-omarchy.apk"
+    with ZipFile(apk, "w", compression=ZIP_DEFLATED) as archive:
+        archive.writestr("assets/main.py", "print('ok')")
+    (built / "omega-omarchy.tar.gz").write_bytes(b"redundant")
+
+    _store_web_archive(apk)
+    _repair_pygbag_launcher(built)
+
+    with ZipFile(apk) as archive:
+        assert {entry.compress_type for entry in archive.infolist()} == {ZIP_STORED}
+    html = (built / "index.html").read_text(encoding="utf-8")
+    assert html.startswith('<script src="browserfs.min.js"></script>')
+    assert "github.io/cdn/0.9.3//browserfs.min.js" not in html
+    assert 'await aio.pep0723.pip_install("pygame")' in html
+    assert "exec(compile(main.read_text()" in html
+    assert "if True:  # the build replaces this with a stored ZIP" in html
+    assert not (built / "omega-omarchy.tar.gz").exists()
+    assert (built / "browserfs.min.js").stat().st_size > 200_000
+    assert (built / "BROWSERFS-LICENSE.txt").is_file()

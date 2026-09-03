@@ -1,0 +1,28 @@
+# Desired public-cutover label taxonomy. Apply and verify it before G3 can pass.
+- name: "type: bug"
+  color: "d73a4a"
+  description: Reproducible incorrect behavior
+- name: "type: proposal"
+  color: "a2eeef"
+  description: Maintainer-reviewed product proposal
+- name: "area: accessibility"
+  color: "0e8a16"
+  description: Input, motion, timing, text, color, audio, or cognitive access
+- name: "area: content-pack"
+  color: "5319e7"
+  description: Declarative packs, levels, recipes, enemies, or items
+- name: "area: art-audio"
+  color: "fbca04"
+  description: Visual, animation, music, or sound contribution
+- name: "area: web"
+  color: "1d76db"
+  description: Browser runtime, packaging, persistence, input, or performance
+- name: "good first issue"
+  color: "7057ff"
+  description: Bounded work with accepted direction and evidence expectations
+- name: "needs: triage"
+  color: "ededed"
+  description: Awaiting maintainer classification
+- name: "needs: maintainer-decision"
+  color: "b60205"
+  description: Direction, canon, compatibility, or release authority required

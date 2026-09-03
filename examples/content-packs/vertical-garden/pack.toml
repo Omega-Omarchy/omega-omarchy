@@ -1,0 +1,32 @@
+id = "example.vertical-garden"
+version = "1.0.0"
+schemaVersion = "1.0.0"
+gameSchemaVersion = "1.0.0"
+generatorVersion = "3.8.0"
+license = "CC0-1.0"
+authors = ["Omega Omarchy contributors"]
+entryPoints = ["chapters/vertical-garden-addon.json"]
+dependencies = ["omega-core-1"]
+loadAfter = ["omega-core-1"]
+loadBefore = []
+loadOrder = 100
+capabilities = ["chapter-profile"]
+contentDigest = "sha256:bce5bd7861ccec6523a5a74739612f6cf346121522e63c0f1fd5a46ca4cf5f4e"
+
+[[files]]
+path = "ATTRIBUTION.md"
+digest = "sha256:ebd4b295bc35d453e44efdc998a6c58f29fc28bfaf5a6baea35f1d54408829b0"
+bytes = 215
+mediaType = "text/markdown"
+
+[[files]]
+path = "LICENSE"
+digest = "sha256:422ac79e5cf67a1bbb013d352425e56a8ba27753f8636db0e225db1d9be5dc41"
+bytes = 167
+mediaType = "text/plain"
+
+[[files]]
+path = "chapters/vertical-garden-addon.json"
+digest = "sha256:f37249e2426e31662cd89227d86a0b2c90effce24ba66d60435038d5b6157823"
+bytes = 281
+mediaType = "application/json"

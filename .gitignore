@@ -1,0 +1,46 @@
+# Private local design material
+/docs/OMEGA-OMARCHY-GAME-DESIGN.md
+/docs/ONE-SHOT-DEVELOPMENT-GOAL.md
+/docs/references/
+/docs/records/
+
+# Local development state
+.env
+.env.*
+!.env.example
+.cache/
+godot-export/
+.local/
+.tmp/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Common generated files
+*.log
+.DS_Store
+Thumbs.db
+
+# Local operator dumps (inspection stills belong in scratch, not git)
+/var/
+/out/
+/build/
+/dist/audit-local/
+/dist/native-local/
+/dist/*.tar.gz
+/dist/*.sha256
+
+# Machine-local VM/ISO artifacts (never commit)
+*.iso
+*.qcow2
+*.qcow
+*.ppm

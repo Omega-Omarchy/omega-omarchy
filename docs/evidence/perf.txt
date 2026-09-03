@@ -1,0 +1,5 @@
+asset_load_s=1.804
+peak_mb=49.5
+frame_ms_eight_clean=51.36
+frame_ms_high_crt=53.44
+generate_s=0.236

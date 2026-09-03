@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# Issue-scoped development commands plus an explicit full release gate.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+if [[ ! -x "$ROOT/.venv/bin/python" ]]; then
+  python3 -m venv "$ROOT/.venv"
+  "$ROOT/.venv/bin/python" -m pip install --requirement "$ROOT/requirements/bootstrap.txt"
+  "$ROOT/.venv/bin/python" -m pip install --no-build-isolation --requirement "$ROOT/requirements/ci.txt"
+fi
+
+PY="$ROOT/.venv/bin/python"
+export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-dummy}"
+export PYGAME_HIDE_SUPPORT_PROMPT=1
+
+cmd="${1:-help}"
+shift || true
+
+usage() {
+  echo "Omega Omarchy developer commands"
+  echo "  ./scripts/omega run"
+  echo "  ./scripts/omega doctor"
+  echo "  ./scripts/omega test PATH_OR_PYTEST_SELECTOR [...]"
+  echo "  ./scripts/omega test-scope core|gameplay|combat|presentation|generation|content|installer|assets|web|release"
+  echo "  ./scripts/omega web [--web-out PATH]"
+  echo "  ./scripts/omega web-serve"
+  echo "  ./scripts/omega release-check"
+  echo "Choose tests from the issue's affected behavior; the full gate is never the default."
+}
+
+test_scope() {
+  scope="${1:-}"
+  case "$scope" in
+    core)
+      set -- tests/test_physics.py tests/test_collision.py tests/test_save.py tests/test_identity.py tests/test_privacy.py
+      ;;
+    gameplay)
+      set -- tests/test_physics.py tests/test_collision.py tests/test_sim_events.py tests/test_gameplay_upgrade.py tests/test_omega_milestone.py tests/test_golden_path.py
+      ;;
+    combat)
+      set -- tests/test_combat.py tests/test_sim_events.py tests/test_gameplay_upgrade.py -k "combat or battle or helper or boss or rpg"
+      ;;
+    presentation)
+      set -- tests/test_render_layout.py tests/test_flight_render.py tests/test_gameplay_upgrade.py
+      ;;
+    generation)
+      set -- tests/test_generation.py tests/test_identity.py tests/test_zone_delta.py
+      ;;
+    content)
+      set -- tests/test_content_packs.py tests/test_pack_store.py tests/test_zone_delta.py
+      ;;
+    installer)
+      set -- tests/test_installer.py tests/test_golden_path.py
+      ;;
+    assets)
+      set -- tests/test_assets.py
+      ;;
+    web)
+      set -- tests/test_web.py tests/test_save.py -k "web or browser"
+      ;;
+    release)
+      set -- tests/test_release_artifact.py tests/test_release_audit.py tests/test_privacy.py
+      ;;
+    *)
+      echo "Unknown or missing test scope: ${scope:-<none>}" >&2
+      usage >&2
+      return 2
+      ;;
+  esac
+  "$PY" -m pytest "$@"
+}
+
+case "$cmd" in
+  help|-h|--help)
+    usage
+    ;;
+  check|release-check)
+    "$PY" -m omega_omarchy assets
+    "$PY" -m omega_omarchy validate-pack "$ROOT/src/omega_omarchy/data/content-packs/omega-core"
+    "$PY" -m omega_omarchy validate-pack "$ROOT/examples/content-packs/vertical-garden"
+    "$PY" -m pytest "$ROOT/tests"
+    "$PY" -m omega_omarchy dump-identity --seed omega-fixture-1 --no-installed-content
+    "$PY" -m omega_omarchy dump-campaign
+    SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-dummy}" "$PY" -m omega_omarchy run \
+      --headless --ticks 2 --seed omega-fixture-1 --no-installed-content
+    "$PY" -m omega_omarchy web
+    echo "RELEASE_CHECK_OK"
+    ;;
+  run)
+    exec "$PY" -m omega_omarchy run "$@"
+    ;;
+  doctor)
+    failed=0
+    "$PY" - <<'PY' || failed=1
+from importlib.metadata import version
+import pygame
+import pygbag
+
+print(f"python=ok")
+print(f"pygame-ce={pygame.version.ver}")
+print(f"pygbag={pygbag.VERSION}")
+print(f"omega-omarchy={version('omega-omarchy')}")
+PY
+    if command -v ffmpeg >/dev/null 2>&1; then
+      echo "ffmpeg=ok"
+    else
+      echo "ffmpeg=missing (required for ./scripts/omega web)" >&2
+      failed=1
+    fi
+    for required in \
+      "$ROOT/assets/fidelity/ultra" \
+      "$ROOT/assets/ui/omega-omarchy-icon-256.png" \
+      "$ROOT/vendor/browserfs-1.4.3/browserfs.min.js"; do
+      if [[ ! -e "$required" ]]; then
+        echo "missing=$required" >&2
+        failed=1
+      fi
+    done
+    if [[ -n "$(git status --short)" ]]; then
+      echo "worktree=dirty (informational)"
+    else
+      echo "worktree=clean"
+    fi
+    if [[ "$failed" -ne 0 ]]; then
+      exit 1
+    fi
+    echo "doctor=ok"
+    ;;
+  test)
+    if [[ $# -eq 0 ]]; then
+      echo "Specify issue-relevant test paths/selectors, or use test-scope." >&2
+      usage >&2
+      exit 2
+    fi
+    exec "$PY" -m pytest "$@"
+    ;;
+  test-scope)
+    test_scope "${1:-}"
+    ;;
+  web)
+    exec "$PY" -m omega_omarchy web "$@"
+    ;;
+  web-serve)
+    if [[ ! -f "$ROOT/dist/web/index.html" ]]; then
+      echo "dist/web is missing; run ./scripts/omega web first" >&2
+      exit 2
+    fi
+    port="${OMEGA_WEB_PORT:-8000}"
+    echo "Serving http://127.0.0.1:$port (Ctrl+C to stop)"
+    exec "$PY" -m http.server "$port" --bind 127.0.0.1 --directory "$ROOT/dist/web"
+    ;;
+  package)
+    exec "$PY" "$ROOT/tools/build_native.py" "$@"
+    ;;
+  verify-package)
+    exec "$PY" "$ROOT/tools/verify_native.py" "$@"
+    ;;
+  audit-release)
+    exec "$PY" "$ROOT/tools/audit_release.py" "$@"
+    ;;
+  *)
+    exec "$PY" -m omega_omarchy "$cmd" "$@"
+    ;;
+esac

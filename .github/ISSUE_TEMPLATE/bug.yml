@@ -1,0 +1,54 @@
+name: Bug report
+description: Report reproducible gameplay, generation, save, installer, or packaging behavior.
+title: "[Bug]: "
+labels: ["type: bug", "needs: triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Never include secrets, private references, or a private security vulnerability here.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: 0.1.0 / full commit SHA
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and launch method
+      placeholder: Omarchy/Linux or browser version; checkout, native artifact, or dist/web
+    validations:
+      required: true
+  - type: input
+    id: seed
+    attributes:
+      label: Seed and world identity
+      description: Include both when generation or gameplay geometry is involved.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: Numbered ordinary-input steps from a clean launch.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Attach safe screenshots, logs, save validation output, or receipts.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I reproduced this on the current main branch or named artifact.
+          required: true
+        - label: I removed secrets, private paths, and unlicensed material.
+          required: true

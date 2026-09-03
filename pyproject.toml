@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omega-omarchy"
+version = "0.1.0"
+description = "Omega Omarchy — a fast, customizable, retro-inspired game about user-owned computing."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Omega Omarchy contributors"}]
+dependencies = [
+  "pygame-ce==2.5.8",
+  "pillow==12.3.0",
+  "qrcode==8.2",
+  "numpy==2.1.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.0.3",
+]
+release = [
+  "pyinstaller==6.22.2",
+]
+web = [
+  "pygbag==0.9.3",
+]
+limitless = [
+  "limitless-library>=0.1.0a0",
+]
+
+[project.scripts]
+omega-omarchy = "omega_omarchy.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+omega_omarchy = [
+  "data/**/*.json",
+  "data/**/*.md",
+  "data/**/*.toml",
+  "data/**/*.txt",
+  "data/**/LICENSE",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.omega-omarchy]
+generator_version = "3.8.0"
+schema_version = "1.0.0"
+fixture_seed = "omega-fixture-1"
+internal_width = 320
+internal_height = 180
+tick_hz = 60

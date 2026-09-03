@@ -1,0 +1,37 @@
+name: Content pack or level
+description: Propose or report a deterministic data-only pack, level recipe, enemy motif, or item pool.
+title: "[Content]: "
+labels: ["area: content-pack", "needs: triage"]
+body:
+  - type: dropdown
+    id: request
+    attributes:
+      label: Request type
+      options: [Pack bug, New pack, Level recipe, Enemy motif, Item, Documentation or tooling]
+    validations:
+      required: true
+  - type: input
+    id: schema
+    attributes:
+      label: Pack ID, version, and schema
+      placeholder: example.pack 1.0.0 / pack schema 1.0.0
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validator and deterministic evidence
+      placeholder: PACK_OK output, seed, identities, and with/without-pack result.
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: License, authorship, and provenance
+      description: Identify every asset/data source and the proposed license. Do not attach unclear material.
+    validations:
+      required: true
+  - type: textarea
+    id: player_value
+    attributes:
+      label: Player value and Chapter 1 fit
+    validations:
+      required: true

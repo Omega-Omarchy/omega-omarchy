@@ -1,0 +1,35 @@
+name: Accessibility report
+description: Report a barrier involving input, motion, timing, text, color, audio, or cognition.
+title: "[Accessibility]: "
+labels: ["area: accessibility", "needs: triage"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Barrier area
+      options: [Input, Motion, Timing, Text, Color, Audio, Cognitive load, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: barrier
+    attributes:
+      label: Barrier and player impact
+      description: Describe the task that becomes difficult or impossible; diagnosis disclosure is never required.
+    validations:
+      required: true
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Relevant configuration
+      description: Fidelity, clean/CRT, reduced motion, precision assist, input device, and remaps.
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Suggested outcome
+      description: Describe the capability needed; a specific implementation is optional.

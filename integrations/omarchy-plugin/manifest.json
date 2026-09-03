@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "omega.omarchy",
+  "name": "Omega Omarchy",
+  "version": "0.1.0",
+  "author": "Omega Omarchy",
+  "description": "Launch Omega Omarchy and sync the active Omarchy theme",
+  "license": "MIT",
+  "kinds": [
+    "panel",
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "panel": "plugin/Panel.qml",
+    "barWidget": "plugin/BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Omega Omarchy",
+    "description": "Play Omega Omarchy",
+    "category": "Tools",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  },
+  "keepLoaded": true
+}

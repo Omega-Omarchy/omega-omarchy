@@ -1,0 +1,50 @@
+{
+  "capsuleDigest": "sha256:566ff41d30faafde09c710b19272958d5cdcbdb0d89efb28227428975f15b449",
+  "id": "capsule:omega-precision-assist",
+  "license": "MIT",
+  "offers": [
+    {
+      "compatibility": {
+        "constraints": [
+          "language:json",
+          "runtime:omega-omarchy",
+          "runtime:any"
+        ],
+        "toolchain": {
+          "omega": [
+            "0.1.0"
+          ],
+          "python": [
+            "3.11",
+            "3.12",
+            "3.13"
+          ]
+        }
+      },
+      "files": [
+        {
+          "digest": "sha256:d5a210d68b9d05b5e2e47fa8ca0fef5b09618bcd2da0dd6dde9c9ebfa46ca95c",
+          "source": "payload/assist.json"
+        }
+      ],
+      "id": "offer:omega-precision-assist-json",
+      "kind": "exact-component",
+      "method": null,
+      "policy": {
+        "allowedUses": [
+          "evaluation",
+          "play"
+        ],
+        "state": "active",
+        "tenantScopes": [
+          "public"
+        ]
+      },
+      "priority": 100,
+      "taskKind": "omega-precision-assist"
+    }
+  ],
+  "schemaVersion": "limitless.capsule/0.1",
+  "title": "Omega Omarchy precision assist profile",
+  "version": "0.1.0"
+}

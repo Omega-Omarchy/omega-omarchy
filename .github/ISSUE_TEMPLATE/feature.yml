@@ -1,0 +1,30 @@
+name: Feature proposal
+description: Propose a player-facing capability consistent with the maintainer-led direction.
+title: "[Proposal]: "
+labels: ["type: proposal", "needs: maintainer-decision"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Player problem or opportunity
+      description: Lead with the outcome, not an implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience
+    validations:
+      required: true
+  - type: textarea
+    id: invariants
+    attributes:
+      label: Impact on project invariants
+      description: Address Chapter 1 scope, determinism, offline play, safety, accessibility, and performance.
+    validations:
+      required: true
+  - type: textarea
+    id: canon
+    attributes:
+      label: Voice or canon impact
+      description: Maintainers retain final authority over central voice, canon, and product direction.

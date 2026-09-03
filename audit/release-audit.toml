@@ -1,0 +1,101 @@
+schema_version = 1
+
+# Every exception is category-, scope-, locator-, and fingerprint-bound where
+# practical. Matched values never appear here; the audit report supplies only
+# stable one-way fingerprints.
+
+[[allow]]
+id = "tracked-env-template"
+category = "sensitive-file-name"
+scope = "*"
+locator = "*.env.example"
+fingerprint = "d36f3ab155cf1c7d0aa1"
+rationale = "Tracked comment-only template contains no assignments or credentials."
+
+[[allow]]
+id = "dco-noreply-signoff"
+category = "email-address"
+scope = "commit-message"
+locator = "commit:*"
+fingerprint = "a67a6c42cd1559fd031a"
+rationale = "Intentional GitHub noreply DCO sign-off on public-project commits."
+
+[[allow]]
+id = "historical-generic-research-root"
+category = "temporary-path"
+scope = "history"
+locator = "scripts/omega"
+fingerprint = "88e8f7e6f339674652a3"
+rationale = "Generic disposable research root; no username, credential, or retained private payload."
+
+[[allow]]
+id = "historical-limitless-fixture-root"
+category = "temporary-path"
+scope = "history"
+locator = "tests/test_limitless.py"
+fingerprint = "cc5dc252d7a65ef20b92"
+rationale = "Generic disposable optional-integration fixture root; current tests use an explicit environment variable."
+
+[[allow]]
+id = "bundled-upstream-license-contact"
+category = "email-address"
+scope = "artifact:native"
+locator = "*/licenses/*"
+fingerprint = "*"
+rationale = "Verbatim upstream license and attribution contacts required in the player bundle."
+
+[[allow]]
+id = "github-runner-home"
+category = "local-user-path"
+scope = "artifact:actions-logs"
+locator = "actions-logs/*.log"
+fingerprint = "63de5f30e0941bf573b1"
+rationale = "GitHub-hosted runner home emitted by official setup and checkout actions."
+
+[[allow]]
+id = "github-runner-workspace"
+category = "workspace-path"
+scope = "artifact:actions-logs"
+locator = "actions-logs/*.log"
+fingerprint = "*"
+rationale = "Ephemeral GitHub Actions workspace roots; no private machine or user identity."
+
+[[allow]]
+id = "github-runner-temporary-paths"
+category = "temporary-path"
+scope = "artifact:actions-logs"
+locator = "actions-logs/*.log"
+fingerprint = "*"
+rationale = "Ephemeral pip, PyInstaller, pytest, and workflow scratch paths on hosted runners."
+
+[[allow]]
+id = "historical-omarchy-fixture-root"
+category = "temporary-path"
+scope = "history"
+locator = "tests/test_omarchy.py"
+fingerprint = "02433a3750d38a5dca22"
+rationale = "Generic disposable optional-integration fixture root; current tests use an explicit environment variable."
+
+[[allow]]
+id = "browserfs-upstream-contact"
+category = "email-address"
+scope = "*"
+locator = "*browserfs.min.js"
+fingerprint = "764cb898be4383d3cecb"
+rationale = "Unmodified upstream BrowserFS distribution contains its project contact; license and provenance are retained."
+
+[[allow]]
+id = "documented-loopback-web-server"
+category = "internal-url"
+scope = "*"
+locator = "*scripts/omega"
+fingerprint = "677443a2b111ddd29720"
+rationale = "Documented loopback-only contributor server; it contains no deployed host or private service coordinate."
+
+[[allow]]
+id = "documented-loopback-web-address"
+category = "internal-url"
+scope = "*"
+locator = "*docs/web.md"
+fingerprint = "a92deffa4be52d0d43be"
+rationale = "Contributor documentation points to the loopback-only browser preview; it is not a private or deployed service."

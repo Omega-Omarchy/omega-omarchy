@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test and deterministic gates (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements/audit-targets.txt
+            requirements/audit-tool.txt
+            requirements/bootstrap.txt
+            requirements/ci.txt
+      - name: Bootstrap pinned installer
+        run: python -m pip install --requirement requirements/bootstrap.txt
+      - name: Install pinned dependencies
+        run: python -m pip install --no-build-isolation --requirement requirements/ci.txt
+      - name: Run repository gate
+        env:
+          SDL_AUDIODRIVER: dummy
+          SDL_VIDEODRIVER: dummy
+        run: ./scripts/omega release-check
+      - name: Confirm generated evidence is current
+        run: git diff --exit-code -- assets dist/web
+
+  native-artifact:
+    name: Native Linux artifact
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements/audit-targets.txt
+            requirements/audit-tool.txt
+            requirements/bootstrap.txt
+            requirements/ci.txt
+      - name: Bootstrap pinned installer
+        run: python -m pip install --requirement requirements/bootstrap.txt
+      - name: Install pinned dependencies
+        run: python -m pip install --no-build-isolation --requirement requirements/ci.txt
+      - name: Build clean native bundle
+        run: ./scripts/omega package --require-clean --output dist/native-local
+      - name: Verify extracted artifact
+        run: |
+          ./scripts/omega verify-package \
+            dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz \
+            dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz.sha256 \
+            --require-clean
+      - name: Audit pinned Python dependencies
+        run: |
+          mkdir -p dist/audit-local
+          python -m venv "$RUNNER_TEMP/omega-audit-venv"
+          "$RUNNER_TEMP/omega-audit-venv/bin/python" -m pip install \
+            --requirement requirements/bootstrap.txt
+          "$RUNNER_TEMP/omega-audit-venv/bin/python" -m pip install \
+            --requirement requirements/audit-tool.txt
+          "$RUNNER_TEMP/omega-audit-venv/bin/python" -m pip_audit \
+            --requirement requirements/audit-targets.txt \
+            --no-deps \
+            --disable-pip \
+            --format json \
+            --output dist/audit-local/pip-audit.json
+      - name: Build and scan release surfaces
+        run: |
+          ./scripts/omega web
+          ./scripts/omega audit-release \
+            --require-clean \
+            --report-only \
+            --build-distributions \
+            --vulnerability-report dist/audit-local/pip-audit.json \
+            --artifact native=dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz \
+            --artifact web=dist/web
+      - name: Retain bundle and checksum
+        id: retain-artifact
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: omega-omarchy-native-linux-x86_64
+          path: |
+            dist/native-local/*.tar.gz
+            dist/native-local/*.sha256
+            dist/audit-local/pip-audit.json
+            dist/audit-local/release-audit.json
+            dist/audit-local/release-audit.md
+            dist/audit-local/sbom.spdx.json
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+      - name: Record artifact retention result
+        if: always()
+        env:
+          RETENTION_OUTCOME: ${{ steps.retain-artifact.outcome }}
+        run: |
+          if [[ "$RETENTION_OUTCOME" != "success" ]]; then
+            echo "::warning title=Artifact retention unavailable::" \
+              "The clean bundle passed verification but was not retained; check account storage quota."
+            {
+              echo "### Artifact retention unavailable"
+              echo "The clean bundle passed verification but upload failed."
+              echo "Check the account-wide Actions storage quota."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -1,0 +1,46 @@
+{
+  "capsuleDigest": "sha256:0209048bc6e89cfd4614b0b63c2a69bb5393054c6ea83096a24c9c61c448380c",
+  "id": "capsule:omega-floaty-jump",
+  "license": "MIT",
+  "offers": [
+    {
+      "compatibility": {
+        "constraints": [
+          "runtime:any"
+        ],
+        "toolchain": {}
+      },
+      "files": null,
+      "id": "offer:omega-floaty-jump-method",
+      "kind": "method",
+      "method": {
+        "steps": [
+          "Raise jump velocity by at most twelve percent.",
+          "Keep gravity, spike damage, and boss reachability unchanged.",
+          "Reject any change that lets the player skip a required boss anchor."
+        ],
+        "summary": "Make the jump feel floatier without lowering the challenge.",
+        "verification": [
+          "Jump height increases slightly.",
+          "The chapter boss remains reachable without rare events.",
+          "Precision demand does not drop below the selected difficulty."
+        ]
+      },
+      "policy": {
+        "allowedUses": [
+          "evaluation",
+          "play"
+        ],
+        "state": "active",
+        "tenantScopes": [
+          "public"
+        ]
+      },
+      "priority": 80,
+      "taskKind": "omega-movement-jump"
+    }
+  ],
+  "schemaVersion": "limitless.capsule/0.1",
+  "title": "Floatier jump without lowering the challenge",
+  "version": "0.1.0"
+}

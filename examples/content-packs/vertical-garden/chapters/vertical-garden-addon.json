@@ -1,0 +1,11 @@
+{
+  "kind": "chapter-addon",
+  "id": "example.vertical-garden/corrupted-install-addon",
+  "chapterId": "corrupted-install",
+  "generation": {
+    "sectorMotifs": ["garden"],
+    "recipes": ["broken-bridge"]
+  },
+  "enemyMotifs": ["garden-glitch"],
+  "itemPool": ["mirror-cache"]
+}

@@ -1,0 +1,6 @@
+{
+  "kind": "omega-precision-assist",
+  "coyoteBonus": 5,
+  "bufferBonus": 3,
+  "description": "Generous coyote time and jump buffer that does not skip bosses."
+}

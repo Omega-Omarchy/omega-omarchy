@@ -1,0 +1,52 @@
+{
+  "kind": "chapter",
+  "id": "omega-core/chapter/corrupted-install",
+  "chapterId": "corrupted-install",
+  "name": "The Corrupted Install",
+  "blurb": "The installer finished. The world did not.",
+  "palette": "corrupted",
+  "boss": {
+    "id": "package-bureaucrat",
+    "name": "The Package Bureaucrat"
+  },
+  "generation": {
+    "widthBase": {
+      "casual": 256,
+      "standard": 288,
+      "precise": 320
+    },
+    "heightBase": 46,
+    "sectorWidth": 32,
+    "sectorMotifs": [
+      "ruin",
+      "canopy",
+      "relay",
+      "ravine",
+      "spire",
+      "archive",
+      "foundry"
+    ],
+    "recipes": [
+      "switchback",
+      "sky-well",
+      "bumper-gallery",
+      "twin-towers",
+      "suspended-chain",
+      "archive-stacks"
+    ]
+  },
+  "enemyMotifs": [
+    "cache-gremlin",
+    "lint-launcher",
+    "justice-signaler",
+    "detractabot"
+  ],
+  "itemPool": [
+    "logic-bomb",
+    "patch-cable",
+    "manifest",
+    "penguin-flock",
+    "fork-beacon",
+    "checksum-key"
+  ]
+}
