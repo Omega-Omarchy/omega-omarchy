@@ -25,6 +25,13 @@ The built-in content pack has its own private-alpha notice at
 carry their own license and attribution; a pack's terms do not relicense the
 engine or other packs.
 
+The maintainer-supplied *Make It Come Alive* recording, its decoded FLAC
+preservation master, and every derived runtime tier are included in this
+all-rights-reserved private-alpha category. Their container/master digests and
+provisional provenance are recorded in `assets/source/audio/`. Permission for
+public source or binary redistribution has not yet been established and is a
+blocking public-cutover review item.
+
 ## Third-party typeface
 
 The vendored Omarchy Font files under `assets/source/fonts/` and their runtime

@@ -11,6 +11,7 @@ from . import INSTALLER_COMPLETION_ACTION
 from .character import DAVID, FALLBACK_CHARACTER_NAME, Character, parse_character
 from .content import load_content
 from .generation import SealedWorld, generate_world
+from .audio import AUDIO_FIDELITIES, DEFAULT_AUDIO, cycle_audio_fidelity, normalize_audio_settings
 from .presentation import DISPLAYS, FIDELITIES, apply_presentation, cycle_display, cycle_fidelity
 
 # Pinned Omarchy installer mapping (VM-observed 2026-08-28 on omarchy-4.0.1
@@ -52,6 +53,7 @@ PARODY_STEPS = (
     "difficulty",
     "accessibility",
     "quality",
+    "sound",
     "display",
     "limitless",
     "sharing",
@@ -123,6 +125,7 @@ class InstallerChoices:
     accessibility_profile: str = "default"
     quality: str = "ultra"
     fidelity: str = "ultra"
+    audio_fidelity: str = "ultra"
     display: str = "clean"
     limitless_enabled: bool = False
     share_policy: str = "local-only"
@@ -156,6 +159,8 @@ class InstallerChoices:
             "precisionAssist": self.precision_assist,
             "quality": self.quality,
             "fidelity": self.fidelity,
+            "audioFidelity": self.audio_fidelity,
+            "audio": dict(DEFAULT_AUDIO),
             "display": self.display,
             "reducedMotion": self.reduced_motion,
             "seed": self.seed,
@@ -232,6 +237,10 @@ class InstallerSession:
                 if value not in QUALITY_PRESETS:
                     raise ValueError("unknown quality")
                 self.choices.quality = value
+            elif key == "audio_fidelity":
+                if value not in AUDIO_FIDELITIES:
+                    raise ValueError("unknown audio fidelity")
+                self.choices.audio_fidelity = value
             elif hasattr(self.choices, key):
                 setattr(self.choices, key, value)
             else:
@@ -258,6 +267,8 @@ class InstallerSession:
         elif step == "quality":
             c.fidelity = cycle_fidelity(c.fidelity, delta)
             c.quality = c.fidelity
+        elif step == "sound":
+            c.audio_fidelity = cycle_audio_fidelity(c.audio_fidelity, delta)
         elif step == "display":
             c.display = cycle_display(c.display, delta)
             if c.display == "crt":
@@ -314,7 +325,7 @@ class InstallerSession:
         """Gum-style list page for the current setup step. None on non-list screens."""
 
         c = self.choices
-        machine = self.step in {"input", "quality", "display", "limitless", "sharing"}
+        machine = self.step in {"input", "quality", "sound", "display", "limitless", "sharing"}
         header = SETUP_MACHINE if machine else SETUP_ACCOUNT
         pages = {
             "input": ("Select input", list(INPUT_MODES), INPUT_MODES.index(c.input_mode) if c.input_mode in INPUT_MODES else 0),
@@ -342,6 +353,11 @@ class InstallerSession:
                 "Select art fidelity",
                 list(FIDELITIES),
                 FIDELITIES.index(c.fidelity) if c.fidelity in FIDELITIES else 0,
+            ),
+            "sound": (
+                "Select sound fidelity",
+                list(AUDIO_FIDELITIES),
+                AUDIO_FIDELITIES.index(c.audio_fidelity) if c.audio_fidelity in AUDIO_FIDELITIES else 2,
             ),
             "display": (
                 "Select display treatment",
@@ -386,6 +402,8 @@ class InstallerSession:
             footnote = "Names can be changed now; deeper character creation comes later."
         elif self.step == "quality":
             footnote = "Ultra adds detail. Change fidelity later in Pause."
+        elif self.step == "sound":
+            footnote = "Sound quality is independent from visual fidelity."
         elif self.step == "display":
             footnote = "CRT is a display treatment. Reduced-motion wins."
         return {
@@ -405,6 +423,7 @@ class InstallerSession:
             ("Seed", c.seed),
             ("Difficulty", c.difficulty),
             ("Fidelity", c.fidelity),
+            ("Sound", c.audio_fidelity),
             ("Display", c.display),
             ("Limitless", "on" if c.limitless_enabled else "off"),
             ("Sharing", c.share_policy),
@@ -462,6 +481,8 @@ class InstallerSession:
         settings = {
             "quality": self.choices.quality,
             "fidelity": self.choices.fidelity,
+            "audioFidelity": self.choices.audio_fidelity,
+            "audio": dict(DEFAULT_AUDIO),
             "display": self.choices.display,
             "inputMode": self.choices.input_mode,
             "limitlessEnabled": self.choices.limitless_enabled,
@@ -473,6 +494,7 @@ class InstallerSession:
             "accessibilityProfile": accessibility,
         }
         settings = apply_presentation(settings, quality=self.choices.quality)
+        settings = normalize_audio_settings(settings, legacy_fidelity=self.choices.fidelity)
         world = generate_world(
             self.choices.seed,
             difficulty=self.choices.difficulty,

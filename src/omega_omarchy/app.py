@@ -19,6 +19,7 @@ from .accessibility import (
     Accessibility,
     gamepad_button_index,
 )
+from .audio import AudioManager
 from .physics import InputState
 from .render import INTERNAL, Renderer, save_surface
 from .runtime_assets import asset_dir
@@ -217,22 +218,9 @@ async def run_game_async(
         os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
     pygame.init()
     pygame.joystick.init()
-    bank: dict[str, pygame.mixer.Sound] = {}
-    try:
-        pygame.mixer.init()
-        audio_root = asset_dir() / "audio"
-        for name in ("jump", "collect", "convert", "hit", "logo", "ui"):
-            candidates = (f"{name}.ogg", f"{name}.wav")
-            source = next(
-                (audio_root / candidate for candidate in candidates if (audio_root / candidate).is_file()),
-                None,
-            )
-            if source is not None:
-                bank[name] = pygame.mixer.Sound(str(source))
-    except pygame.error:
-        bank = {}
     sim = GameSim.new(seed, content_packs)
     sim.web_chapter_one = sys.platform == "emscripten"
+    audio = AudioManager(browser=sim.web_chapter_one, enabled=not headless)
     if skip_installer or headless or dev_warp:
         sim.confirm_play_now(skip_prologue=True)
     if dev_warp:
@@ -259,6 +247,7 @@ async def run_game_async(
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
+                audio.unlock()
                 sim.last_input_device = "keyboard"
                 if sim.capture_remap_key(key_code_to_name(event.key)):
                     continue
@@ -310,6 +299,7 @@ async def run_game_async(
             elif event.type == pygame.JOYDEVICEREMOVED:
                 joysticks.pop(event.instance_id, None)
             elif event.type == pygame.JOYBUTTONDOWN:
+                audio.unlock()
                 sim.last_input_device = "gamepad"
                 if sim.capture_remap_button(event.button):
                     continue
@@ -326,10 +316,15 @@ async def run_game_async(
         if sim.scene == "oligarchy" and (inp.interact or inp.jump_pressed):
             sim.dismiss_oligarchy()
         sim.step(inp)
-        for name in sim.sfx:
-            sound = bank.get(name)
-            if sound is not None and not sim.audio_muted:
-                sound.play()
+        active_audio_settings = (
+            sim.installer.choices.to_record() if sim.scene == "installer" else sim.settings
+        )
+        audio.update(
+            scene=sim.scene,
+            in_combat=sim.combat is not None,
+            settings=active_audio_settings,
+            cues=tuple(sim.sfx),
+        )
         sim.sfx.clear()
         frame = renderer.frame(sim)
         if window.get_size() != frame.get_size():
@@ -357,6 +352,7 @@ async def run_game_async(
         print("COMPLETION:" + INSTALLER_COMPLETION_ACTION)
     if inspect_dir:
         _inspect(sim, renderer, Path(inspect_dir))
+    audio.shutdown()
     if sys.platform != "emscripten":
         pygame.quit()
     return sim

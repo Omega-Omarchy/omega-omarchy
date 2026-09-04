@@ -31,6 +31,7 @@ identity remains reproducible; normal native play applies them.
 | `./scripts/omega doctor` | report contributor/runtime/web prerequisites without running tests |
 | `./scripts/omega web` | playable Chapter 1 WebAssembly build using the authoritative game |
 | `./scripts/omega web-serve` | serve `dist/web` on loopback for browser testing |
+| `./scripts/omega audio` | deterministically rebuild every runtime sound tier from source masters |
 | `./scripts/omega package` | portable native Linux archive + SHA-256 file |
 | `./scripts/omega verify-package ARCHIVE CHECKSUM` | safely extract and smoke-test the portable artifact |
 | `./scripts/omega audit-release` | redacted tree/history/artifact/SBOM audit |
@@ -55,6 +56,11 @@ Use `--no-installed-content` for a one-off run without enabled installed packs.
 
 See [content-packs.md](content-packs.md) for the schema, safety model, and full
 create/validate/enable/disable/remove workflow.
+
+Audio generation additionally requires `ffmpeg` and `ffprobe`. It preserves
+lossless/PCM masters under `assets/source/audio/` and writes only runtime Ogg
+files plus `assets/audio/audio-manifest.json`. See
+[sound-support.md](sound-support.md) for recipes, rights, and listening gates.
 
 The native target is pygame-ce. `dist/web` is a playable Chapter 1 browser
 alpha backed by the same simulation and renderer, not a six-chapter web game.

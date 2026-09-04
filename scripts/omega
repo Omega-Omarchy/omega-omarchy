@@ -23,9 +23,10 @@ usage() {
   echo "  ./scripts/omega run"
   echo "  ./scripts/omega doctor"
   echo "  ./scripts/omega test PATH_OR_PYTEST_SELECTOR [...]"
-  echo "  ./scripts/omega test-scope core|gameplay|combat|presentation|generation|content|installer|assets|web|release"
+  echo "  ./scripts/omega test-scope core|gameplay|combat|presentation|generation|content|installer|assets|audio|web|release"
   echo "  ./scripts/omega web [--web-out PATH]"
   echo "  ./scripts/omega web-serve"
+  echo "  ./scripts/omega audio"
   echo "  ./scripts/omega release-check"
   echo "Choose tests from the issue's affected behavior; the full gate is never the default."
 }
@@ -56,6 +57,9 @@ test_scope() {
       ;;
     assets)
       set -- tests/test_assets.py
+      ;;
+    audio)
+      set -- tests/test_audio.py tests/test_installer.py tests/test_web.py -k "audio or sound"
       ;;
     web)
       set -- tests/test_web.py tests/test_save.py -k "web or browser"
@@ -111,6 +115,8 @@ PY
     fi
     for required in \
       "$ROOT/assets/fidelity/ultra" \
+      "$ROOT/assets/audio/audio-manifest.json" \
+      "$ROOT/assets/source/audio/music/make-it-come-alive/master-ultra.flac" \
       "$ROOT/assets/ui/omega-omarchy-icon-256.png" \
       "$ROOT/vendor/browserfs-1.4.3/browserfs.min.js"; do
       if [[ ! -e "$required" ]]; then
@@ -150,6 +156,9 @@ PY
     port="${OMEGA_WEB_PORT:-8000}"
     echo "Serving http://127.0.0.1:$port (Ctrl+C to stop)"
     exec "$PY" -m http.server "$port" --bind 127.0.0.1 --directory "$ROOT/dist/web"
+    ;;
+  audio)
+    exec "$PY" -m omega_omarchy.audio_build "$@"
     ;;
   package)
     exec "$PY" "$ROOT/tools/build_native.py" "$@"

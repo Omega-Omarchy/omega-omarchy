@@ -34,6 +34,15 @@ Build/test-only packages are pinned in `requirements/ci.txt`. They are not
 intended to be imported as game features, although the PyInstaller bootloader
 and its applicable exception are part of the player artifact.
 
+## Music recording pending rights review
+
+The private alpha includes the maintainer-supplied recording *Make It Come
+Alive*. The project preserves a decoded FLAC master and derives Ultra, High,
+and sixteen-bit runtime interpretations from it. Authorship, ownership, and
+public redistribution terms are not asserted here; the recording and its
+derivatives must remain private until the rights gate in
+`docs/OPEN-SOURCE-CUTOVER.md` is resolved.
+
 ## Branding references
 
 - Omarchy logo geometry is sourced from the Basecamp Omarchy repository:

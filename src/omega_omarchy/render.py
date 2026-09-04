@@ -335,6 +335,9 @@ class Renderer:
         elif sim.scene == "pause":
             self._world(surf, sim)
             self._pause(surf, sim)
+        elif sim.scene == "audio-settings":
+            self._world(surf, sim)
+            self._audio_settings(surf, sim)
         elif sim.scene == "items":
             self._world(surf, sim)
             self._items(surf, sim)
@@ -377,6 +380,8 @@ class Renderer:
                 self._combat_action(surf, sim)
             if sim.flash_ticks > 0:
                 self._flash(surf, sim)
+        if sim.audio_captions and sim.audio_caption and sim.audio_caption_ticks > 0:
+            self._audio_caption(surf, sim.audio_caption)
         fid, disp = migrate_quality(sim.quality, sim.settings)
         fid = self._active_fid(sim)
         disp = getattr(sim, "display", None) or disp
@@ -2576,6 +2581,7 @@ class Renderer:
             "fidelity": ("FIDELITY", fid),
             "display": ("DISPLAY", disp),
             "items": ("ITEMS", sim.current_item.replace("-", " ")),
+            "audio": ("SOUND", "muted" if sim.audio_muted else sim.audio_fidelity),
             "controls": ("CONTROLS", "remap"),
             "reroll": ("NEW WORLD", "confirm"),
             "omega-code": ("OMEGA CODE", "export"),
@@ -2624,7 +2630,7 @@ class Renderer:
             surf.blit(self._fit(port, (ph, ph)), (228 * self._vs, 41 * self._vs))
         except Exception:
             pass
-        help_y = 128 if len(row_ids) > 8 else 119
+        help_y = 139 if len(row_ids) > 9 else (128 if len(row_ids) > 8 else 119)
         select_key = sim.prompt_binding("jump", compact=True)
         pause_key = sim.prompt_binding("pause", compact=True)
         directions = "D-pad" if sim.last_input_device == "gamepad" else "Arrows"
@@ -2647,6 +2653,92 @@ class Renderer:
             )
         if sim.omega_text:
             self.fit_text(surf, "code ready", (198, 145, 64, 8), PALETTE["cyan"], align="right", max_size=6, min_size=5)
+
+    def _audio_settings(self, surf: Surface, sim: GameSim) -> None:
+        shade = Surface((self._iw, self._ih), pygame.SRCALPHA)
+        shade.fill((2, 4, 10, 194))
+        surf.blit(shade, (0, 0))
+        self._panel(surf, (28, 10, 264, 160), fill=(7, 9, 18))
+        self.blit_text(surf, "SOUND", (42, 20), PALETTE["bright_green"])
+        self.fit_text(
+            surf,
+            "Independent from art fidelity",
+            (42, 31, 236, 9),
+            PALETTE["cyan"],
+            max_size=7,
+            min_size=5,
+        )
+        audio = dict(sim.settings.get("audio") or {})
+        labels = {
+            "quality": "QUALITY",
+            "master": "MASTER",
+            "music": "MUSIC",
+            "effects": "EFFECTS",
+            "ui": "INTERFACE",
+            "mute": "MUTE",
+            "captions": "CAPTIONS",
+            "back": "BACK",
+        }
+        volume_keys = {
+            "master": "masterVolume",
+            "music": "musicVolume",
+            "effects": "effectsVolume",
+            "ui": "uiVolume",
+        }
+        for index, row in enumerate(sim.audio_settings_rows):
+            y = 43 + index * 14
+            selected = index == sim.audio_cursor
+            if selected:
+                pygame.draw.rect(surf, LIME_MARK, self._lr(40, y, 238, 11))
+            color = PALETTE["dark"] if selected else PALETTE["fg"]
+            self.fit_text(
+                surf,
+                ("> " if selected else "  ") + labels[row],
+                (43, y + 1, 78, 9),
+                color,
+                max_size=7,
+                min_size=5,
+                bold=selected,
+            )
+            if row in volume_keys:
+                amount = float(audio.get(volume_keys[row], 0.8))
+                pygame.draw.rect(surf, (28, 32, 46), self._lr(126, y + 4, 112, 5))
+                pygame.draw.rect(
+                    surf,
+                    PALETTE["dark"] if selected else SHIFT_CYAN,
+                    self._lr(126, y + 4, max(1, round(112 * amount)), 5),
+                )
+                self.fit_text(surf, f"{round(amount * 100):02d}%", (242, y + 1, 31, 9), color, align="right", max_size=6, min_size=5)
+            elif row == "quality":
+                value = sim.audio_fidelity
+                self.fit_text(surf, f"< {value} >", (126, y + 1, 147, 9), color, align="right", max_size=7, min_size=5)
+            elif row == "mute":
+                self.fit_text(surf, "ON" if sim.audio_muted else "OFF", (126, y + 1, 147, 9), color, align="right", max_size=7, min_size=5)
+            elif row == "captions":
+                self.fit_text(surf, "ON" if sim.audio_captions else "OFF", (126, y + 1, 147, 9), color, align="right", max_size=7, min_size=5)
+        self.fit_text(
+            surf,
+            "Arrows adjust · Select toggle · Back closes",
+            (42, 151, 236, 9),
+            PALETTE["cyan"],
+            align="center",
+            max_size=6,
+            min_size=4,
+        )
+
+    def _audio_caption(self, surf: Surface, caption: str) -> None:
+        width = min(236, max(88, len(caption) * 6 + 18))
+        x = (320 - width) // 2
+        self._panel(surf, (x, 157, width, 17), fill=(4, 5, 10))
+        self.fit_text(
+            surf,
+            f"♪ {caption}",
+            (x + 5, 161, width - 10, 9),
+            PALETTE["fg"],
+            align="center",
+            max_size=7,
+            min_size=5,
+        )
 
     def _remap(self, surf: Surface, sim: GameSim) -> None:
         shade = Surface((self._iw, self._ih), pygame.SRCALPHA)

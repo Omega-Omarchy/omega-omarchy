@@ -1360,30 +1360,11 @@ def write_wav(path: Path, samples: np.ndarray, sr: int = 22050) -> None:
 
 
 def build_audio(root: Path) -> None:
-    audio = root / "audio"
-    def mix(*parts: np.ndarray) -> np.ndarray:
-        n = max(part.size for part in parts)
-        out = np.zeros(n, dtype=np.int32)
-        for part in parts:
-            out[: part.size] += part
-        return out
+    # Keep the tiny integer helpers above for their focused determinism tests,
+    # but route production assets through the authored master/tier pipeline.
+    from .audio_build import build_audio_assets
 
-    write_wav(audio / "jump.wav", _tone(320, 0.12))
-    write_wav(audio / "collect.wav", mix(_tone(880, 0.16), _tone(1320, 0.12, 0.1)))
-    write_wav(audio / "convert.wav", mix(_tone(196, 0.4, square=False), _tone(392, 0.3, 0.1, square=False)))
-    write_wav(audio / "hit.wav", _tone(90, 0.18))
-    write_wav(audio / "logo.wav", mix(_tone(523, 0.5, square=False), _tone(659, 0.4, 0.08, square=False)))
-    write_wav(audio / "ui.wav", _tone(640, 0.07, 0.1))
-    # short loop: 2 bars of deadpan arpeggio
-    loop = np.zeros(22050 * 2, dtype=np.float32)
-    notes = [196, 247, 294, 392, 294, 247]
-    pos = 0
-    for i, note in enumerate(notes * 2):
-        tone = _tone(note, 0.16, 0.07)
-        end = min(len(loop), pos + len(tone))
-        loop[pos:end] += tone[: end - pos]
-        pos += int(22050 * 0.16)
-    write_wav(audio / "loop.wav", loop)
+    build_audio_assets(root)
 
 
 def emit_fidelity_art(root: Path) -> None:

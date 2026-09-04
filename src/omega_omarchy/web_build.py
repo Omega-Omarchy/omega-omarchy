@@ -61,6 +61,7 @@ def stage_web(stage: Path, *, seed: str = "omega-fixture-1") -> Path:
             "__pycache__",
             "*.pyc",
             "assets.py",
+            "audio_build.py",
             "spritekit.py",
             "cli.py",
             "web_build.py",
@@ -105,7 +106,7 @@ def _archive_timestamp() -> tuple[int, int, int, int, int, int]:
 
 
 def _encode_web_audio(stage: Path) -> None:
-    """Install browser-safe Ogg cues, encoding only when a committed file is missing."""
+    """Install browser-safe Ogg cues and reject accidental source masters."""
 
     dest = stage / "assets" / "audio"
     source_audio = asset_dir() / "audio"
@@ -150,6 +151,14 @@ def _encode_web_audio(stage: Path) -> None:
         if process.returncode:
             raise RuntimeError(f"could not encode {source.name}: {process.stderr.strip()}")
         source.unlink()
+    # Tiered runtime files are committed Oggs. Never let a new source/master
+    # format quietly inflate or break the browser package.
+    forbidden = sorted(
+        path for path in dest.rglob("*") if path.is_file() and path.suffix.lower() in {".wav", ".flac", ".mp4"}
+    )
+    if forbidden:
+        names = ", ".join(path.relative_to(dest).as_posix() for path in forbidden[:5])
+        raise RuntimeError(f"browser audio contains non-runtime masters: {names}")
 
 
 def _store_web_archive(apk: Path) -> None:

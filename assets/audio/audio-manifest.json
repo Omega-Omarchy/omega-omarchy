@@ -1,0 +1,324 @@
+{
+  "buildDigest": "sha256:6942777c93d8d323510dd7a61845a435c96375cd2934d704c881b071eea928e8",
+  "buildVersion": "omega-audio-render/6",
+  "cues": {
+    "bomb": {
+      "bus": "sfx",
+      "caption": "Logic Bomb thrown",
+      "files": {
+        "high": "high/sfx/bomb.ogg",
+        "sixteen-bit": "sixteen-bit/sfx/bomb.ogg",
+        "ultra": "ultra/sfx/bomb.ogg"
+      },
+      "gain": 0.76,
+      "kind": "sfx",
+      "levels": {
+        "high": {
+          "meanDbfs": -17.6,
+          "peakDbfs": -6.6
+        },
+        "sixteen-bit": {
+          "meanDbfs": -18.9,
+          "peakDbfs": -7.5
+        },
+        "ultra": {
+          "meanDbfs": -18.2,
+          "peakDbfs": -5.6
+        }
+      },
+      "maxVoices": 4,
+      "priority": 7,
+      "sourceDigest": "sha256:ed486456687ea9a4fbcaf7addb62e3c80dacc9408070e208380bd1d7fa2b5e56"
+    },
+    "boss-pressure": {
+      "bus": "music",
+      "caption": "Music intensifies: Make It Come Alive",
+      "durations": {
+        "high": 57.0,
+        "sixteen-bit": 57.036961,
+        "ultra": 57.0
+      },
+      "files": {
+        "high": "high/music/boss-pressure.ogg",
+        "sixteen-bit": "sixteen-bit/music/boss-pressure.ogg",
+        "ultra": "ultra/music/boss-pressure.ogg"
+      },
+      "gain": 0.88,
+      "kind": "music",
+      "levels": {
+        "high": {
+          "meanDbfs": -15.8,
+          "peakDbfs": -3.7
+        },
+        "sixteen-bit": {
+          "meanDbfs": -16.3,
+          "peakDbfs": -4.2
+        },
+        "ultra": {
+          "meanDbfs": -15.7,
+          "peakDbfs": -4.6
+        }
+      },
+      "loop": true,
+      "sourceDigest": "sha256:3763901165fe93bf3660d450faa8940fbd19df6a6236196f19578a03aa198e32"
+    },
+    "chapter-one": {
+      "bus": "music",
+      "caption": "Music: Make It Come Alive",
+      "durations": {
+        "high": 229.360563,
+        "sixteen-bit": 229.397506,
+        "ultra": 229.360544
+      },
+      "files": {
+        "high": "high/music/chapter-one.ogg",
+        "sixteen-bit": "sixteen-bit/music/chapter-one.ogg",
+        "ultra": "ultra/music/chapter-one.ogg"
+      },
+      "gain": 0.82,
+      "kind": "music",
+      "levels": {
+        "high": {
+          "meanDbfs": -16.5,
+          "peakDbfs": -3.2
+        },
+        "sixteen-bit": {
+          "meanDbfs": -17.1,
+          "peakDbfs": -3.0
+        },
+        "ultra": {
+          "meanDbfs": -16.3,
+          "peakDbfs": -2.8
+        }
+      },
+      "loop": true,
+      "sourceDigest": "sha256:3763901165fe93bf3660d450faa8940fbd19df6a6236196f19578a03aa198e32"
+    },
+    "collect": {
+      "bus": "sfx",
+      "caption": "Item collected",
+      "files": {
+        "high": "high/sfx/collect.ogg",
+        "sixteen-bit": "sixteen-bit/sfx/collect.ogg",
+        "ultra": "ultra/sfx/collect.ogg"
+      },
+      "gain": 0.72,
+      "kind": "sfx",
+      "levels": {
+        "high": {
+          "meanDbfs": -22.7,
+          "peakDbfs": -10.8
+        },
+        "sixteen-bit": {
+          "meanDbfs": -23.5,
+          "peakDbfs": -11.9
+        },
+        "ultra": {
+          "meanDbfs": -24.2,
+          "peakDbfs": -11.4
+        }
+      },
+      "maxVoices": 4,
+      "priority": 7,
+      "sourceDigest": "sha256:6fb12ce83d84778f634ae57d04231b2ef2b2bfd02a48c44e1b0cbee08b3ec442"
+    },
+    "convert": {
+      "bus": "sfx",
+      "caption": "Opponent converted",
+      "files": {
+        "high": "high/sfx/convert.ogg",
+        "sixteen-bit": "sixteen-bit/sfx/convert.ogg",
+        "ultra": "ultra/sfx/convert.ogg"
+      },
+      "gain": 0.78,
+      "kind": "sfx",
+      "levels": {
+        "high": {
+          "meanDbfs": -22.8,
+          "peakDbfs": -11.4
+        },
+        "sixteen-bit": {
+          "meanDbfs": -23.3,
+          "peakDbfs": -12.2
+        },
+        "ultra": {
+          "meanDbfs": -23.6,
+          "peakDbfs": -11.8
+        }
+      },
+      "maxVoices": 3,
+      "priority": 8,
+      "sourceDigest": "sha256:bbcaf248274614f7adbcbb61d6ffda8f58cb09df3833560eda44cd16503916dd"
+    },
+    "hit": {
+      "bus": "sfx",
+      "caption": "Impact",
+      "files": {
+        "high": "high/sfx/hit.ogg",
+        "sixteen-bit": "sixteen-bit/sfx/hit.ogg",
+        "ultra": "ultra/sfx/hit.ogg"
+      },
+      "gain": 0.74,
+      "kind": "sfx",
+      "levels": {
+        "high": {
+          "meanDbfs": -21.3,
+          "peakDbfs": -6.5
+        },
+        "sixteen-bit": {
+          "meanDbfs": -22.5,
+          "peakDbfs": -7.3
+        },
+        "ultra": {
+          "meanDbfs": -21.6,
+          "peakDbfs": -5.9
+        }
+      },
+      "maxVoices": 5,
+      "priority": 8,
+      "sourceDigest": "sha256:2f05fb7f39df4706a657cc13d729b90bde7afbccc8b376613a404f53fa1d2afe"
+    },
+    "installation-signal": {
+      "bus": "music",
+      "caption": "Music: Make It Come Alive \u2014 system overture",
+      "durations": {
+        "high": 29.0,
+        "sixteen-bit": 29.036961,
+        "ultra": 29.0
+      },
+      "files": {
+        "high": "high/music/installation-signal.ogg",
+        "sixteen-bit": "sixteen-bit/music/installation-signal.ogg",
+        "ultra": "ultra/music/installation-signal.ogg"
+      },
+      "gain": 0.8,
+      "kind": "music",
+      "levels": {
+        "high": {
+          "meanDbfs": -19.0,
+          "peakDbfs": -3.7
+        },
+        "sixteen-bit": {
+          "meanDbfs": -19.3,
+          "peakDbfs": -4.7
+        },
+        "ultra": {
+          "meanDbfs": -19.2,
+          "peakDbfs": -3.9
+        }
+      },
+      "loop": true,
+      "sourceDigest": "sha256:3763901165fe93bf3660d450faa8940fbd19df6a6236196f19578a03aa198e32"
+    },
+    "jump": {
+      "bus": "sfx",
+      "caption": "Jump",
+      "files": {
+        "high": "high/sfx/jump.ogg",
+        "sixteen-bit": "sixteen-bit/sfx/jump.ogg",
+        "ultra": "ultra/sfx/jump.ogg"
+      },
+      "gain": 0.7,
+      "kind": "sfx",
+      "levels": {
+        "high": {
+          "meanDbfs": -22.3,
+          "peakDbfs": -10.4
+        },
+        "sixteen-bit": {
+          "meanDbfs": -23.7,
+          "peakDbfs": -10.8
+        },
+        "ultra": {
+          "meanDbfs": -23.8,
+          "peakDbfs": -10.9
+        }
+      },
+      "maxVoices": 3,
+      "priority": 6,
+      "sourceDigest": "sha256:e0b2cb46bef1dd5e33f18ca802e568f22a159ea7653c6229591c3b7b136f3d67"
+    },
+    "logo": {
+      "bus": "ui",
+      "caption": "Omega signal",
+      "files": {
+        "high": "high/sfx/logo.ogg",
+        "sixteen-bit": "sixteen-bit/sfx/logo.ogg",
+        "ultra": "ultra/sfx/logo.ogg"
+      },
+      "gain": 0.72,
+      "kind": "sfx",
+      "levels": {
+        "high": {
+          "meanDbfs": -20.6,
+          "peakDbfs": -7.9
+        },
+        "sixteen-bit": {
+          "meanDbfs": -22.0,
+          "peakDbfs": -9.3
+        },
+        "ultra": {
+          "meanDbfs": -21.3,
+          "peakDbfs": -8.2
+        }
+      },
+      "maxVoices": 2,
+      "priority": 8,
+      "sourceDigest": "sha256:ac3e0907e7c0980244bbfe201151bb66a4a71f7faa9d2ad96a3377b7914f8002"
+    },
+    "ui": {
+      "bus": "ui",
+      "caption": "Menu selection",
+      "files": {
+        "high": "high/sfx/ui.ogg",
+        "sixteen-bit": "sixteen-bit/sfx/ui.ogg",
+        "ultra": "ultra/sfx/ui.ogg"
+      },
+      "gain": 0.62,
+      "kind": "sfx",
+      "levels": {
+        "high": {
+          "meanDbfs": -18.1,
+          "peakDbfs": -10.4
+        },
+        "sixteen-bit": {
+          "meanDbfs": -21.1,
+          "peakDbfs": -10.8
+        },
+        "ultra": {
+          "meanDbfs": -19.3,
+          "peakDbfs": -10.7
+        }
+      },
+      "maxVoices": 3,
+      "priority": 9,
+      "sourceDigest": "sha256:9d5e6ea389d07e8c6b13c7525e0c3268a2b4d2e31773937361ae524f8d909f53"
+    }
+  },
+  "defaultFidelity": "ultra",
+  "rights": {
+    "provenance": "Maintainer supplied for the private development build.",
+    "publicRedistribution": "Public redistribution must be confirmed during the audio rights audit."
+  },
+  "sceneMusic": {
+    "action": "chapter-one",
+    "chapter-complete": "chapter-one",
+    "chapter-credits": "chapter-one",
+    "credits": "chapter-one",
+    "edit": "chapter-one",
+    "ending": "installation-signal",
+    "flight": "chapter-one",
+    "installer": "installation-signal",
+    "level-intro": "boss-pressure",
+    "network": "chapter-one",
+    "prologue": "installation-signal",
+    "stage-map": "installation-signal",
+    "turn": "boss-pressure"
+  },
+  "schemaVersion": 1,
+  "tiers": [
+    "sixteen-bit",
+    "high",
+    "ultra"
+  ]
+}

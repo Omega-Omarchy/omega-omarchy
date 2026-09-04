@@ -12,9 +12,10 @@ is optional.
 
 This is the Omega Omarchy organization repository. It is a **technical alpha**,
 not a release candidate, public announcement, marketplace listing, or hosted
-service. Visibility and invitations stay with the lead maintainer.
+service. A maintainer-approved external preview is active; visibility and
+invitations stay with the lead maintainer.
 
-## Current snapshot — 2026-09-03
+## Current snapshot — 2026-09-04
 
 - Chapter 1 is the only end-to-end qualified player path. It covers the faux
   Omarchy install, eight-beat prologue, procedural side-scrolling, conversion
@@ -31,8 +32,10 @@ service. Visibility and invitations stay with the lead maintainer.
   the same simulation and renderer as a playable Chapter 1 browser alpha,
   including browser persistence; later chapters and external packs remain
   native-only.
-- Sound currently consists of a small generated effects bank. A three-tier,
-  independently selectable sound pipeline is specified but not implemented.
+- Sound now streams the supplied *Make It Come Alive* master as scene-aware
+  Chapter 1, boss, and installer cues, with semantic effects, mixer buses,
+  captions, and independently selectable Ultra/High/sixteen-bit fidelity.
+  Public redistribution of the supplied recording remains a rights-audit gate.
 - Public cutover remains **NO-GO** pending human play/pacing evidence,
   clean-machine artifact play, rights/history review, a genuine cross-install
   Limitless exchange, release media, and exact-candidate approval.
@@ -60,6 +63,7 @@ Other useful commands:
 ```bash
 ./scripts/omega web
 ./scripts/omega web-serve
+./scripts/omega audio
 ./scripts/omega package
 ./scripts/omega validate-pack examples/content-packs/vertical-garden
 ./scripts/omega review-pack examples/content-packs/vertical-garden

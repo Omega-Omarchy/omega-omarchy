@@ -200,3 +200,17 @@ def test_quality_page_explains_where_fidelity_can_be_changed():
     page = session.gum_page()
     assert page is not None
     assert page["footnote"] == "Ultra adds detail. Change fidelity later in Pause."
+
+
+def test_sound_fidelity_is_a_separate_installer_choice():
+    session = InstallerSession(step_index=PARODY_STEPS.index("sound"))
+    page = session.gum_page()
+    assert page is not None
+    assert page["prompt"] == "Select sound fidelity"
+    assert page["footnote"] == "Sound quality is independent from visual fidelity."
+    session.cycle(-1)
+    assert session.choices.fidelity == "ultra"
+    assert session.choices.audio_fidelity == "high"
+    world = session.run_generation()
+    assert world.settings["fidelity"] == "ultra"
+    assert world.settings["audioFidelity"] == "high"

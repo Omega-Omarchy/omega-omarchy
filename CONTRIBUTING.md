@@ -69,6 +69,12 @@ required, and inspect all affected fidelity tiers. Never commit private visual
 references, `.local/` captures, caches, or release artifacts. The expensive
 asset build must never run during ordinary game launch.
 
+Audio-only work uses `./scripts/omega audio` and `./scripts/omega test-scope
+audio`. Every cue needs one semantic ID, all three direct-from-master outputs,
+caption copy, bus/gain/voice metadata, source digests, and explicit rights.
+Listen on headphones and ordinary speakers; attach a short recording or
+measurement without uploading a source master to an issue.
+
 Content-pack work follows `docs/content-packs.md`. A pull request must show
 `PACK_OK`, exact seeds/identities, with/without-pack behavior, license and
 attribution files, and safe disable/removal behavior.

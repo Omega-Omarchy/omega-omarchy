@@ -29,7 +29,9 @@ def test_web_stage_contains_authoritative_runtime_and_bounded_art(tmp_path):
     assert (stage / "omega_omarchy" / "sim.py").is_file()
     assert (stage / "omega_omarchy" / "render.py").is_file()
     assert not (stage / "omega_omarchy" / "assets.py").exists()
+    assert not (stage / "omega_omarchy" / "audio_build.py").exists()
     assert not (stage / "assets" / "source").exists()
+    assert (stage / "assets" / "audio" / "audio-manifest.json").is_file()
     for fidelity in ("sixteen-bit", "high", "ultra"):
         backgrounds = stage / "assets" / "fidelity" / fidelity / "bg"
         assert {path.name for path in backgrounds.iterdir()} == set(WEB_BACKGROUNDS)
@@ -41,10 +43,13 @@ def test_web_audio_is_transcoded_to_browser_safe_ogg(tmp_path):
     _encode_web_audio(stage)
     audio = stage / "assets" / "audio"
 
-    assert not list(audio.glob("*.wav"))
-    encoded = sorted(audio.glob("*.ogg"))
+    assert not list(audio.rglob("*.wav"))
+    assert not list(audio.rglob("*.flac"))
+    encoded = sorted(audio.rglob("*.ogg"))
     assert encoded
     assert all(path.read_bytes().startswith(b"OggS") for path in encoded)
+    for fidelity in ("sixteen-bit", "high", "ultra"):
+        assert (audio / fidelity / "music" / "chapter-one.ogg").is_file()
 
 
 def test_launcher_workarounds_are_explicit_and_archive_is_stored(tmp_path):

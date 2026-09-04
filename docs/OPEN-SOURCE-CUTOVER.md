@@ -334,6 +334,9 @@ cutover.
 - [ ] Original art, animation, audio, writing, and generated source assets have
   an explicit asset license and a provenance record sufficient for redistribution
   and contribution review.
+- [ ] The author/rights holder and public source/binary redistribution terms for
+  *Make It Come Alive* are documented; otherwise its FLAC master and every
+  derived Ogg are removed from the public candidate and replaced.
 - [ ] `THIRD_PARTY_NOTICES.md` lists every retained third-party component and
   asset with source, version/date, license or permission basis, modifications,
   and required notice text.

@@ -1,7 +1,7 @@
 # Sound support and fidelity design
 
-Status: approved direction; runtime tier selection and authored music are not
-yet implemented. This document defines the contribution and release contract.
+Status: first vertical-slice runtime and production pipeline implemented on
+2026-09-03; listening, multi-browser, and public-rights gates remain open.
 
 ## Outcome and invariants
 
@@ -25,14 +25,27 @@ The following are non-negotiable:
 - Mute, captions, volume buses, and reduced-audio-surprise behavior work at
   every tier and on native and web targets.
 
-## Current baseline
+## Current implementation
 
-The game has short generated cues for `jump`, `collect`, `convert`, `hit`,
-`logo`, and `ui`, plus a two-second `loop` file that is not yet used as a
-proper music system. Native builds load WAV; web packaging produces Ogg/Vorbis
-copies because browser Pygame rejects common desktop WAV arrangements. There
-is no authored soundtrack, cue manifest, mixer bus model, variation system,
-loop metadata, audio-fidelity setting, or complete action coverage yet.
+The maintainer-supplied *Make It Come Alive* MP4 carried a 44.1 kHz stereo AAC
+stream. The pipeline decodes that once into a FLAC preservation/Ultra master,
+records both container and decoded digests, and renders three loop-ready scene
+cues: `installation-signal`, `chapter-one`, and `boss-pressure`. The FLAC avoids
+another lossy source generation; it cannot restore information absent from the
+original AAC stream.
+
+Seven short semantic effects—`jump`, `collect`, `convert`, `hit`, `bomb`,
+`logo`, and `ui`—have deterministic 48 kHz stereo PCM masters. Every music and
+effect runtime file is rendered directly from its master into Ultra, High, and
+sixteen-bit Ogg/Vorbis. `AudioManager` streams music, loads short effects by
+tier, bounds simultaneous voices, applies master/music/effects/UI levels,
+switches music by scene, and degrades silently when playback is unavailable.
+
+The sixteen-bit music output is a reproducible console-style interpretation
+using reduced bandwidth/stereo, tighter dynamics, deliberate quantization, and
+a short dark echo. It is the usable first art pass, not a claim of a hand-made
+SNES orchestral arrangement. A later contributor with stems or composition
+data can replace that recipe output without changing cue IDs or game logic.
 
 ## Fidelity targets
 
@@ -50,32 +63,40 @@ automated, but each generated result still requires listening approval.
 
 ## Source and runtime layout
 
-Proposed source layout:
+Implemented source layout:
 
 ```text
 assets/source/audio/
-  music/<cue>/composition.mid
-  music/<cue>/arrangement-ultra.*
-  music/<cue>/arrangement-high.*
-  music/<cue>/arrangement-sixteen-bit.*
+  music/make-it-come-alive/master-ultra.flac
   sfx/<cue>/master.wav
-  samples/<licensed-pack>/LICENSE
   audio-manifest.toml
+  README.md
 ```
 
 Generated runtime layout:
 
 ```text
 assets/audio/<tier>/music/<cue>.ogg
-assets/audio/<tier>/sfx/<cue>-01.ogg
+assets/audio/<tier>/sfx/<cue>.ogg
 assets/audio/<tier>/sfx/<cue>-02.ogg
 assets/audio/audio-manifest.json
 ```
 
-The manifest records cue ID, bus, tier files, gain trim, loop start/end,
+The generated manifest records cue ID, bus, tier files, gain trim, duration,
 priority, maximum simultaneous voices, caption key, variant policy, provenance,
 and source digest. Generation must be deterministic for identical tools and
 inputs. Lossless masters remain outside the player artifact.
+
+Rebuild and test only this subsystem with:
+
+```bash
+./scripts/omega audio
+./scripts/omega test-scope audio
+```
+
+`ffmpeg` and `ffprobe` are required. The browser and native package stages copy
+runtime Oggs and the JSON manifest but exclude `assets/source/` and the offline
+builder.
 
 ## Production pipeline
 
@@ -104,13 +125,14 @@ Recommended build stages:
 
 ## Runtime model and settings
 
-Introduce an `AudioManager` between simulation cue IDs and Pygame’s mixer. It
-owns `music`, `sfx`, `ui`, and `ambience` buses, cue priority/voice limits,
-variant rotation, fades, scene music state, and seamless loop metadata. The
+`AudioManager` sits between simulation cue IDs and Pygame’s mixer. It
+owns `music`, `sfx`, and `ui` buses, per-cue voice limits, fades, scene music
+state, and seamless loop metadata. Ambient material currently shares the music
+bus. The
 simulation continues to append semantic IDs such as `collect`; it does not
 know which tier or file played.
 
-Pause/settings should expose:
+Pause/settings exposes:
 
 - Sound Quality: `Sixteen-bit`, `High`, or `Ultra`;
 - Master, Music, Effects, and UI volume;
@@ -118,19 +140,20 @@ Pause/settings should expose:
 
 New installs default both art and sound to Ultra. Existing saves migrate once
 by initializing `audioFidelity` from their current visual tier, after which the
-two settings are independent. Switching sound quality crossfades music at the
-same musical position when compatible stems/loop markers exist; otherwise it
-changes at the next safe phrase boundary. Effects already playing finish in
-their original tier.
+two settings are independent. Switching sound quality performs a short faded
+handoff at the same approximate musical position when the host's Ogg seek
+supports it; otherwise it restarts at the loop boundary. Loading a second
+four-minute track as a decoded `Sound` just to overlap streams is deliberately
+rejected on the target hardware. Effects already playing finish in their
+original tier.
 
 ## Browser and performance contract
 
-Web builds ship only the selected vertical-slice cue set and encode it as Ogg.
-Audio must not play before a browser gesture; the installer’s first accepted
-input may unlock the mixer. Decode work should be bounded: preload UI and
-critical gameplay cues, stream music where Pygame/WebAssembly proves reliable,
-and lazy-load uncommon boss/item cues before their encounter gate. Missing or
-blocked audio must fail silently into captions, never stop gameplay.
+Web builds ship only the vertical-slice cue set as committed Ogg. Audio does
+not play before a browser gesture; the first keyboard/gamepad press unlocks the
+mixer. Decode work is bounded by streaming music and loading only the selected
+tier's short effects. Missing or blocked audio fails silently while captions
+remain available and gameplay continues.
 
 Runtime DSP is intentionally modest. Expensive convolution, emulated console
 mixers, and bitcrushing belong in offline generation. Tier selection should
@@ -139,6 +162,8 @@ than a performance promise.
 
 ## Content-pack interface
 
+This remains the next extension point; the core runtime manifest is
+externalized, but the content-pack loader does not accept audio files yet.
 Content packs may declare new cue IDs and tier files through the externalized
 manifest schema. They may override core cues only through an explicit namespaced
 replacement declaration accepted during pack review. A pack must provide all
@@ -148,22 +173,24 @@ not the entire pack or save.
 
 ## Qualification gates
 
-The first implementation milestone is one Chapter 1 music theme, boss music,
-ambient bed, and complete gameplay/UI effects across all three tiers. It passes
-only when:
+The first implementation milestone supplies Chapter 1, boss, and installer/
+ambient music plus complete gameplay/UI effects across all three tiers. Its
+automated gates are implemented; human listening and browser qualification are
+still required before release:
 
-- every referenced cue resolves at every tier and missing-file fallback works;
-- all nine visual/audio tier combinations can be selected, saved, and restored;
-- tier switching cannot alter deterministic simulation receipts;
+- [x] every referenced cue resolves at every tier and missing-file fallback is safe;
+- [x] all nine visual/audio tier combinations can be selected, saved, and restored;
+- [x] tier switching cannot alter deterministic simulation behavior;
 - loop seams, cue latency, voice stealing, fades, and rapid repeated actions
   pass automated checks plus headphone and speaker listening review;
 - true peaks/loudness remain inside the project target and speech/caption cues
   remain legible in the densest encounter;
-- native and browser builds survive muted/no-device/autoplay-blocked operation;
-- the release audit inventories generated audio and every source/sample license;
-- at least one external collaborator can rebuild the emitted files from the
+- [x] native no-device/mute behavior and browser gesture gating fail safely;
+- [ ] the release audit inventories generated audio and confirms recording rights;
+- [ ] at least one external collaborator can rebuild the emitted files from the
   documented source inputs without private tools.
 
-Later milestones add adaptive stems, per-zone themes, helper/boss motifs, and
-content-pack exchange. Console-hardware-exact emulation is explicitly outside
-the first vertical slice; convincing, coherent era interpretation is the goal.
+Later milestones add adaptive stems, per-zone themes, helper/boss motifs,
+effect variants, and content-pack audio exchange. Console-hardware-exact
+emulation is explicitly outside the first vertical slice; convincing, coherent
+era interpretation is the goal.

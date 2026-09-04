@@ -109,6 +109,7 @@ def test_new_sessions_default_to_ultra_and_crt_exposes_independent_controls():
         "curvature",
         "phosphor",
         "items",
+        "audio",
         "controls",
         "reroll",
         "omega-code",

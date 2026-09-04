@@ -1,0 +1,109 @@
+schema_version = 1
+project = "Omega Omarchy"
+
+[master]
+file = "music/make-it-come-alive/master-ultra.flac"
+title = "Make It Come Alive"
+source_container = "Make It Come Alive.mp4"
+source_container_sha256 = "c503516eea6d201b0d4db6ce1329581aeadf44642faedeb3e23949a905c7a0ec"
+decoded_master_sha256 = "3763901165fe93bf3660d450faa8940fbd19df6a6236196f19578a03aa198e32"
+provenance = "Maintainer supplied for the private development build."
+rights = "Public redistribution must be confirmed during the audio rights audit."
+
+[[music]]
+id = "installation-signal"
+bus = "music"
+caption = "Music: Make It Come Alive — system overture"
+start = 0.0
+end = 32.0
+crossfade = 3.0
+gain = 0.80
+
+[[music]]
+id = "chapter-one"
+bus = "music"
+caption = "Music: Make It Come Alive"
+start = 0.0
+end = 233.360544
+crossfade = 4.0
+gain = 0.82
+
+[[music]]
+id = "boss-pressure"
+bus = "music"
+caption = "Music intensifies: Make It Come Alive"
+start = 158.0
+end = 218.0
+crossfade = 3.0
+gain = 0.88
+
+[[sfx]]
+id = "ui"
+bus = "ui"
+caption = "Menu selection"
+gain = 0.62
+priority = 9
+max_voices = 3
+
+[[sfx]]
+id = "logo"
+bus = "ui"
+caption = "Omega signal"
+gain = 0.72
+priority = 8
+max_voices = 2
+
+[[sfx]]
+id = "jump"
+bus = "sfx"
+caption = "Jump"
+gain = 0.70
+priority = 6
+max_voices = 3
+
+[[sfx]]
+id = "collect"
+bus = "sfx"
+caption = "Item collected"
+gain = 0.72
+priority = 7
+max_voices = 4
+
+[[sfx]]
+id = "convert"
+bus = "sfx"
+caption = "Opponent converted"
+gain = 0.78
+priority = 8
+max_voices = 3
+
+[[sfx]]
+id = "hit"
+bus = "sfx"
+caption = "Impact"
+gain = 0.74
+priority = 8
+max_voices = 5
+
+[[sfx]]
+id = "bomb"
+bus = "sfx"
+caption = "Logic Bomb thrown"
+gain = 0.76
+priority = 7
+max_voices = 4
+
+[scene_music]
+installer = "installation-signal"
+prologue = "installation-signal"
+stage-map = "installation-signal"
+level-intro = "boss-pressure"
+action = "chapter-one"
+flight = "chapter-one"
+network = "chapter-one"
+edit = "chapter-one"
+turn = "boss-pressure"
+chapter-complete = "chapter-one"
+chapter-credits = "chapter-one"
+ending = "installation-signal"
+credits = "chapter-one"

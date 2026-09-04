@@ -7,6 +7,12 @@ import math
 from typing import Any
 
 from .campaign import BOSSES, CAMPAIGN_ROSTER, campaign_roster_names, chapter_by_id
+from .audio import (
+    AUDIO_CAPTIONS,
+    AUDIO_SETTING_ROWS,
+    cycle_audio_fidelity,
+    normalize_audio_settings,
+)
 from .character import DEFAULT_CHARACTER_NAME
 from .combat import (
     MAX_BS,
@@ -347,6 +353,11 @@ class GameSim:
     limitless_receipt: dict[str, Any] | None = None
     limitless_status: str = ""
     audio_muted: bool = False
+    audio_fidelity: str = "ultra"
+    audio_captions: bool = False
+    audio_cursor: int = 0
+    audio_caption: str = ""
+    audio_caption_ticks: int = 0
     theme_palette: dict[str, tuple[int, int, int]] | None = None
     post_boss: bool = False
     flash_ticks: int = 0
@@ -440,6 +451,7 @@ class GameSim:
         self.settings = apply_presentation(dict(world.settings), quality=str(world.settings.get("quality") or "ultra"))
         self.quality = str(self.settings.get("quality") or "ultra")
         self.fidelity, self.display = migrate_quality(self.quality, self.settings)
+        self._restore_audio()
         self._restore_accessibility()
         if self.accessibility.reduced_motion:
             crt = dict(self.settings.get("crt") or {})
@@ -458,8 +470,34 @@ class GameSim:
         self.note("ui")
 
     def note(self, name: str) -> None:
-        if not self.audio_muted:
-            self.sfx.append(name)
+        self.sfx.append(name)
+        if self.audio_captions and name in AUDIO_CAPTIONS:
+            self.audio_caption = AUDIO_CAPTIONS[name]
+            self.audio_caption_ticks = 72
+
+    def _restore_audio(self) -> None:
+        self.settings = normalize_audio_settings(self.settings, legacy_fidelity=self.fidelity)
+        self.audio_fidelity = str(self.settings["audioFidelity"])
+        audio = self.settings["audio"]
+        self.audio_muted = bool(audio["muted"])
+        self.audio_captions = bool(audio["captions"])
+
+    def _sync_audio(self) -> None:
+        self.settings = normalize_audio_settings(self.settings, legacy_fidelity=self.fidelity)
+        self.settings["audioFidelity"] = self.audio_fidelity
+        audio = dict(self.settings["audio"])
+        audio["muted"] = self.audio_muted
+        audio["captions"] = self.audio_captions
+        self.settings["audio"] = audio
+
+    def set_audio_fidelity(self, fidelity: str) -> None:
+        self.audio_fidelity = fidelity if fidelity in {"sixteen-bit", "high", "ultra"} else "ultra"
+        self._sync_audio()
+        self.messages.append(f"Sound fidelity: {self.audio_fidelity}.")
+
+    @property
+    def audio_settings_rows(self) -> tuple[str, ...]:
+        return AUDIO_SETTING_ROWS
 
     def _restore_accessibility(self) -> None:
         profile = str(
@@ -2174,6 +2212,10 @@ class GameSim:
 
     def step(self, inp: InputState) -> None:
         self.tick += 1
+        if self.audio_caption_ticks > 0:
+            self.audio_caption_ticks -= 1
+            if self.audio_caption_ticks == 0:
+                self.audio_caption = ""
         self._tick_floaters()
         self._tick_score_combo()
         if inp.pause and self.scene not in {
@@ -2196,6 +2238,10 @@ class GameSim:
                 self.scene = "pause"
                 self.note("ui")
                 return
+            if self.scene == "audio-settings":
+                self.scene = "pause"
+                self.note("ui")
+                return
             if self.scene == "pause":
                 self.scene = self.paused_from or "action"
             else:
@@ -2208,6 +2254,9 @@ class GameSim:
             return
         if self.scene == "items":
             self._step_items(inp)
+            return
+        if self.scene == "audio-settings":
+            self._step_audio_settings(inp)
             return
         if self.scene == "remap":
             self._step_remap(inp)
@@ -4465,11 +4514,12 @@ class GameSim:
                 "curvature",
                 "phosphor",
                 "items",
+                "audio",
                 "controls",
                 "reroll",
                 "omega-code",
             )
-        return ("fidelity", "display", "items", "controls", "reroll", "omega-code")
+        return ("fidelity", "display", "items", "audio", "controls", "reroll", "omega-code")
 
     def _adjust_crt_control(self, control: str, delta: int) -> None:
         current = dict(self.settings.get("crt") or {})
@@ -4523,6 +4573,9 @@ class GameSim:
                 self.item_menu_cursor = ITEMS.index(self.current_item) if self.current_item in ITEMS else 0
                 self.item_menu_row = 0
                 self.scene = "items"
+            elif selected == "audio":
+                self.audio_cursor = 0
+                self.scene = "audio-settings"
             elif selected == "controls":
                 self.remap_device = "keyboard"
                 self.remap_slot = 0
@@ -4543,6 +4596,9 @@ class GameSim:
                 self.item_menu_cursor = ITEMS.index(self.current_item) if self.current_item in ITEMS else 0
                 self.item_menu_row = 0
                 self.scene = "items"
+            elif selected == "audio":
+                self.audio_cursor = 0
+                self.scene = "audio-settings"
             elif selected == "omega-code":
                 self.export_omega_code()
             else:
@@ -4561,7 +4617,62 @@ class GameSim:
             return
         if inp.interact:
             self.audio_muted = not self.audio_muted
+            self._sync_audio()
             self.messages.append("Audio muted." if self.audio_muted else "Audio on.")
+
+    def _step_audio_settings(self, inp: InputState) -> None:
+        rows = self.audio_settings_rows
+        self.audio_cursor %= len(rows)
+        if inp.up_pressed:
+            self.audio_cursor = (self.audio_cursor - 1) % len(rows)
+            self.note("ui")
+            return
+        if inp.down_pressed:
+            self.audio_cursor = (self.audio_cursor + 1) % len(rows)
+            self.note("ui")
+            return
+        selected = rows[self.audio_cursor]
+        delta = -1 if inp.left_pressed else (1 if inp.right_pressed else 0)
+        audio = dict(self.settings.get("audio") or {})
+        if delta and selected == "quality":
+            self.set_audio_fidelity(cycle_audio_fidelity(self.audio_fidelity, delta))
+            self.note("ui")
+            return
+        volume_keys = {
+            "master": "masterVolume",
+            "music": "musicVolume",
+            "effects": "effectsVolume",
+            "ui": "uiVolume",
+        }
+        if delta and selected in volume_keys:
+            key = volume_keys[selected]
+            audio[key] = round(max(0.0, min(1.0, float(audio.get(key, 0.8)) + delta * 0.05)), 2)
+            self.settings["audio"] = audio
+            self._sync_audio()
+            self.note("ui")
+            return
+        if delta and selected in {"mute", "captions"}:
+            if selected == "mute":
+                self.audio_muted = not self.audio_muted
+            else:
+                self.audio_captions = not self.audio_captions
+            self._sync_audio()
+            self.note("ui")
+            return
+        if inp.jump_pressed or inp.action_pressed:
+            if selected == "back":
+                self.scene = "pause"
+            elif selected == "mute":
+                self.audio_muted = not self.audio_muted
+                self._sync_audio()
+            elif selected == "captions":
+                self.audio_captions = not self.audio_captions
+                self._sync_audio()
+            self.note("ui")
+            return
+        if inp.interact or inp.customize:
+            self.scene = "pause"
+            self.note("ui")
 
     def _step_remap(self, inp: InputState) -> None:
         if self.remap_waiting:
@@ -4718,6 +4829,7 @@ class GameSim:
         self.settings = next_settings
         self.quality = next_quality
         self.fidelity, self.display = next_fidelity, next_display
+        self._restore_audio()
         self.converted = next_capabilities
         self.inventory = list(STARTING_INVENTORY)
         self.item_strength = STARTING_ITEM_STRENGTH
@@ -4885,6 +4997,7 @@ class GameSim:
         restored_settings = dict(progress.get("settings") or self.world.settings)
         self.settings = apply_presentation(restored_settings, quality=self.quality)
         self.fidelity, self.display = migrate_quality(self.quality, self.settings)
+        self._restore_audio()
         self._restore_accessibility()
         self.oligarchy = bool(progress.get("oligarchy"))
         self.hud_wordmark = "OLIGARCHY" if self.oligarchy else "OMARCHY"

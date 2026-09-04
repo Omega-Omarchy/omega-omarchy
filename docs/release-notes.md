@@ -5,13 +5,20 @@ submitted, not published as a public service.
 
 What this pass actually demonstrates:
 
+- *Make It Come Alive* is now the preserved Ultra music master for a complete
+  first audio-system pass: deterministic Ultra/High/sixteen-bit music and SFX,
+  semantic cue manifest, scene switching, streamed music, bounded voices,
+  independent Pause/installer sound quality, mixer buses, captions, save
+  migration, no-device fallback, and browser gesture unlock. Public music
+  redistribution rights and human listening approval remain explicit gates.
+
 - The browser output now runs the authoritative Pygame simulation and renderer
   instead of a separate canvas mock-up. It packages Chapter 1/Cow assets in a
   fast stored archive, emits Ogg audio, persists saves through localStorage,
   and has passed installer/keyboard smoke testing in desktop Chromium.
-- A sound-support design defines independent art/sound fidelity, Ultra/High/
-  sixteen-bit master-to-runtime production, cue manifests, buses, pack hooks,
-  browser constraints, rights rules, and vertical-slice qualification gates.
+- The sound-support design now documents the implemented master-to-runtime
+  system and keeps authored re-orchestration, pack audio, and listening/browser
+  qualification visible as later work.
 - Contributor setup now includes a non-destructive `doctor`, a loopback web
   server command, a focused web test scope, web issue labeling, and a dedicated
   browser troubleshooting/smoke guide.
@@ -48,7 +55,8 @@ What this pass actually demonstrates:
   to their specific jobs.
 
 - A usable installer whose choices (character, seed, difficulty, accessibility,
-  quality, Limitless, sharing) are selectable and bound into the generated world
+  art fidelity, independent sound fidelity, display, Limitless, sharing) are
+  selectable and bound into the generated session/world as appropriate
 - **Play Now** as the completion action
 - Six large deterministic procedural macro-route maps with multi-screen
   vertical ladder, bumper, and platform routes, with the first chapter

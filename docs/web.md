@@ -20,8 +20,8 @@ Prerequisites are Python 3.11+, the pinned development requirements, and
 Then open <http://127.0.0.1:8000/>. Set `OMEGA_WEB_PORT` to choose another
 loopback port. Opening `index.html` through `file://` does not work.
 
-`./scripts/omega web` stages source into `build/web-stage/`, converts runtime
-audio to browser-safe Ogg, and writes the deployable output to `dist/web/`.
+`./scripts/omega web` stages source into `build/web-stage/`, validates runtime
+audio as browser-safe Ogg, and writes the deployable output to `dist/web/`.
 Pass `--web-out PATH` for a disposable build. Source masters and unrelated
 zone backgrounds are not copied into the browser archive.
 
@@ -31,11 +31,12 @@ zone backgrounds are not copied into the browser archive.
 - all three visual-fidelity tiers for Chapter 1 and Cow Level;
 - installer, prologue, map, UI, character, enemy, boss, item, tile, and effect
   assets needed by those paths;
-- browser-safe audio cues;
+- all three independently selectable Ogg sound tiers and the runtime cue manifest;
 - localStorage-backed saves and reroll archives;
 - the selected Omega Omarchy application icon.
 
-The current archive is approximately 24 MiB. It is intentionally a stored ZIP:
+The three soundtrack tiers increase the current archive from the earlier 24
+MiB build to approximately 38 MiB. It remains an intentionally stored ZIP:
 PNG and Ogg files are already compressed, and applying DEFLATE again made
 CPython/WebAssembly startup stall for little size benefit.
 
@@ -74,6 +75,8 @@ Manual smoke checklist:
 5. Chapter 1 starts, moves, jumps, pauses, and resumes;
 6. a save survives a same-origin reload;
 7. Chapter 1 completion stays at the explicit web boundary.
+8. the first accepted key gesture unlocks music, Pause → Sound changes tiers,
+   and mute/captions continue working after a same-origin reload.
 
 When reporting a web defect, include browser/version, OS, commit, whether the
 runtime was cached, launch URL/origin, exact input sequence, console errors,

@@ -26,6 +26,7 @@ Use a maintained group when a change crosses several files in one area:
 | `content` | content-pack validation, storage, ordering, and deltas |
 | `installer` | faux install state and the ordinary-input golden path |
 | `assets` | source-to-fidelity asset derivation; intentionally expensive |
+| `audio` | source/master provenance, tier resolution, settings, saves, and web audio |
 | `web` | WebAssembly staging, launcher invariants, Ogg conversion, and browser persistence |
 | `release` | artifact, release-audit, and privacy surfaces |
 
