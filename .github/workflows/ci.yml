@@ -46,6 +46,7 @@ jobs:
         env:
           SDL_AUDIODRIVER: dummy
           SDL_VIDEODRIVER: dummy
+          SOURCE_DATE_EPOCH: "1704067200"
         run: ./scripts/omega release-check
       - name: Confirm generated evidence is current
         run: git diff --exit-code -- assets dist/web
@@ -100,6 +101,8 @@ jobs:
             --format json \
             --output dist/audit-local/pip-audit.json
       - name: Build and scan release surfaces
+        env:
+          SOURCE_DATE_EPOCH: "1704067200"
         run: |
           ./scripts/omega web
           ./scripts/omega audit-release \

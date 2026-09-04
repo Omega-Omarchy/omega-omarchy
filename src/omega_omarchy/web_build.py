@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 
 from .runtime_assets import asset_dir
@@ -98,14 +99,28 @@ def _normalize_mtimes(root: Path) -> None:
             os.utime(path, (epoch, epoch))
 
 
-def _encode_web_audio(stage: Path) -> None:
-    """Transcode desktop WAV cues to the browser-safe Ogg/Vorbis form."""
+def _archive_timestamp() -> tuple[int, int, int, int, int, int]:
+    epoch = int(os.environ.get("SOURCE_DATE_EPOCH", "1704067200"))
+    return time.gmtime(epoch)[:6]
 
-    ffmpeg = shutil.which("ffmpeg")
-    if ffmpeg is None:
-        raise RuntimeError("web packaging requires ffmpeg for browser-safe audio")
-    for source in sorted((stage / "assets" / "audio").glob("*.wav")):
+
+def _encode_web_audio(stage: Path) -> None:
+    """Install browser-safe Ogg cues, encoding only when a committed file is missing."""
+
+    dest = stage / "assets" / "audio"
+    source_audio = asset_dir() / "audio"
+    ffmpeg = None
+    for source in sorted(dest.glob("*.wav")):
         target = source.with_suffix(".ogg")
+        committed = source_audio / target.name
+        if committed.is_file():
+            shutil.copyfile(committed, target)
+            source.unlink()
+            continue
+        if ffmpeg is None:
+            ffmpeg = shutil.which("ffmpeg")
+        if ffmpeg is None:
+            raise RuntimeError("web packaging requires ffmpeg for browser-safe audio")
         process = subprocess.run(
             [
                 ffmpeg,
@@ -138,21 +153,27 @@ def _encode_web_audio(stage: Path) -> None:
 
 
 def _store_web_archive(apk: Path) -> None:
-    """Remove redundant DEFLATE work from an archive of compressed media.
+    """Rewrite the pygbag archive as a stored ZIP with stable metadata.
 
     PNG and Ogg assets barely shrink under a second compression pass, while
-    inflating hundreds of entries in CPython/WebAssembly can stall startup for
-    minutes. A stored ZIP is practically the same size and mounts promptly.
+    inflating hundreds of entries in CPython/WebAssembly can stall startup.
+    Rebuilding ZipInfo (instead of copying pygbag's) keeps the bytes stable
+    across encoder hosts so ``git diff -- assets dist/web`` can pass in CI.
     """
 
+    stamp = _archive_timestamp()
     replacement = apk.with_suffix(".stored.apk")
     with zipfile.ZipFile(apk, "r") as source, zipfile.ZipFile(
         replacement, "w", compression=zipfile.ZIP_STORED
     ) as target:
         for member in sorted(source.infolist(), key=lambda item: item.filename):
             payload = source.read(member.filename)
-            member.compress_type = zipfile.ZIP_STORED
-            target.writestr(member, payload)
+            info = zipfile.ZipInfo(filename=member.filename, date_time=stamp)
+            info.compress_type = zipfile.ZIP_STORED
+            info.create_system = 3
+            directory = member.is_dir() or member.filename.endswith("/")
+            info.external_attr = (0o755 if directory else 0o644) << 16
+            target.writestr(info, payload)
     replacement.replace(apk)
 
 

@@ -72,7 +72,10 @@ def test_launcher_workarounds_are_explicit_and_archive_is_stored(tmp_path):
     _repair_pygbag_launcher(built)
 
     with ZipFile(apk) as archive:
-        assert {entry.compress_type for entry in archive.infolist()} == {ZIP_STORED}
+        entries = archive.infolist()
+        assert {entry.compress_type for entry in entries} == {ZIP_STORED}
+        assert {entry.date_time for entry in entries} == {(2024, 1, 1, 0, 0, 0)}
+        assert {entry.create_system for entry in entries} == {3}
     html = (built / "index.html").read_text(encoding="utf-8")
     assert html.startswith('<script src="browserfs.min.js"></script>')
     assert "github.io/cdn/0.9.3//browserfs.min.js" not in html
