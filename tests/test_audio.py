@@ -27,7 +27,13 @@ def test_runtime_manifest_resolves_every_semantic_cue_at_every_tier():
     manifest = json.loads((root / "audio-manifest.json").read_text(encoding="utf-8"))
     assert tuple(manifest["tiers"]) == AUDIO_FIDELITIES
     assert {"ui", "logo", "jump", "collect", "convert", "hit", "bomb"} <= set(manifest["cues"])
-    assert {"installation-signal", "chapter-one", "boss-pressure"} <= set(manifest["cues"])
+    assert "credits-theme" in manifest["cues"]
+    assert not {"installation-signal", "chapter-one", "boss-pressure"} & set(manifest["cues"])
+    assert manifest["cues"]["credits-theme"]["loop"] is False
+    assert manifest["sceneMusic"] == {
+        "chapter-credits": "credits-theme",
+        "credits": "credits-theme",
+    }
     for cue in manifest["cues"].values():
         assert set(cue["files"]) == set(AUDIO_FIDELITIES)
         assert set(cue["levels"]) == set(AUDIO_FIDELITIES)
@@ -114,8 +120,17 @@ def test_manager_resolves_tiers_when_playback_is_disabled():
     assert manager.available is False
     for fidelity in AUDIO_FIDELITIES:
         manager.apply_settings({"audioFidelity": fidelity})
-        assert manager.cue_path("chapter-one") == asset_dir() / "audio" / fidelity / "music" / "chapter-one.ogg"
+        assert manager.cue_path("credits-theme") == asset_dir() / "audio" / fidelity / "music" / "credits-theme.ogg"
     manager.update(scene="action", in_combat=False, settings={}, cues=("jump", "missing"))
+
+
+def test_make_it_come_alive_is_reserved_for_credits():
+    manager = AudioManager(enabled=False)
+    assert manager._desired_music("action", in_combat=False) is None
+    assert manager._desired_music("installer", in_combat=False) is None
+    assert manager._desired_music("turn", in_combat=True) is None
+    assert manager._desired_music("chapter-credits", in_combat=False) == "credits-theme"
+    assert manager._desired_music("credits", in_combat=False) == "credits-theme"
 
 
 def test_missing_selected_tier_falls_back_without_stopping_play(tmp_path):

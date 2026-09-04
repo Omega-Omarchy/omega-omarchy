@@ -5,12 +5,13 @@ submitted, not published as a public service.
 
 What this pass actually demonstrates:
 
-- *Make It Come Alive* is now the preserved Ultra music master for a complete
-  first audio-system pass: deterministic Ultra/High/sixteen-bit music and SFX,
-  semantic cue manifest, scene switching, streamed music, bounded voices,
+- *Make It Come Alive* is now the preserved Ultra credits master for a complete
+  first audio-system pass: a deterministic Ultra/High/sixteen-bit credits cue
+  and SFX, semantic cue manifest, scene switching, streamed music, bounded voices,
   independent Pause/installer sound quality, mixer buses, captions, save
   migration, no-device fallback, and browser gesture unlock. Public music
   redistribution rights and human listening approval remain explicit gates.
+  Installation, level, and boss music intentionally await their own masters.
 
 - The browser output now runs the authoritative Pygame simulation and renderer
   instead of a separate canvas mock-up. It packages Chapter 1/Cow assets in a

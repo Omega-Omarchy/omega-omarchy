@@ -4,6 +4,8 @@
 preservation master extracted from the maintainer-supplied MP4. The original
 container carried AAC audio, so decoding to FLAC prevents another lossy source
 generation but does not recreate information absent from that AAC stream.
+The recording is reserved for the credits. It is not installation, level, or
+boss music; those scenes remain unmapped until purpose-built masters arrive.
 
 `sfx/*/master.wav` files are deterministic 48 kHz stereo source masters emitted
 by `python -m omega_omarchy.audio_build`. Every runtime tier is rendered from

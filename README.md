@@ -32,9 +32,10 @@ invitations stay with the lead maintainer.
   the same simulation and renderer as a playable Chapter 1 browser alpha,
   including browser persistence; later chapters and external packs remain
   native-only.
-- Sound now streams the supplied *Make It Come Alive* master as scene-aware
-  Chapter 1, boss, and installer cues, with semantic effects, mixer buses,
-  captions, and independently selectable Ultra/High/sixteen-bit fidelity.
+- Sound now streams the supplied *Make It Come Alive* master as the dedicated
+  credits theme, with semantic effects, mixer buses, captions, and independently
+  selectable Ultra/High/sixteen-bit fidelity. Installation, level, and boss
+  music await purpose-built masters rather than reusing the credits song.
   Public redistribution of the supplied recording remains a rights-audit gate.
 - Public cutover remains **NO-GO** pending human play/pacing evidence,
   clean-machine artifact play, rights/history review, a genuine cross-install

@@ -18,7 +18,7 @@ import wave
 from typing import Any
 
 
-BUILD_VERSION = "omega-audio-render/6"
+BUILD_VERSION = "omega-audio-render/7"
 TIERS = ("sixteen-bit", "high", "ultra")
 TIER_FILTERS = {
     "ultra": "aresample=44100,alimiter=limit=0.95",
@@ -236,21 +236,29 @@ def _render_music(
     start: float,
     end: float,
     crossfade: float,
+    loop: bool,
 ) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     start = max(0.0, start)
-    end = max(start + crossfade * 3, end)
-    middle_start = start + crossfade
-    middle_end = end - crossfade
-    graph = (
-        f"[0:a]atrim=start={middle_start:.6f}:end={middle_end:.6f},asetpts=PTS-STARTPTS[mid];"
-        f"[0:a]atrim=start={middle_end:.6f}:end={end:.6f},asetpts=PTS-STARTPTS,"
-        f"afade=t=out:st=0:d={crossfade:.6f}[tail];"
-        f"[0:a]atrim=start={start:.6f}:end={middle_start:.6f},asetpts=PTS-STARTPTS,"
-        f"afade=t=in:st=0:d={crossfade:.6f}[head];"
-        f"[tail][head]amix=inputs=2:duration=first:normalize=0,asetpts=PTS-STARTPTS[cross];"
-        f"[mid][cross]concat=n=2:v=0:a=1,{TIER_FILTERS[tier]}[out]"
-    )
+    if loop:
+        end = max(start + crossfade * 3, end)
+        middle_start = start + crossfade
+        middle_end = end - crossfade
+        graph = (
+            f"[0:a]atrim=start={middle_start:.6f}:end={middle_end:.6f},asetpts=PTS-STARTPTS[mid];"
+            f"[0:a]atrim=start={middle_end:.6f}:end={end:.6f},asetpts=PTS-STARTPTS,"
+            f"afade=t=out:st=0:d={crossfade:.6f}[tail];"
+            f"[0:a]atrim=start={start:.6f}:end={middle_start:.6f},asetpts=PTS-STARTPTS,"
+            f"afade=t=in:st=0:d={crossfade:.6f}[head];"
+            f"[tail][head]amix=inputs=2:duration=first:normalize=0,asetpts=PTS-STARTPTS[cross];"
+            f"[mid][cross]concat=n=2:v=0:a=1,{TIER_FILTERS[tier]}[out]"
+        )
+    else:
+        end = max(start + 0.001, end)
+        graph = (
+            f"[0:a]atrim=start={start:.6f}:end={end:.6f},"
+            f"asetpts=PTS-STARTPTS,{TIER_FILTERS[tier]}[out]"
+        )
     command = _ogg_args(ffmpeg, source, target)
     command += [
         "-filter_complex",
@@ -346,8 +354,11 @@ def _validate_config(config: dict[str, Any], source_root: Path) -> None:
                 music_ids.add(cue_id)
                 start = float(cue.get("start", -1))
                 end = float(cue.get("end", -1))
+                loop = bool(cue.get("loop", True))
                 crossfade = float(cue.get("crossfade", 0))
-                if start < 0 or crossfade <= 0 or end <= start + crossfade * 3:
+                if start < 0 or end <= start:
+                    raise RuntimeError(f"invalid range for audio cue {cue_id}")
+                if loop and (crossfade <= 0 or end <= start + crossfade * 3):
                     raise RuntimeError(f"invalid loop range for audio cue {cue_id}")
             elif str(cue.get("bus") or "") not in {"sfx", "ui"}:
                 raise RuntimeError(f"invalid bus for audio cue {cue_id}")
@@ -386,6 +397,15 @@ def build_audio_assets(asset_root: Path, *, force: bool = False) -> Path:
         for kind, cues in (("music", config["music"]), ("sfx", config["sfx"]))
         for cue in cues
     ]
+    expected_set = {path.resolve() for path in expected}
+    for tier in TIERS:
+        for kind in ("music", "sfx"):
+            directory = runtime_root / tier / kind
+            if not directory.is_dir():
+                continue
+            for stale in directory.glob("*.ogg"):
+                if stale.resolve() not in expected_set:
+                    stale.unlink()
     if not force and runtime_manifest.is_file() and all(path.is_file() for path in expected):
         try:
             prior = json.loads(runtime_manifest.read_text(encoding="utf-8"))
@@ -436,7 +456,8 @@ def build_audio_assets(asset_root: Path, *, force: bool = False) -> Path:
                 tier,
                 start=float(source_cue["start"]),
                 end=float(source_cue["end"]),
-                crossfade=float(source_cue["crossfade"]),
+                crossfade=float(source_cue.get("crossfade", 0.0)),
+                loop=bool(source_cue.get("loop", True)),
             )
             paths[tier] = target.relative_to(runtime_root).as_posix()
             durations[tier] = _probe_duration(ffprobe, target)
@@ -446,7 +467,7 @@ def build_audio_assets(asset_root: Path, *, force: bool = False) -> Path:
             "bus": str(source_cue["bus"]),
             "caption": str(source_cue["caption"]),
             "gain": float(source_cue["gain"]),
-            "loop": True,
+            "loop": bool(source_cue.get("loop", True)),
             "files": paths,
             "durations": durations,
             "levels": levels,

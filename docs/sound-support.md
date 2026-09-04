@@ -29,17 +29,19 @@ The following are non-negotiable:
 
 The maintainer-supplied *Make It Come Alive* MP4 carried a 44.1 kHz stereo AAC
 stream. The pipeline decodes that once into a FLAC preservation/Ultra master,
-records both container and decoded digests, and renders three loop-ready scene
-cues: `installation-signal`, `chapter-one`, and `boss-pressure`. The FLAC avoids
-another lossy source generation; it cannot restore information absent from the
-original AAC stream.
+records both container and decoded digests, and renders the complete,
+non-looping `credits-theme` cue. The song is reserved for the credits and is
+not reused for installation, level, or boss scenes. Those scenes remain silent
+until they receive appropriate masters. The FLAC avoids another lossy source
+generation; it cannot restore information absent from the original AAC stream.
 
 Seven short semantic effects—`jump`, `collect`, `convert`, `hit`, `bomb`,
 `logo`, and `ui`—have deterministic 48 kHz stereo PCM masters. Every music and
 effect runtime file is rendered directly from its master into Ultra, High, and
 sixteen-bit Ogg/Vorbis. `AudioManager` streams music, loads short effects by
 tier, bounds simultaneous voices, applies master/music/effects/UI levels,
-switches music by scene, and degrades silently when playback is unavailable.
+switches music by manifest-defined scene, and degrades silently when playback
+is unavailable.
 
 The sixteen-bit music output is a reproducible console-style interpretation
 using reduced bandwidth/stereo, tighter dynamics, deliberate quantization, and
@@ -173,10 +175,11 @@ not the entire pack or save.
 
 ## Qualification gates
 
-The first implementation milestone supplies Chapter 1, boss, and installer/
-ambient music plus complete gameplay/UI effects across all three tiers. Its
-automated gates are implemented; human listening and browser qualification are
-still required before release:
+The first implementation milestone supplies the credits theme plus gameplay/UI
+effects across all three tiers. Purpose-built Chapter 1, boss, installer, and
+ambient masters remain open production work. The automated system gates are
+implemented; human listening and browser qualification are still required
+before release:
 
 - [x] every referenced cue resolves at every tier and missing-file fallback is safe;
 - [x] all nine visual/audio tier combinations can be selected, saved, and restored;

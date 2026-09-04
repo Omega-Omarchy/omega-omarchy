@@ -229,7 +229,10 @@ class AudioManager:
                 position = 0.0
         try:
             pygame.mixer.music.load(str(path))
-            kwargs: dict[str, Any] = {"loops": -1, "fade_ms": 260}
+            kwargs: dict[str, Any] = {
+                "loops": -1 if bool(cue.get("loop", True)) else 0,
+                "fade_ms": 260,
+            }
             durations = cue.get("durations") or {}
             duration = float(durations.get(self.fidelity, 0.0)) if isinstance(durations, dict) else 0.0
             if preserve_position and position > 0.05 and duration > 0.2:
@@ -248,17 +251,25 @@ class AudioManager:
             self.error = str(exc)
             return False
 
-    def _desired_music(self, scene: str, *, in_combat: bool) -> str:
-        if in_combat or scene in {"turn", "recovery", "level-intro"}:
-            return "boss-pressure"
+    def _desired_music(self, scene: str, *, in_combat: bool) -> str | None:
         if scene in {"pause", "audio-settings", "items", "remap", "customize"}:
-            return self.music_cue or "chapter-one"
+            return self.music_cue or None
         table = self.manifest.get("sceneMusic")
         if isinstance(table, dict):
             value = table.get(scene)
             if isinstance(value, str):
                 return value
-        return "chapter-one"
+        return None
+
+    def _stop_music(self) -> None:
+        if self.available and self.unlocked:
+            try:
+                pygame.mixer.music.fadeout(260)
+            except pygame.error:
+                pass
+        self.music_cue = ""
+        self.music_path = None
+        self.music_start_offset = 0.0
 
     def update(
         self,
@@ -270,7 +281,9 @@ class AudioManager:
     ) -> None:
         self.apply_settings(settings)
         desired = self._desired_music(scene, in_combat=in_combat)
-        if desired != self.music_cue and self.unlocked:
+        if desired is None and self.music_cue:
+            self._stop_music()
+        elif desired is not None and desired != self.music_cue and self.unlocked:
             if not self._play_music(desired):
                 # Record the silent choice so a bad/missing stream does not
                 # trigger an exception and filesystem probe every frame.

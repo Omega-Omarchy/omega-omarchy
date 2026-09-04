@@ -49,7 +49,7 @@ def test_web_audio_is_transcoded_to_browser_safe_ogg(tmp_path):
     assert encoded
     assert all(path.read_bytes().startswith(b"OggS") for path in encoded)
     for fidelity in ("sixteen-bit", "high", "ultra"):
-        assert (audio / fidelity / "music" / "chapter-one.ogg").is_file()
+        assert (audio / fidelity / "music" / "credits-theme.ogg").is_file()
 
 
 def test_launcher_workarounds_are_explicit_and_archive_is_stored(tmp_path):

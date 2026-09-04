@@ -11,31 +11,13 @@ provenance = "Maintainer supplied for the private development build."
 rights = "Public redistribution must be confirmed during the audio rights audit."
 
 [[music]]
-id = "installation-signal"
-bus = "music"
-caption = "Music: Make It Come Alive — system overture"
-start = 0.0
-end = 32.0
-crossfade = 3.0
-gain = 0.80
-
-[[music]]
-id = "chapter-one"
+id = "credits-theme"
 bus = "music"
 caption = "Music: Make It Come Alive"
 start = 0.0
 end = 233.360544
-crossfade = 4.0
+loop = false
 gain = 0.82
-
-[[music]]
-id = "boss-pressure"
-bus = "music"
-caption = "Music intensifies: Make It Come Alive"
-start = 158.0
-end = 218.0
-crossfade = 3.0
-gain = 0.88
 
 [[sfx]]
 id = "ui"
@@ -94,16 +76,5 @@ priority = 7
 max_voices = 4
 
 [scene_music]
-installer = "installation-signal"
-prologue = "installation-signal"
-stage-map = "installation-signal"
-level-intro = "boss-pressure"
-action = "chapter-one"
-flight = "chapter-one"
-network = "chapter-one"
-edit = "chapter-one"
-turn = "boss-pressure"
-chapter-complete = "chapter-one"
-chapter-credits = "chapter-one"
-ending = "installation-signal"
-credits = "chapter-one"
+chapter-credits = "credits-theme"
+credits = "credits-theme"
