@@ -41,6 +41,7 @@ class ConversionReport:
     pitched_voices: int
     note_events: int
     percussion_events: int
+    estimated_key: str | None = None
     source_mix_retained: bool = False
 
 
@@ -133,7 +134,36 @@ def _tempo_from_onsets(onsets: np.ndarray) -> tuple[int, float]:
     return beat_frames, 60.0 * frames_per_second / beat_frames
 
 
-def _analyse(samples: np.ndarray, *, pitched_voices: int) -> tuple[list[_Cell], float, float]:
+def _stabilize_monophonic(cells: list[_Cell]) -> list[_Cell]:
+    """Remove one-cell pitch chatter without erasing intentional movement."""
+
+    notes = [cell.notes[0][0] if cell.notes else None for cell in cells]
+    stable = list(notes)
+    for index in range(1, len(notes) - 1):
+        previous = notes[index - 1]
+        current = notes[index]
+        following = notes[index + 1]
+        if current is None or previous is None or following is None:
+            continue
+        if abs(previous - following) <= 1 and abs(current - previous) >= 3:
+            stable[index] = previous
+    result: list[_Cell] = []
+    for cell, note in zip(cells, stable, strict=True):
+        if note is None:
+            result.append(_Cell((), cell.energy, cell.onset, cell.bass_ratio))
+            continue
+        velocity = cell.notes[0][1] if cell.notes else 0.45
+        result.append(_Cell(((int(note), velocity),), cell.energy, cell.onset, cell.bass_ratio))
+    return result
+
+
+def _analyse(
+    samples: np.ndarray,
+    *,
+    pitched_voices: int,
+    role: str = "full",
+    grid_step_seconds: float | None = None,
+) -> tuple[list[_Cell], float, float]:
     frame_count = 1 + math.ceil(max(0, samples.size - FFT_SIZE) / HOP_SIZE)
     window = np.hanning(FFT_SIZE)
     harmonics = np.asarray((1.0, 2.0, 3.0, 4.0), dtype=np.float64)
@@ -169,7 +199,11 @@ def _analyse(samples: np.ndarray, *, pitched_voices: int) -> tuple[list[_Cell], 
         previous = magnitude
 
     beat_frames, tempo_bpm = _tempo_from_onsets(onsets)
-    step_frames = max(2, round(beat_frames / 4.0))
+    step_frames = (
+        max(2, round(grid_step_seconds * ANALYSIS_RATE / HOP_SIZE))
+        if grid_step_seconds is not None
+        else max(2, round(beat_frames / 4.0))
+    )
     step_seconds = step_frames * HOP_SIZE / ANALYSIS_RATE
     energy_reference = max(1e-7, float(np.percentile(energies, 92.0)))
     onset_reference = max(1e-7, float(np.percentile(onsets, 86.0)))
@@ -187,12 +221,24 @@ def _analyse(samples: np.ndarray, *, pitched_voices: int) -> tuple[list[_Cell], 
 
         chosen: list[tuple[int, float]] = []
         maximum = float(np.max(score))
-        bass_limit = int(np.searchsorted(_MIDI_NOTES, 60))
-        bass_index = int(np.argmax(score[:bass_limit]))
-        if float(score[bass_index]) >= maximum * 0.24:
+        if role == "percussion":
+            cells.append(_Cell((), energy, onset, bass_ratio))
+            continue
+        if role == "bass":
+            valid = np.flatnonzero((_MIDI_NOTES >= 36) & (_MIDI_NOTES <= 64))
+            bass_index = int(valid[int(np.argmax(score[valid]))])
             chosen.append((int(_MIDI_NOTES[bass_index]), float(score[bass_index])))
+        elif role == "lead":
+            valid = np.flatnonzero((_MIDI_NOTES >= 45) & (_MIDI_NOTES <= 88))
+            lead_index = int(valid[int(np.argmax(score[valid]))])
+            chosen.append((int(_MIDI_NOTES[lead_index]), float(score[lead_index])))
+        elif role == "full":
+            bass_limit = int(np.searchsorted(_MIDI_NOTES, 60))
+            bass_index = int(np.argmax(score[:bass_limit]))
+            if float(score[bass_index]) >= maximum * 0.24:
+                chosen.append((int(_MIDI_NOTES[bass_index]), float(score[bass_index])))
 
-        for index in np.argsort(score)[::-1]:
+        for index in np.argsort(score)[::-1] if role not in {"bass", "lead"} else ():
             midi = int(_MIDI_NOTES[index])
             value = float(score[index])
             if value < maximum * 0.28:
@@ -211,6 +257,8 @@ def _analyse(samples: np.ndarray, *, pitched_voices: int) -> tuple[list[_Cell], 
             for midi, value in chosen
         )
         cells.append(_Cell(notes, energy, onset, bass_ratio))
+    if role in {"bass", "lead"}:
+        cells = _stabilize_monophonic(cells)
     return cells, tempo_bpm, step_seconds
 
 
@@ -240,6 +288,73 @@ def _assign_voices(cells: list[_Cell], voice_count: int) -> list[tuple[tuple[int
         previous = [note for note, _ in assigned]
         arrangement.append(tuple(assigned))
     return arrangement
+
+
+def _constrain_arrangement(
+    arrangement: list[tuple[tuple[int | None, float], ...]],
+    *,
+    minimum_hold: int = 2,
+) -> tuple[list[tuple[tuple[int | None, float], ...]], str | None]:
+    """Apply a global pitch set, octave continuity, and minimum note holds."""
+
+    if not arrangement:
+        return arrangement, None
+    pitch_weights = np.zeros(12, dtype=np.float64)
+    for cell in arrangement:
+        for note, velocity in cell:
+            if note is not None:
+                pitch_weights[int(note) % 12] += float(velocity)
+    if float(np.sum(pitch_weights)) <= 1e-9:
+        return arrangement, None
+    scales = {
+        "major": (0, 2, 4, 5, 7, 9, 11),
+        "minor": (0, 2, 3, 5, 7, 8, 10),
+    }
+    note_names = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
+    candidates: list[tuple[float, int, str, set[int]]] = []
+    for root in range(12):
+        for mode, intervals in scales.items():
+            allowed = {(root + interval) % 12 for interval in intervals}
+            score = sum(float(pitch_weights[pitch]) for pitch in allowed)
+            score += float(pitch_weights[root]) * 0.08
+            candidates.append((score, -root, mode, allowed))
+    _, negative_root, mode, allowed = max(candidates, key=lambda item: (item[0], item[1], item[2]))
+    root = -negative_root
+
+    def snap(note: int) -> int:
+        if note % 12 in allowed:
+            return note
+        offsets = sorted(range(-2, 3), key=lambda value: (abs(value), value > 0))
+        return next(note + offset for offset in offsets if (note + offset) % 12 in allowed)
+
+    voice_count = len(arrangement[0])
+    previous: list[int | None] = [None] * voice_count
+    previous_velocity = [0.0] * voice_count
+    age = [minimum_hold] * voice_count
+    constrained: list[tuple[tuple[int | None, float], ...]] = []
+    for cell in arrangement:
+        next_cell: list[tuple[int | None, float]] = []
+        for voice, (raw_note, raw_velocity) in enumerate(cell):
+            note = snap(int(raw_note)) if raw_note is not None else None
+            prior = previous[voice]
+            if note is not None and prior is not None:
+                octave_candidates = [note + octave for octave in (-24, -12, 0, 12, 24)]
+                octave_candidates = [candidate for candidate in octave_candidates if 36 <= candidate <= 96]
+                note = min(octave_candidates, key=lambda candidate: (abs(candidate - prior), candidate))
+            if note != prior and prior is not None and age[voice] < minimum_hold:
+                note = prior
+                velocity = max(float(raw_velocity), previous_velocity[voice] * 0.82)
+            else:
+                velocity = float(raw_velocity)
+            if note == prior:
+                age[voice] += 1
+            else:
+                age[voice] = 0
+            previous[voice] = note
+            previous_velocity[voice] = velocity
+            next_cell.append((note, velocity))
+        constrained.append(tuple(next_cell))
+    return constrained, f"{note_names[root]} {mode}"
 
 
 def _snes_tables() -> tuple[np.ndarray, ...]:
@@ -409,6 +524,7 @@ def convert_to_chiptune(
     pitched_voices = 7 if style == "snes" else 6
     cells, tempo_bpm, step_seconds = _analyse(samples, pitched_voices=pitched_voices)
     arrangement = _assign_voices(cells, pitched_voices)
+    arrangement, estimated_key = _constrain_arrangement(arrangement)
     note_events, percussion_events = _write_arrangement(
         target,
         cells,
@@ -427,6 +543,120 @@ def convert_to_chiptune(
         pitched_voices=pitched_voices,
         note_events=note_events,
         percussion_events=percussion_events,
+        estimated_key=estimated_key,
+    )
+
+
+def convert_stems_to_chiptune(
+    stems: Path,
+    target: Path,
+    *,
+    style: str = "snes",
+    start: float = 0.0,
+    end: float | None = None,
+    ffmpeg: str | None = None,
+) -> ConversionReport:
+    """Render role-aware music from Demucs-compatible four-stem input."""
+
+    if style not in SUPPORTED_STYLES:
+        raise ValueError(f"unsupported chiptune style: {style}")
+    executable = ffmpeg or shutil.which("ffmpeg")
+    if not executable:
+        raise RuntimeError("ffmpeg is required for chiptune source decoding")
+    stem_root = Path(stems)
+    paths = {role: stem_root / f"{role}.wav" for role in ("bass", "drums", "other", "vocals")}
+    missing = [path.name for path in paths.values() if not path.is_file()]
+    if missing:
+        raise RuntimeError(f"stem directory is missing: {', '.join(missing)}")
+    for optional in ("guitar", "piano"):
+        candidate = stem_root / f"{optional}.wav"
+        if candidate.is_file():
+            paths[optional] = candidate
+    decoded = {
+        role: _decode_mono(executable, path, start=start, end=end)
+        for role, path in paths.items()
+    }
+    duration_seconds = min(samples.size for samples in decoded.values()) / ANALYSIS_RATE
+    voice_count = 7 if style == "snes" else 6
+    drum_cells, tempo_bpm, step_seconds = _analyse(
+        decoded["drums"], pitched_voices=1, role="percussion"
+    )
+    bass_cells, _, _ = _analyse(
+        decoded["bass"], pitched_voices=1, role="bass", grid_step_seconds=step_seconds
+    )
+    vocal_cells, _, _ = _analyse(
+        decoded["vocals"], pitched_voices=1, role="lead", grid_step_seconds=step_seconds
+    )
+    harmony_voices = voice_count - 2
+    if {"guitar", "piano"} <= decoded.keys():
+        allocations = (
+            {"guitar": 2, "piano": 1, "other": 2}
+            if harmony_voices == 5
+            else {"guitar": 2, "piano": 1, "other": 1}
+        )
+    else:
+        allocations = {"other": harmony_voices}
+    harmony_cells: dict[str, list[_Cell]] = {}
+    harmony_arrangements: dict[str, list[tuple[tuple[int | None, float], ...]]] = {}
+    for role, allocated in allocations.items():
+        role_cells, _, _ = _analyse(
+            decoded[role],
+            pitched_voices=allocated,
+            role="harmony",
+            grid_step_seconds=step_seconds,
+        )
+        harmony_cells[role] = role_cells
+    cell_count = min(
+        len(drum_cells),
+        len(bass_cells),
+        len(vocal_cells),
+        *(len(role_cells) for role_cells in harmony_cells.values()),
+    )
+    for role, allocated in allocations.items():
+        harmony_arrangements[role] = _assign_voices(harmony_cells[role][:cell_count], allocated)
+    cells: list[_Cell] = []
+    arrangement: list[tuple[tuple[int | None, float], ...]] = []
+    for index in range(cell_count):
+        drums = drum_cells[index]
+        bass = bass_cells[index]
+        vocals = vocal_cells[index]
+        bass_voice = bass.notes[0] if bass.notes else (None, 0.0)
+        vocal_voice = vocals.notes[0] if vocals.notes else (None, 0.0)
+        harmony = tuple(
+            voice
+            for role in allocations
+            for voice in harmony_arrangements[role][index]
+        )
+        arrangement.append((bass_voice, vocal_voice, *harmony))
+        accompaniment_energy = max(harmony_cells[role][index].energy for role in allocations)
+        cells.append(
+            _Cell(
+                (),
+                max(bass.energy * 0.85, vocals.energy * 0.90, accompaniment_energy),
+                drums.onset,
+                drums.bass_ratio,
+            )
+        )
+    arrangement, estimated_key = _constrain_arrangement(arrangement)
+    note_events, percussion_events = _write_arrangement(
+        Path(target),
+        cells,
+        arrangement,
+        style=style,
+        step_seconds=step_seconds,
+        duration_seconds=duration_seconds,
+    )
+    return ConversionReport(
+        style=f"{style}-stems",
+        duration_seconds=round(duration_seconds, 6),
+        analysis_rate=ANALYSIS_RATE,
+        output_rate=OUTPUT_RATE,
+        tempo_bpm=round(tempo_bpm, 3),
+        step_seconds=round(step_seconds, 6),
+        pitched_voices=voice_count,
+        note_events=note_events,
+        percussion_events=percussion_events,
+        estimated_key=estimated_key,
     )
 
 
@@ -440,7 +670,8 @@ def main() -> int:
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     end = args.start + args.duration if args.duration is not None else None
-    report = convert_to_chiptune(args.source, args.target, style=args.style, start=args.start, end=end)
+    converter = convert_stems_to_chiptune if args.source.is_dir() else convert_to_chiptune
+    report = converter(args.source, args.target, style=args.style, start=args.start, end=end)
     payload = json.dumps(asdict(report), indent=2, sort_keys=True) + "\n"
     if args.report is not None:
         args.report.parent.mkdir(parents=True, exist_ok=True)

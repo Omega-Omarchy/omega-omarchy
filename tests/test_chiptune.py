@@ -10,6 +10,8 @@ from omega_omarchy.chiptune import (
     OUTPUT_RATE,
     _assign_voices,
     _Cell,
+    _constrain_arrangement,
+    _stabilize_monophonic,
     convert_to_chiptune,
 )
 
@@ -23,6 +25,28 @@ def test_voice_assignment_preserves_bass_and_nearby_melodic_parts():
     assert arrangement[0][0][0] == 40
     assert arrangement[1][0][0] == 41
     assert {voice[0] for voice in arrangement[1][1:]} == {62, 74}
+
+
+def test_monophonic_stabilizer_removes_single_cell_pitch_chatter():
+    cells = [
+        _Cell(((60, 0.8),), 0.8, 0.3, 0.1),
+        _Cell(((72, 0.7),), 0.8, 0.3, 0.1),
+        _Cell(((60, 0.8),), 0.8, 0.3, 0.1),
+    ]
+    assert [cell.notes[0][0] for cell in _stabilize_monophonic(cells)] == [60, 60, 60]
+
+
+def test_arrangement_constraint_snaps_pitch_set_and_suppresses_short_jumps():
+    arrangement = [
+        ((60, 0.8), (64, 0.7)),
+        ((72, 0.8), (71, 0.7)),
+        ((61, 0.8), (64, 0.7)),
+        ((60, 0.8), (64, 0.7)),
+    ]
+    constrained, key = _constrain_arrangement(arrangement, minimum_hold=2)
+    assert key is not None
+    assert constrained[1][0][0] == 60
+    assert abs(int(constrained[2][0][0]) - int(constrained[1][0][0])) <= 2
 
 
 @pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is required")
