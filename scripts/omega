@@ -27,6 +27,7 @@ usage() {
   echo "  ./scripts/omega web [--web-out PATH]"
   echo "  ./scripts/omega web-serve"
   echo "  ./scripts/omega audio"
+  echo "  ./scripts/omega chiptune SOURCE TARGET.wav [--style snes|genesis]"
   echo "  ./scripts/omega release-check"
   echo "Choose tests from the issue's affected behavior; the full gate is never the default."
 }
@@ -159,6 +160,9 @@ PY
     ;;
   audio)
     exec "$PY" -m omega_omarchy.audio_build "$@"
+    ;;
+  chiptune)
+    exec "$PY" -m omega_omarchy.chiptune "$@"
     ;;
   package)
     exec "$PY" "$ROOT/tools/build_native.py" "$@"

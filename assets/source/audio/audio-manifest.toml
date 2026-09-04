@@ -17,6 +17,7 @@ caption = "Music: Make It Come Alive"
 start = 0.0
 end = 233.360544
 loop = false
+sixteen_bit_style = "snes"
 gain = 0.82
 
 [[sfx]]

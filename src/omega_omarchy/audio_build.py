@@ -13,14 +13,17 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import tempfile
 import tomllib
 import wave
 from typing import Any
 
+from .chiptune import SUPPORTED_STYLES, convert_to_chiptune
 
-BUILD_VERSION = "omega-audio-render/7"
+
+BUILD_VERSION = "omega-audio-render/8-poc"
 TIERS = ("sixteen-bit", "high", "ultra")
-TIER_FILTERS = {
+SFX_TIER_FILTERS = {
     "ultra": "aresample=44100,alimiter=limit=0.95",
     "high": (
         "aresample=32000,lowpass=f=14000,"
@@ -36,7 +39,13 @@ TIER_FILTERS = {
         "aecho=0.82:0.88:37:0.08,volume=1.55,alimiter=limit=0.91"
     ),
 }
-TIER_QUALITY = {"sixteen-bit": "4", "high": "5", "ultra": "7"}
+MUSIC_TIER_FILTERS = {
+    "ultra": SFX_TIER_FILTERS["ultra"],
+    # The prior sixteen-bit signal treatment becomes the High music tier.
+    "high": SFX_TIER_FILTERS["sixteen-bit"],
+}
+SFX_TIER_QUALITY = {"sixteen-bit": "4", "high": "5", "ultra": "7"}
+MUSIC_TIER_QUALITY = {"sixteen-bit": "4", "high": "4", "ultra": "7"}
 _CUE_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -223,7 +232,15 @@ def _ogg_args(ffmpeg: str, source: Path, target: Path) -> list[str]:
 def _render_sfx(ffmpeg: str, source: Path, target: Path, tier: str) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     command = _ogg_args(ffmpeg, source, target)
-    command += ["-af", TIER_FILTERS[tier], "-codec:a", "libvorbis", "-q:a", TIER_QUALITY[tier], str(target)]
+    command += [
+        "-af",
+        SFX_TIER_FILTERS[tier],
+        "-codec:a",
+        "libvorbis",
+        "-q:a",
+        SFX_TIER_QUALITY[tier],
+        str(target),
+    ]
     _run(command)
 
 
@@ -237,9 +254,34 @@ def _render_music(
     end: float,
     crossfade: float,
     loop: bool,
+    sixteen_bit_style: str,
 ) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     start = max(0.0, start)
+    if tier == "sixteen-bit":
+        with tempfile.TemporaryDirectory(prefix="omega-chiptune-") as temporary:
+            arrangement = Path(temporary) / "arrangement.wav"
+            convert_to_chiptune(
+                source,
+                arrangement,
+                style=sixteen_bit_style,
+                start=start,
+                end=end,
+                ffmpeg=ffmpeg,
+            )
+            command = _ogg_args(ffmpeg, arrangement, target)
+            gain = "volume=1.38," if sixteen_bit_style == "snes" else ""
+            command += [
+                "-af",
+                f"{gain}aresample=32000,lowpass=f=14500,alimiter=limit=0.91:level=false",
+                "-codec:a",
+                "libvorbis",
+                "-q:a",
+                MUSIC_TIER_QUALITY[tier],
+                str(target),
+            ]
+            _run(command)
+        return
     if loop:
         end = max(start + crossfade * 3, end)
         middle_start = start + crossfade
@@ -251,13 +293,13 @@ def _render_music(
             f"[0:a]atrim=start={start:.6f}:end={middle_start:.6f},asetpts=PTS-STARTPTS,"
             f"afade=t=in:st=0:d={crossfade:.6f}[head];"
             f"[tail][head]amix=inputs=2:duration=first:normalize=0,asetpts=PTS-STARTPTS[cross];"
-            f"[mid][cross]concat=n=2:v=0:a=1,{TIER_FILTERS[tier]}[out]"
+            f"[mid][cross]concat=n=2:v=0:a=1,{MUSIC_TIER_FILTERS[tier]}[out]"
         )
     else:
         end = max(start + 0.001, end)
         graph = (
             f"[0:a]atrim=start={start:.6f}:end={end:.6f},"
-            f"asetpts=PTS-STARTPTS,{TIER_FILTERS[tier]}[out]"
+            f"asetpts=PTS-STARTPTS,{MUSIC_TIER_FILTERS[tier]}[out]"
         )
     command = _ogg_args(ffmpeg, source, target)
     command += [
@@ -268,7 +310,7 @@ def _render_music(
         "-codec:a",
         "libvorbis",
         "-q:a",
-        TIER_QUALITY[tier],
+        MUSIC_TIER_QUALITY[tier],
         str(target),
     ]
     _run(command)
@@ -360,6 +402,9 @@ def _validate_config(config: dict[str, Any], source_root: Path) -> None:
                     raise RuntimeError(f"invalid range for audio cue {cue_id}")
                 if loop and (crossfade <= 0 or end <= start + crossfade * 3):
                     raise RuntimeError(f"invalid loop range for audio cue {cue_id}")
+                style = str(cue.get("sixteen_bit_style") or "snes")
+                if style not in SUPPORTED_STYLES:
+                    raise RuntimeError(f"invalid sixteen-bit music style for {cue_id}: {style}")
             elif str(cue.get("bus") or "") not in {"sfx", "ui"}:
                 raise RuntimeError(f"invalid bus for audio cue {cue_id}")
     unknown_scenes = sorted({str(value) for value in scenes.values()} - music_ids)
@@ -458,6 +503,7 @@ def build_audio_assets(asset_root: Path, *, force: bool = False) -> Path:
                 end=float(source_cue["end"]),
                 crossfade=float(source_cue.get("crossfade", 0.0)),
                 loop=bool(source_cue.get("loop", True)),
+                sixteen_bit_style=str(source_cue.get("sixteen_bit_style") or "snes"),
             )
             paths[tier] = target.relative_to(runtime_root).as_posix()
             durations[tier] = _probe_duration(ffprobe, target)

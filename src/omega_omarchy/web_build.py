@@ -62,6 +62,7 @@ def stage_web(stage: Path, *, seed: str = "omega-fixture-1") -> Path:
             "*.pyc",
             "assets.py",
             "audio_build.py",
+            "chiptune.py",
             "spritekit.py",
             "cli.py",
             "web_build.py",
