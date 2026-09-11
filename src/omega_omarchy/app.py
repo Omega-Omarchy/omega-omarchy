@@ -365,8 +365,8 @@ async def run_game_async(
         if sim.scene == "ending":
             from .credits import CAST_THEME_FADE_SECONDS, title_duration
 
-            remaining = title_duration() - sim.credits_elapsed
-            if 0 < remaining <= CAST_THEME_FADE_SECONDS:
+            cast_remaining = title_duration() - sim.credits_elapsed
+            if 0 < cast_remaining <= CAST_THEME_FADE_SECONDS:
                 music_fade_ms = round(CAST_THEME_FADE_SECONDS * 1000)
         audio.update(
             scene=sim.scene,

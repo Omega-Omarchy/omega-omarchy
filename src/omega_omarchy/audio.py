@@ -189,7 +189,7 @@ class AudioManager:
         except pygame.error:
             self.available = False
             return
-        if self._theme_channel is not None:
+        if self._theme_channel is not None and not self._music_fading:
             try:
                 self._theme_channel.set_volume(volume)
             except pygame.error:
@@ -232,16 +232,19 @@ class AudioManager:
 
     def _stop_theme_channel(self, *, fade_ms: int = 0) -> None:
         channel = self._theme_channel
-        self._theme_channel = None
         if channel is None:
             return
         try:
             if fade_ms > 0:
+                # Still fading: keep tracking the channel so a later hard
+                # stop (scene transition, next cue) can actually reach it
+                # instead of finding a reference we cleared too early.
                 channel.fadeout(fade_ms)
-            else:
-                channel.stop()
+                return
+            channel.stop()
         except pygame.error:
             pass
+        self._theme_channel = None
 
     def _play_cast_theme(self, path: Path, cue: dict[str, Any]) -> bool:
         """Play Make It Come Alive as a Sound so the roll can preload on music."""
