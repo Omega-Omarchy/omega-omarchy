@@ -239,6 +239,7 @@ async def run_game_async(
     sim = GameSim.new(seed, content_packs)
     sim.installer.realtime = not headless
     sim.web_chapter_one = sys.platform == "emscripten"
+    sim.installer.web_chapter_one = sim.web_chapter_one
     audio = AudioManager(browser=sim.web_chapter_one, enabled=not headless)
     if skip_installer or headless or dev_warp:
         sim.confirm_play_now(skip_prologue=True)
@@ -246,7 +247,12 @@ async def run_game_async(
         resolved = sim.dev_warp(dev_warp)
         print(f"DEV_WARP={resolved}")
     renderer = Renderer()
-    window_size = INTERNAL if headless else (INTERNAL[0] * SCALE, INTERNAL[1] * SCALE)
+    if headless:
+        window_size = INTERNAL
+    elif sys.platform == "emscripten":
+        window_size = renderer.frame(sim).get_size()
+    else:
+        window_size = (INTERNAL[0] * SCALE, INTERNAL[1] * SCALE)
     window = pygame.display.set_mode(window_size)
     _set_window_icon()
     pygame.display.set_caption("Omega Omarchy")
@@ -357,7 +363,11 @@ async def run_game_async(
         if sim.scene == "installer":
             renderer.preload_character_portraits(sim.installer)
         frame = renderer.frame(sim)
-        if window.get_size() != frame.get_size():
+        if sys.platform == "emscripten":
+            if window.get_size() != frame.get_size():
+                window = pygame.display.set_mode(frame.get_size())
+            window.blit(frame, (0, 0))
+        elif window.get_size() != frame.get_size():
             pygame.transform.scale(frame, window.get_size(), window)
         else:
             window.blit(frame, (0, 0))

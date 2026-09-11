@@ -200,6 +200,7 @@ class InstallerSession:
     _started_at: float | None = field(default=None, repr=False)
     _finished_at: float | None = field(default=None, repr=False)
     realtime: bool = False
+    web_chapter_one: bool = False
 
     def preload_characters(self, *, files: int = 4) -> None:
         if self.characters_ready:
@@ -617,6 +618,7 @@ class InstallerSession:
             settings=settings,
             force_logo=self.force_logo,
             content=load_content(self.content_paths),
+            chapter_ids=("corrupted-install",) if self.web_chapter_one else None,
         ))
 
     def run_generation(self) -> SealedWorld:

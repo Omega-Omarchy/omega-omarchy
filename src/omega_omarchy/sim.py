@@ -5078,6 +5078,7 @@ class GameSim:
                 settings=settings,
                 force_logo=self.installer.force_logo,
                 content=load_content(self.installer.content_paths),
+                chapter_ids=("corrupted-install",) if self.web_chapter_one else None,
             )
             next_settings = apply_presentation(settings, quality=str(settings.get("quality") or self.fidelity))
             next_quality = str(next_settings.get("quality") or self.fidelity)

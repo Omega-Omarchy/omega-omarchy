@@ -145,10 +145,13 @@ class Renderer:
         self._curve_cache: dict[tuple[int, int, int, int], tuple[tuple[int, int, int], ...]] = {}
         self._crt_overlay_cache: dict[tuple[int, ...], Surface] = {}
         self._actor_transform_cache: dict[tuple[Any, ...], Surface] = {}
+        self._tile_blit_cache: dict[tuple[Any, ...], Surface] = {}
+        self._parallax_scale_cache: dict[tuple[Any, ...], Surface] = {}
+        self._flash_overlay: Surface | None = None
         self._vs = 1
         self._fid_cur = "ultra"
         self._iw, self._ih = INTERNAL
-        self._last_frame: Surface | None = None
+        self._canvas: Surface | None = None
         self._stage_transition_source: Surface | None = None
         self._stage_transition_active = False
         self._character_roots: dict[tuple[str, str], Path | None] = {}
@@ -365,11 +368,13 @@ class Renderer:
         self._fid_cur = fid
         self._vs = vs
         self._iw, self._ih = iw, ih
+        if self._canvas is None or self._canvas.get_size() != (iw, ih):
+            self._canvas = Surface((iw, ih))
         transition_active = sim.scene == "stage-map" and sim.stage_map_transition_ticks > 0
         if transition_active and not self._stage_transition_active:
-            self._stage_transition_source = self._last_frame.copy() if self._last_frame is not None else None
+            self._stage_transition_source = self._canvas.copy()
         self._stage_transition_active = transition_active
-        surf = Surface((iw, ih))
+        surf = self._canvas
         if sim.scene == "installer":
             surf.fill(PALETTE.get("bg", PALETTE["dark"]))
         else:
@@ -446,7 +451,6 @@ class Renderer:
             surf = self._crt(surf, crt)
         else:
             self._persist = None
-        self._last_frame = surf.copy()
         if not transition_active:
             self._stage_transition_source = None
         return surf
@@ -1692,7 +1696,9 @@ class Renderer:
             "penguin": (232, 176, 64, alpha),
             "combat": (247, 118, 142, alpha),
         }.get(kind, (255, 255, 255, alpha))
-        overlay = Surface((self._iw, self._ih), pygame.SRCALPHA)
+        if self._flash_overlay is None or self._flash_overlay.get_size() != (self._iw, self._ih):
+            self._flash_overlay = Surface((self._iw, self._ih), pygame.SRCALPHA)
+        overlay = self._flash_overlay
         overlay.fill(color)
         surf.blit(overlay, (0, 0))
 
@@ -1812,9 +1818,18 @@ class Renderer:
                     layer = self._fid(sim, f"bg/parallax-{i}.png")
                 except Exception:
                     break
-            if layer.get_height() != self._ih:
-                scaled_w = max(self._iw, round(layer.get_width() * self._ih / max(1, layer.get_height())))
-                layer = pygame.transform.smoothscale(layer, (scaled_w, self._ih))
+            scale_key = (fid, pal, i, self._iw, self._ih)
+            scaled = self._parallax_scale_cache.get(scale_key)
+            if scaled is None:
+                if layer.get_height() != self._ih:
+                    scaled_w = max(self._iw, round(layer.get_width() * self._ih / max(1, layer.get_height())))
+                    scaled = pygame.transform.smoothscale(layer, (scaled_w, self._ih))
+                else:
+                    scaled = layer
+                if len(self._parallax_scale_cache) >= 32:
+                    self._parallax_scale_cache.clear()
+                self._parallax_scale_cache[scale_key] = scaled
+            layer = scaled
             # Keep the smoothed camera's fractional position for scenery. The
             # world grid remains integer-aligned, while wide authored planes
             # advance regularly instead of holding on a truncated camera value.
@@ -1889,7 +1904,19 @@ class Renderer:
                         except Exception:
                             pygame.draw.rect(surf, PALETTE["brown"], (px, py, tw, tw))
                             continue
-                    tile = self._fit(tile, (tw, tw))
+                    variant = (x * 17 + y * 31 + sim.chapter_index * 13) % 4 if cell in {"#", "="} else 0
+                    blit_key = (fid, pal, art_cell, tw, variant)
+                    fitted = self._tile_blit_cache.get(blit_key)
+                    if fitted is None:
+                        fitted = self._fit(tile, (tw, tw))
+                        if variant:
+                            fitted = pygame.transform.flip(
+                                fitted, variant in {1, 3}, variant == 2 and cell == "#"
+                            )
+                        if len(self._tile_blit_cache) >= 256:
+                            self._tile_blit_cache.clear()
+                        self._tile_blit_cache[blit_key] = fitted
+                    tile = fitted
                     if cell == "I":
                         green_key = f"invisible-green:{fid}:{pal}:{tw}"
                         if green_key not in self.cache:
@@ -1899,9 +1926,6 @@ class Renderer:
                             self.cache[green_key] = green
                         tile = self.cache[green_key].copy()
                         tile.set_alpha(alpha)
-                    variant = (x * 17 + y * 31 + sim.chapter_index * 13) % 4
-                    if cell in {"#", "="} and variant:
-                        tile = pygame.transform.flip(tile, variant in {1, 3}, variant == 2 and cell == "#")
                     surf.blit(tile, (px, py))
                     if fid != "sixteen-bit" and cell == "#" and variant in {2, 3}:
                         pygame.draw.line(
@@ -1913,7 +1937,12 @@ class Renderer:
                         )
                 if cell == "B":
                     block = self._fid(sim, "items/block.png")
-                    surf.blit(self._fit(block, (tw, tw)), (px, py))
+                    block_key = (fid, "block", tw)
+                    fitted_block = self._tile_blit_cache.get(block_key)
+                    if fitted_block is None:
+                        fitted_block = self._fit(block, (tw, tw))
+                        self._tile_blit_cache[block_key] = fitted_block
+                    surf.blit(fitted_block, (px, py))
         for entity in sim.entities:
             if not entity.alive or entity.kind != "wind-column":
                 continue

@@ -107,8 +107,8 @@ export const robotDetail = value => ROBOT_DETAILS.includes(value) ? value : 'ult
 
 export function floatingLogoAt(seconds, width, height) {
   const size = 72, margin = 14, top = 88;
-  return {size, x: margin + reflected(width * .72 + seconds * 48, width - size - margin * 2),
-    y: top + reflected(34 + seconds * 31, height - top - size - margin)};
+  return {size, x: margin + reflected(width * .72 + seconds * 96, width - size - margin * 2),
+    y: top + reflected(34 + seconds * 62, height - top - size - margin)};
 }
 
 // Each emission is one expanding emblem, shared by the floater and clicks.

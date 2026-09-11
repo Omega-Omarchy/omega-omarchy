@@ -1,8 +1,9 @@
 # Third-party notices
 
-This inventory covers direct runtime/build components and retained branding in
-the current private technical alpha. It supports review; it is not a substitute
-for the final G5 rights audit.
+This inventory lists third-party and separately licensed components shipped or
+referenced by Omega Omarchy. It is not a license grant and does not replace
+the notices that travel with each file. See [ASSET-LICENSE.md](ASSET-LICENSE.md)
+for how the MIT code license relates to assets and future content.
 
 ## Python runtime components
 
@@ -11,7 +12,7 @@ for the final G5 rights audit.
 | Python | 3.12 | Python Software Foundation License | Bundled interpreter |
 | pygame-ce | 2.5.8 | LGPL-2.1 | Native window, input, sound, and rendering |
 | Pillow | 12.3.0 | HPND | Image processing and Omega Code output |
-| NumPy | 2.1.3 | BSD-3-Clause with bundled-library notices | Pixel processing and packaged native libraries |
+| NumPy | 2.4.6 | BSD-3-Clause with bundled-library notices | Pixel processing and packaged native libraries |
 | qrcode | 8.2 | BSD | Standard QR encoding |
 | PyInstaller | 6.22.2 | GPL-2.0-or-later with bootloader exception | Native bundle construction and bootloader |
 | Pygbag | 0.9.3 | MIT | WebAssembly packaging and browser runtime launcher |
@@ -27,8 +28,8 @@ The native artifact copies the license/notice files supplied by each installed
 distribution into `licenses/`, records their exact resolved versions in
 `DEPENDENCIES.json`, and includes Python's license. NumPy, Pillow, pygame-ce,
 and their wheels may contain additional native libraries; their upstream
-license files are retained in full where shipped. A final release must compare
-the built artifact's actual shared-library inventory against these notices.
+license files are retained in full where shipped. Compare a built artifact's
+shared-library inventory against these notices when preparing a distribution.
 
 Build/test-only packages are pinned in `requirements/ci.txt`. They are not
 intended to be imported as game features, although the PyInstaller bootloader
@@ -37,20 +38,18 @@ and its applicable exception are part of the player artifact.
 ## Music recordings and permissions
 
 Jeremy Dixon supplied **Super Key Love (Oh Omarchy — theme from Omega Omarchy)**
-for the credit roll on 2026-09-11. Its embedded artist field credits Jeremy Dixon.
-The game preserves the supplied MP3
-and full-length prepared Ogg encodes. The song follows the project's asset
-license scope, not the source-code MIT license.
+for the credit roll on 2026-09-11. Its embedded artist field credits Jeremy
+Dixon. The game preserves the supplied MP3 and full-length prepared Ogg
+encodes. The song follows the project's asset-license scope, not the
+source-code MIT license.
 
 The maintainer confirmed **Coded Jason ft. The Gen X Ancients** as the artist
 credit for **Make It Come Alive** on 2026-09-11.
 
-The private alpha includes the maintainer-supplied recording *Make It Come
-Alive*. The project preserves a decoded FLAC master and derives Ultra, High,
-and sixteen-bit runtime interpretations from it. The maintainer reports direct
-creator permission to use the work with or without attribution. Before public
-cutover, retain the permission exchange and confirm that it covers the intended
-binary release and public source-master distribution; this notice does not
+The project includes the maintainer-supplied recording *Make It Come Alive*.
+It preserves a decoded FLAC master and derives Ultra, High, and sixteen-bit
+runtime interpretations from it. The maintainer reports direct creator
+permission to use the work with or without attribution. This notice does not
 broaden that grant.
 
 The cinematic credits use a subset of **Noto Sans CJK**, under the SIL Open Font
@@ -66,8 +65,9 @@ does not infer reuse or redistribution rights from its public availability.
 
 Suvikyi's *Boot Up Your New Digital World* is under local conversion review and
 is not currently bundled. Jeremy Dixon explicitly reconfirmed direct permission
-from Suvikyi to utilize her song in Omega Omarchy on 2026-09-11. That confirmation
-is recorded in `credits/music.json`; Suvikyi remains its credited artist.
+from Suvikyi to utilize her song in Omega Omarchy on 2026-09-11. That
+confirmation is recorded in `credits/music.json`; Suvikyi remains its credited
+artist.
 
 ## Branding references
 
@@ -78,9 +78,7 @@ is recorded in `credits/music.json`; Suvikyi remains its credited artist.
 
 Their provenance is recorded in `assets/source/branding/README.md`. These names
 and marks are used for an unofficial parody/fan project. They are not relicensed
-under MIT, and no affiliation or endorsement is implied. Retention for public
-distribution remains subject to the separate trademark/branding review in
-`docs/OPEN-SOURCE-CUTOVER.md`.
+under MIT, and no affiliation or endorsement is implied.
 
 ## Display typeface
 
@@ -98,5 +96,5 @@ Limitless Library is optional and is not bundled into the standard native
 artifact. The Omarchy panel is source-only in this environment and is not
 represented as native-shell-qualified.
 
-Report missing or incorrect attribution through the private security/contact
-route described in `SECURITY.md` once that route is enabled for contributors.
+Report missing or incorrect attribution through the private reporting route in
+[SECURITY.md](SECURITY.md).

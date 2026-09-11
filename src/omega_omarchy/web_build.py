@@ -21,8 +21,13 @@ CHARACTER_CONTROLS = '''
 html,body{overflow-x:hidden!important;overflow-y:auto!important;min-height:calc(100vh + 340px)}
 #canvas{position:fixed!important;inset:0!important;margin:auto!important;width:100vw!important;height:100vh!important;object-fit:contain;background:#000}
 #character-tools{position:relative;top:100vh;z-index:10}
+html.omega-character-tools-hidden,html.omega-character-tools-hidden body{min-height:100vh!important;overflow:hidden!important}
+html.omega-character-tools-hidden #character-tools{display:none!important}
+#character-tools-close{position:absolute;top:8px;right:10px;width:32px;height:32px;border:0;border-radius:8px;background:#2a2e3f;color:#c0caf5;font:22px/1 system-ui;cursor:pointer}
+#character-tools-close:hover{background:#414868}
 </style>
 <section id="character-tools" aria-label="Custom characters" style="max-width:850px;margin:20px auto;padding:18px;text-align:left;font:16px system-ui;color:#c0caf5;background:#1a1b26;border:1px solid #414868;border-radius:12px">
+<button type="button" id="character-tools-close" aria-label="Hide custom character tools">×</button>
 <strong>Make the protagonist yours.</strong>
 <p>Choose David, The Omarch King, or The Omarch Queen during setup. For a custom character, give the agent kit to your image-capable agent, then import its finished ZIP.</p>
 <a href="character-agent-kit.zip" download style="color:#9ece6a">Download agent kit</a>
@@ -43,6 +48,20 @@ window.addEventListener('keydown', (event) => {
 }, {capture: true});
 window.omegaCharacterImport = '';
 window.omegaCharacterImportStatus = '';
+(function () {
+  const tools = document.getElementById('character-tools');
+  const close = document.getElementById('character-tools-close');
+  const hide = () => {
+    document.documentElement.classList.add('omega-character-tools-hidden');
+    try { sessionStorage.setItem('omega-hide-character-tools', '1'); } catch (error) {}
+    window.scrollTo(0, 0);
+    if (gameCanvas) gameCanvas.focus();
+  };
+  try {
+    if (sessionStorage.getItem('omega-hide-character-tools') === '1') hide();
+  } catch (error) {}
+  if (close) close.addEventListener('click', hide);
+})();
 document.getElementById('character-import').addEventListener('change', function () {
   const file = this.files[0];
   if (!file) return;

@@ -936,14 +936,16 @@ def generate_world(
     settings: dict[str, Any] | None = None,
     force_logo: bool = False,
     content: ContentIndex | None = None,
+    chapter_ids: tuple[str, ...] | None = None,
 ) -> SealedWorld:
     return _finish_work(generate_world_steps(seed, difficulty=difficulty,
         accessibility_profile=accessibility_profile, character=character, settings=settings,
-        force_logo=force_logo, content=content))
+        force_logo=force_logo, content=content, chapter_ids=chapter_ids))
 
 
 def generate_world_steps(seed: str, *, difficulty="standard", accessibility_profile="default",
-                         character=None, settings=None, force_logo=False, content=None):
+                         character=None, settings=None, force_logo=False, content=None,
+                         chapter_ids=None):
     """Same sealed world as the blocking API, with progress before each work unit."""
     if difficulty not in {"casual", "standard", "precise"}:
         raise ValueError("unknown difficulty")
@@ -951,9 +953,14 @@ def generate_world_steps(seed: str, *, difficulty="standard", accessibility_prof
     streams = Streams(seed)
     settings = dict(settings or {})
     include_optional = settings.get("includeOptionalChunks", True)
+    roster = tuple(
+        spec for spec in CAMPAIGN_ROSTER if chapter_ids is None or spec.id in chapter_ids
+    )
+    if not roster:
+        raise ValueError("no matching chapters")
     chapters = []
     yield 0.02, "Preparing world content"
-    for chapter_index, spec in enumerate(CAMPAIGN_ROSTER):
+    for chapter_index, spec in enumerate(roster):
         profile = content.chapter_profile(spec.id) or {}
         work = assemble_chapter_steps(
             content,
@@ -971,7 +978,7 @@ def generate_world_steps(seed: str, *, difficulty="standard", accessibility_prof
                                   "Checking upper routes": .7}.get(label, .8 + min(.15, island_checks * .03))
                 if label == "Checking island routes":
                     island_checks += 1
-                yield 0.04 + 0.90 * (chapter_index + within_chapter) / len(CAMPAIGN_ROSTER), f"{spec.name}: {label.lower()}"
+                yield 0.04 + 0.90 * (chapter_index + within_chapter) / len(roster), f"{spec.name}: {label.lower()}"
             except StopIteration as done:
                 chapter = done.value
                 break

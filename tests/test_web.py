@@ -4,6 +4,7 @@ from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
 import pytest
 
 from omega_omarchy.web_build import (
+    CHARACTER_CONTROLS,
     WEB_BACKGROUNDS,
     _encode_web_audio,
     _repair_pygbag_launcher,
@@ -11,6 +12,12 @@ from omega_omarchy.web_build import (
     _replace_directory,
     stage_web,
 )
+
+
+def test_web_character_tools_can_be_dismissed():
+    assert 'id="character-tools-close"' in CHARACTER_CONTROLS
+    assert "omega-character-tools-hidden" in CHARACTER_CONTROLS
+    assert "Hide custom character tools" in CHARACTER_CONTROLS
 
 
 def test_web_output_replacement_refuses_repository_root():

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {ASSEMBLY, layout, sceneAt, solveArm, reflected, effectsEnabled, robotDetail, floatingLogoAt, logoBurstAt} from './motion-model.mjs';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -130,6 +131,13 @@ test('Pause, reduced motion, and hidden tabs each stop the effects', () => {
 test('Robot detail accepts only the three actual asset tiers', () => {
   for (const detail of ['sixteen-bit', 'high', 'ultra']) assert.equal(robotDetail(detail), detail);
   for (const detail of [undefined, '../ultra', 'bogus']) assert.equal(robotDetail(detail), 'ultra');
+});
+
+test('The Get Omega button points at the source section', async () => {
+  const html = await readFile(new URL('./index.html', import.meta.url), 'utf8');
+  assert.match(html, /class="button primary" href="#source"/);
+  assert.match(html, />Get Omega</);
+  assert.match(html, /id="source"/);
 });
 
 test('The enlarged floater stays inside its viewport and logo bursts expire', () => {

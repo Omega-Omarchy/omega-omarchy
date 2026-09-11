@@ -8,6 +8,13 @@ from omega_omarchy.reachability import (
 )
 
 
+def test_web_chapter_one_generation_matches_the_first_full_world_chapter():
+    full = generate_world("omega-fixture-1", force_logo=True)
+    web = generate_world("omega-fixture-1", force_logo=True, chapter_ids=("corrupted-install",))
+    assert [chapter["chapterId"] for chapter in web.chapters] == ["corrupted-install"]
+    assert web.chapters[0]["tiles"] == full.chapters[0]["tiles"]
+
+
 def test_every_chapter_completable_without_rare_events():
     world = generate_world("omega-fixture-1", force_logo=True)
     assert len(world.chapters) == len(CAMPAIGN_ROSTER)
