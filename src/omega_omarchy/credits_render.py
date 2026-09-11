@@ -180,6 +180,8 @@ class CreditsRenderer:
         try:
             if sim.scene == "ending":
                 self.title(surf, sim, seconds, reduced)
+                if seconds >= 0.5:
+                    self.layout(sim.character_name)
             else:
                 self._draw_roll(surf, sim, seconds, reduced)
         except pygame.error:

@@ -269,6 +269,10 @@ class AudioManager:
         if isinstance(table, dict):
             value = table.get(scene)
             if isinstance(value, str):
+                # Super Key Love is a 13MB stream. Decoding it on skip in
+                # WebAssembly stalls or kills the tab, so the browser roll is silent.
+                if self.browser and value == "credits-roll":
+                    return None
                 return value
         return None
 

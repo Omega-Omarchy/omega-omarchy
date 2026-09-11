@@ -146,6 +146,16 @@ def stage_web(stage: Path, *, seed: str = "omega-fixture-1", character_packs: tu
             "__main__.py",
         ),
     )
+    try:
+        revision = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        revision = "unknown"
+    (stage / "omega_omarchy" / "_build_revision.py").write_text(
+        f'REVISION = "{revision}"\n',
+        encoding="utf-8",
+    )
     runtime_assets = stage / "assets"
     runtime_assets.mkdir()
     source_assets = asset_dir()
@@ -346,6 +356,14 @@ def _repair_pygbag_launcher(built: Path) -> None:
     html = html.replace(
         "background: green;\n            color: blue;",
         "background: #1a1b26;\n            color: #b9f27c;\n            border: 1px solid #9ece6a;",
+    )
+    from .release import release_label
+
+    html = _replace_required(
+        html,
+        '<div id="infobox">Loading, please wait ...</div>',
+        f'<div id="infobox">Loading Omega Omarchy {release_label()} …</div>',
+        label="loading banner",
     )
     index.write_text(html, encoding="utf-8")
     tarball = built / "omega-omarchy.tar.gz"

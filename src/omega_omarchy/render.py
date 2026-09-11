@@ -1545,6 +1545,19 @@ class Renderer:
             whiteout.fill((255, 255, 255, alpha))
             surf.blit(whiteout, (0, 0))
 
+    def _build_stamp(self, surf: Surface) -> None:
+        from .release import release_label
+
+        self.fit_text(
+            surf,
+            release_label(),
+            (8, 168, 150, 9),
+            PALETTE.get("muted", PALETTE["fg"]),
+            align="left",
+            max_size=6,
+            min_size=5,
+        )
+
     def _installer(self, surf: Surface, sim: GameSim) -> None:
         step = sim.installer.step
         reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)
@@ -1553,12 +1566,14 @@ class Renderer:
             self._wordmark(surf, 54, pulse=pulse, tick=sim.tick)
             self._center(surf, GREETER_TAGLINE, 105, PALETTE["fg"])
             self._center(surf, GREETER_HINT, 122, PALETTE.get("muted", PALETTE["fg"]))
+            self._build_stamp(surf)
             return
         if step == "progress":
             self._wordmark(surf, 36, pulse=pulse, tick=sim.tick)
             self._center(surf, PROGRESS_TITLE, 84, PALETTE["fg"])
             self._progress_bar(surf, sim)
             self.fit_text(surf, f"{round(sim.installer.progress_fraction * 100)}% · {sim.installer.total_elapsed_s:.1f}s", (80, 129, 160, 12), PALETTE["fg"], align="center", max_size=8, min_size=6)
+            self._build_stamp(surf)
             tip = PROGRESS_TIPS[(sim.tick // 90) % len(PROGRESS_TIPS)]
             self._center(surf, f"Tip: {tip}", 112, LIME_MARK)
             return
@@ -1577,6 +1592,7 @@ class Renderer:
             surf.blit(text, (bx + pad_x, by + pad_y))
             tip = PROGRESS_TIPS[(sim.tick // 90) % len(PROGRESS_TIPS)]
             self._center(surf, f"Tip: {tip}", 138, LIME_MARK)
+            self._build_stamp(surf)
             return
         # Setup pages: wordmark pins to the top, like the live configurator.
         self._wordmark(surf, 8, pulse=False)

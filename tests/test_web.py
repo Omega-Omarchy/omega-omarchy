@@ -84,6 +84,7 @@ def test_launcher_workarounds_are_explicit_and_archive_is_stored(tmp_path):
         "    await shell.source(main, callback=ui_callback)\n"
         "#7f7f7f background-color:powderblue;\n"
         "background: green;\n            color: blue;\n"
+        '<div id="infobox">Loading, please wait ...</div>\n'
         "</html>",
         encoding="utf-8",
     )
@@ -106,6 +107,8 @@ def test_launcher_workarounds_are_explicit_and_archive_is_stored(tmp_path):
     assert 'await aio.pep0723.pip_install("pygame")' in html
     assert "exec(compile(main.read_text()" in html
     assert "if True:  # the build replaces this with a stored ZIP" in html
+    assert "Loading Omega Omarchy" in html
+    assert "Loading, please wait ..." not in html
     assert not (built / "omega-omarchy.tar.gz").exists()
     assert (built / "browserfs.min.js").stat().st_size > 200_000
     assert (built / "BROWSERFS-LICENSE.txt").is_file()

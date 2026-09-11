@@ -184,6 +184,13 @@ def test_credit_shortcuts_can_switch_sequences_and_restore_the_original_screen(o
     assert sim.world is None  # previewing setup must not generate a world
 
 
+def test_browser_skips_the_long_credit_roll_stream():
+    manager = AudioManager(browser=True, enabled=False)
+    assert manager._desired_music("ending", in_combat=False) == "credits-theme"
+    assert manager._desired_music("credits", in_combat=False) is None
+    assert manager._desired_music("chapter-credits", in_combat=False) is None
+
+
 def test_rapid_credit_shortcuts_do_not_restart_the_same_sequence():
     sim = GameSim(installer=InstallerSession(), scene="action")
     assert _handle_credits_shortcut(sim, pygame.K_F12)
