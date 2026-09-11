@@ -175,36 +175,48 @@ class CreditsRenderer:
 
     def draw(self, surf, sim):
         surf.fill((0, 0, 0))
-        seconds = sim.credits_ticks / FPS
+        seconds = max(0.0, float(sim.credits_ticks) / FPS)
         reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)
-        if sim.scene == "ending":
-            self.title(surf, sim, seconds, reduced)
-        else:
-            duration = credit_manifest()["music"]["duration"]
-            if seconds >= duration: return
-            entries, height = self.layout(sim.character_name)
-            if reduced:
-                # Static pages, broken only between complete credit entries.
-                pages, page, used = [], [], 0
-                for _, size, row in entries:
-                    if page and used + size > 150:
-                        pages.append(page)
-                        page, used = [], 0
-                    page.append((used, row))
-                    used += size
-                if page: pages.append(page)
-                page = pages[min(len(pages) - 1, int(seconds / duration * len(pages)))]
-                for y, row in page: self.draw_row(surf, row, y + 12)
+        try:
+            if sim.scene == "ending":
+                self.title(surf, sim, seconds, reduced)
             else:
-                offset = roll_offset(seconds, height)
-                for y, size, row in entries:
-                    top = y - offset
-                    if top + size >= 0 and top < 180:
-                        self.draw_row(surf, row, top)
+                self._draw_roll(surf, sim, seconds, reduced)
+        except pygame.error:
+            return
         # Instructions disappear once the sequence has had time to establish.
         if seconds < 3:
             action = sim.prompt_binding("jump", compact=True)
-            self.text(surf, f"{action} / Esc  {'skip to credits' if sim.scene == 'ending' else 'return'}", 310, 168, 6, "right", (150, 150, 150))
+            try:
+                self.text(surf, f"{action} / Esc  {'skip to credits' if sim.scene == 'ending' else 'return'}", 310, 168, 6, "right", (150, 150, 150))
+            except pygame.error:
+                return
+
+    def _draw_roll(self, surf, sim, seconds, reduced):
+        duration = credit_manifest()["music"]["duration"]
+        if seconds >= duration:
+            return
+        entries, height = self.layout(sim.character_name)
+        if reduced:
+            # Static pages, broken only between complete credit entries.
+            pages, page, used = [], [], 0
+            for _, size, row in entries:
+                if page and used + size > 150:
+                    pages.append(page)
+                    page, used = [], 0
+                page.append((used, row))
+                used += size
+            if page:
+                pages.append(page)
+            page = pages[min(len(pages) - 1, int(seconds / duration * len(pages)))]
+            for y, row in page:
+                self.draw_row(surf, row, y + 12)
+            return
+        offset = roll_offset(seconds, height)
+        for y, size, row in entries:
+            top = y - offset
+            if top + size >= 0 and top < 180:
+                self.draw_row(surf, row, top)
 
     def title(self, surf, sim, seconds, reduced):
         card, local = cast_card(seconds)

@@ -184,6 +184,64 @@ def test_credit_shortcuts_can_switch_sequences_and_restore_the_original_screen(o
     assert sim.world is None  # previewing setup must not generate a world
 
 
+def test_rapid_credit_shortcuts_do_not_restart_the_same_sequence():
+    sim = GameSim(installer=InstallerSession(), scene="action")
+    assert _handle_credits_shortcut(sim, pygame.K_F12)
+    assert sim.scene == "ending"
+    elapsed = sim.credits_elapsed
+    assert _handle_credits_shortcut(sim, pygame.K_F12)
+    assert sim.scene == "ending" and sim.credits_elapsed == elapsed
+    assert _handle_credits_shortcut(sim, pygame.K_F11)
+    assert sim.scene == "credits"
+
+
+def test_skipping_cast_cards_starts_the_roll_without_holding_jump():
+    sim = GameSim(installer=InstallerSession(), scene="action")
+    sim.start_credits(cinematic=True, return_scene="action")
+    for _ in range(32):
+        sim.step(InputState())
+    sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "credits"
+    sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "credits"
+
+
+def test_credit_music_stops_before_loading_the_next_stream(monkeypatch):
+    from omega_omarchy import audio as audio_mod
+
+    order = []
+
+    class FakeMusic:
+        def stop(self):
+            order.append("stop")
+
+        def fadeout(self, ms):
+            order.append(("fadeout", ms))
+
+        def load(self, path):
+            order.append("load")
+
+        def play(self, **kwargs):
+            order.append("play")
+
+        def set_volume(self, volume):
+            return None
+
+        def get_pos(self):
+            return 0
+
+    monkeypatch.setattr(audio_mod.pygame.mixer, "music", FakeMusic())
+    manager = AudioManager(enabled=False)
+    manager.available = True
+    manager.unlocked = True
+    manager.music_cue = "credits-theme"
+    manager._music_fading = True
+    assert manager._play_music("credits-roll")
+    assert order[0] == "stop"
+    assert "load" in order
+    assert order.index("stop") < order.index("load")
+
+
 def test_credit_shortcut_keys_cannot_be_captured_as_gameplay_bindings():
     sim = GameSim(installer=InstallerSession(), scene="remap")
     sim.remap_device, sim.remap_waiting = "keyboard", True
@@ -205,6 +263,9 @@ def test_cast_theme_fades_out_before_the_roll(monkeypatch):
             calls.append(ms)
 
         def set_volume(self, volume):
+            return None
+
+        def stop(self):
             return None
 
     monkeypatch.setattr(audio_mod.pygame.mixer, "music", FakeMusic())

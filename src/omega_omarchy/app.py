@@ -79,10 +79,15 @@ def _handle_credits_shortcut(sim: GameSim, key: int, audio: AudioManager | None 
         if sim.scene in {"credits", "chapter-credits", "ending"}
         else sim.scene
     )
-    sim.start_credits(cinematic=key == pygame.K_F12, return_scene=return_scene)
+    cinematic = key == pygame.K_F12
+    target = "ending" if cinematic else ("chapter-credits" if return_scene == "chapter-complete" else "credits")
+    if sim.scene == target and sim.credits_shortcut_lock > 0:
+        return True
+    sim.start_credits(cinematic=cinematic, return_scene=return_scene)
+    sim.credits_shortcut_lock = 20
     if audio is not None:
-        # Repeating a shortcut must restart the recording with the timeline.
-        audio._stop_music()
+        # Halt immediately. A fadeout here races mixer.load() on the next cue.
+        audio._stop_music(fade_ms=0)
     return True
 
 

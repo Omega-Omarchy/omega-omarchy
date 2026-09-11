@@ -229,6 +229,13 @@ class AudioManager:
             except pygame.error:
                 position = 0.0
         try:
+            # SDL_mixer can abort if load() runs while fadeout() is still
+            # draining the previous stream (F11/F12 or skip-to-roll).
+            try:
+                pygame.mixer.music.stop()
+            except pygame.error:
+                pass
+            self._music_fading = False
             pygame.mixer.music.load(str(path))
             kwargs: dict[str, Any] = {
                 "loops": -1 if bool(cue.get("loop", True)) else 0,
@@ -265,16 +272,22 @@ class AudioManager:
                 return value
         return None
 
-    def _stop_music(self) -> None:
+    def _stop_music(self, *, fade_ms: int = 260) -> None:
         if self.available and self.unlocked:
             try:
-                pygame.mixer.music.fadeout(260)
+                if fade_ms > 0 and not self._music_fading:
+                    pygame.mixer.music.fadeout(fade_ms)
+                    self._music_fading = True
+                else:
+                    pygame.mixer.music.stop()
+                    self._music_fading = False
             except pygame.error:
-                pass
+                self._music_fading = False
         self.music_cue = ""
         self.music_path = None
         self.music_start_offset = 0.0
-        self._music_fading = False
+        if fade_ms <= 0:
+            self._music_fading = False
 
     def update(
         self,

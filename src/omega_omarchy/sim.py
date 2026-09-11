@@ -348,6 +348,7 @@ class GameSim:
     ending: bool = False
     credits: bool = False
     credits_ticks: int = 0
+    credits_shortcut_lock: int = 0
     credits_elapsed: float = 0.0
     credits_return_scene: str = "pause"
     tick: int = 0
@@ -4194,6 +4195,7 @@ class GameSim:
     def start_credits(self, *, cinematic: bool = False, return_scene: str = "pause") -> None:
         self.credits_ticks = 0
         self.credits_elapsed = 0.0
+        self.credits_shortcut_lock = max(self.credits_shortcut_lock, 1)
         self.credits_return_scene = return_scene
         self.credits = not cinematic
         self.scene = "ending" if cinematic else ("chapter-credits" if return_scene == "chapter-complete" else "credits")
@@ -4207,6 +4209,10 @@ class GameSim:
         # roll past its recording. Fixed steps remain deterministic in replays.
         self.credits_elapsed += max(0.0, frame_seconds)
         self.credits_ticks = round(self.credits_elapsed * FPS)
+        if self.credits_shortcut_lock > 0:
+            self.credits_shortcut_lock = max(
+                0, self.credits_shortcut_lock - max(1, round(max(0.0, frame_seconds) * FPS))
+            )
         # The entry button cannot immediately dismiss the next sequence.
         skip = self.credits_ticks > 30 and (inp.pause or inp.jump_pressed or inp.interact)
         duration = title_duration() if self.scene == "ending" else roll_duration()
