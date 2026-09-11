@@ -24,9 +24,12 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - name: Check out source
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - name: Set up Python
-        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -42,27 +45,34 @@ jobs:
         run: python -m pip install --no-build-isolation --requirement requirements/ci.txt
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install optional audio-authoring test dependencies
+        run: python -m pip install --no-build-isolation -e ".[audio-authoring]"
+      - name: Check installed dependency consistency
+        run: python -m pip check
       - name: Run repository gate
         env:
           SDL_AUDIODRIVER: dummy
           SDL_VIDEODRIVER: dummy
           SOURCE_DATE_EPOCH: "1704067200"
         run: ./scripts/omega release-check
-      - name: Confirm generated evidence is current
-        run: git diff --exit-code -- assets dist/web
+      - name: Confirm generated art and audio are current
+        # Browser bundles include current Git-derived credits and are rebuilt
+        # per commit; comparing them with a bundle from the parent cannot pass.
+        run: git diff --exit-code -- assets
 
   native-artifact:
     name: Native Linux artifact
-    needs: test
+    needs: [test, website]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Check out source
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Set up Python
-        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
           cache: pip
@@ -104,18 +114,18 @@ jobs:
         env:
           SOURCE_DATE_EPOCH: "1704067200"
         run: |
-          ./scripts/omega web
+          ./scripts/omega web --web-out .local/release-web
           ./scripts/omega audit-release \
             --require-clean \
             --report-only \
             --build-distributions \
             --vulnerability-report dist/audit-local/pip-audit.json \
             --artifact native=dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz \
-            --artifact web=dist/web
+            --artifact web=.local/release-web
       - name: Retain bundle and checksum
         id: retain-artifact
         continue-on-error: true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: omega-omarchy-native-linux-x86_64
           path: |
@@ -133,12 +143,54 @@ jobs:
         env:
           RETENTION_OUTCOME: ${{ steps.retain-artifact.outcome }}
         run: |
-          if [[ "$RETENTION_OUTCOME" != "success" ]]; then
+          if [[ "$RETENTION_OUTCOME" == "failure" ]]; then
             echo "::warning title=Artifact retention unavailable::" \
-              "The clean bundle passed verification but was not retained; check account storage quota."
+              "Artifact upload failed; check the upload log and account storage quota."
             {
               echo "### Artifact retention unavailable"
-              echo "The clean bundle passed verification but upload failed."
+              echo "Artifact upload failed. Check the preceding build and verification results."
               echo "Check the account-wide Actions storage quota."
             } >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$RETENTION_OUTCOME" != "success" ]]; then
+            echo "Artifact upload was not attempted; inspect the preceding job steps." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  website:
+    name: Website and editor checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Install build tools
+        run: |
+          python -m pip install -r requirements/bootstrap.txt
+          python -m pip install --no-build-isolation -r requirements/ci.txt
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Check browser JavaScript and shell syntax
+        run: |
+          for script in website/*.js website/*.mjs; do node --check "$script"; done
+          bash -n scripts/omega
+      - name: Test website motion, news, and editor state
+        run: |
+          node --test website/motion.test.mjs website/news.test.mjs tests/level_editor_state.test.cjs
+          python -m unittest discover -s website -p 'test_*.py'
+      - name: Build and validate the public website
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+          SOURCE_DATE_EPOCH: "1704067200"
+        run: |
+          ./scripts/omega website --out .local/website-check
+          python website/check.py --directory .local/website-check

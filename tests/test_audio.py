@@ -13,6 +13,7 @@ from omega_omarchy.audio import (
     normalize_audio_settings,
 )
 from omega_omarchy.audio_build import _emit_sfx_masters
+from omega_omarchy.campaign import chapter_by_id
 from omega_omarchy.physics import InputState
 from omega_omarchy.runtime_assets import asset_dir
 from omega_omarchy.sim import GameSim
@@ -31,8 +32,9 @@ def test_runtime_manifest_resolves_every_semantic_cue_at_every_tier():
     assert not {"installation-signal", "chapter-one", "boss-pressure"} & set(manifest["cues"])
     assert manifest["cues"]["credits-theme"]["loop"] is False
     assert manifest["sceneMusic"] == {
-        "chapter-credits": "credits-theme",
-        "credits": "credits-theme",
+        "chapter-credits": "credits-roll",
+        "credits": "credits-roll",
+        "ending": "credits-theme",
     }
     for cue in manifest["cues"].values():
         assert set(cue["files"]) == set(AUDIO_FIDELITIES)
@@ -129,8 +131,18 @@ def test_make_it_come_alive_is_reserved_for_credits():
     assert manager._desired_music("action", in_combat=False) is None
     assert manager._desired_music("installer", in_combat=False) is None
     assert manager._desired_music("turn", in_combat=True) is None
-    assert manager._desired_music("chapter-credits", in_combat=False) == "credits-theme"
-    assert manager._desired_music("credits", in_combat=False) == "credits-theme"
+    assert manager._desired_music("ending", in_combat=False) == "credits-theme"
+    assert manager._desired_music("chapter-credits", in_combat=False) == "credits-roll"
+    assert manager._desired_music("credits", in_combat=False) == "credits-roll"
+
+
+def test_omarchy_oligarchy_reference_is_not_a_runtime_cue():
+    # The optional reference master stays local pending redistribution rights;
+    # public checkouts must build and test without it.
+    assert "omarchy-oligarchy" not in json.loads(
+        (asset_dir() / "audio" / "audio-manifest.json").read_text(encoding="utf-8")
+    )["cues"]
+    assert "oligarchy" in chapter_by_id("walled-garden").events
 
 
 def test_missing_selected_tier_falls_back_without_stopping_play(tmp_path):

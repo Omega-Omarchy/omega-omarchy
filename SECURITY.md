@@ -2,18 +2,17 @@
 
 ## Supported versions
 
-There is no supported public release yet. The `main` branch of this repository and exact
-native artifacts produced from it receive security fixes during technical-alpha
-development. Older commits, local modifications, third-party packs, and the web
-preview are not independently supported versions.
+The `main` branch, the current game deployed at https://omegaomarchy.org/play/,
+and the latest native artifact built from `main` receive security fixes.
+Older snapshots, local modifications, and third-party content packs are not
+independently maintained versions. Include the affected commit or build when
+reporting an issue.
 
 ## Report privately
 
 Do not open a public issue, discussion, or pull request for a suspected
-vulnerability. Repository collaborators should use a private draft security
-advisory from the repository Security tab or contact the lead maintainer through
-the established private project channel. Before public cutover, GitHub private
-vulnerability reporting must be enabled and verified at:
+vulnerability. Use GitHub's private vulnerability reporting form, enabled for
+this public repository:
 
 <https://github.com/Omega-Omarchy/omega-omarchy/security/advisories/new>
 
@@ -25,6 +24,19 @@ transfer if they are essential.
 The target response is acknowledgment within three business days and an initial
 severity/scope decision within seven. Timelines for a fix and coordinated
 disclosure depend on impact and reproducibility. No bounty is currently offered.
+
+## Automated checks
+
+The repository workflows configure CodeQL for Python, JavaScript, and GitHub
+Actions on pull requests, `main`, and a weekly schedule. Dependency review
+rejects newly introduced known vulnerabilities, daily pip-audit jobs check
+the pinned runtime/release and audit toolchains, and Dependabot proposes
+weekly Python and Actions updates. The native release job also audits its
+dependency inventory and builds an SBOM. These checks do not publish the game.
+
+Maintainers should enable secret-scanning push protection and enforce the
+required checks described in [GitHub setup](docs/github-setup.md). Scheduled
+jobs need attention when they fail, even if there has been no recent commit.
 
 ## In scope
 

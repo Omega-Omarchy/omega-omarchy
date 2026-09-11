@@ -1,14 +1,25 @@
 from dataclasses import replace
 
+import pytest
+
 from omega_omarchy.campaign import CAMPAIGN_ROSTER
 from omega_omarchy.physics import TILE, InputState
 from omega_omarchy.sim import (
     BOSS_FIELD_HEALTH,
     BOSS_BEHAVIORS,
+    CANNON_BASE_HEIGHT,
+    CANNON_CAMERA_BIAS_RIGHT_TILES,
+    CANNON_CAMERA_BIAS_UP_TILES,
     CANNON_ENTRY_LOCK_TICKS,
+    CANNON_FLIGHT_CAMERA_BIAS_MAX_TILES,
+    CANNON_GROUND_SINK,
+    CANNON_MAX_ANGLE,
     CANNON_MAX_POWER,
     CANNON_MAX_CHARGE_TICKS,
+    CANNON_MIN_ANGLE,
     COW_LEVEL_FLOOR,
+    COW_LEVEL_HEIGHT,
+    COW_LEVEL_WIDTH,
     GOLIATH_FIRE_INTERVAL_MULTIPLIER,
     LEVEL_INTRO_HOLD_TICKS,
     LEVEL_INTRO_TICKS,
@@ -65,17 +76,17 @@ def test_install_completion_opens_skippable_animated_prologue():
 def test_prologue_has_eight_input_paced_story_beats_with_exact_requested_copy():
     assert len(PROLOGUE_BEATS) == 8
     assert len(PROLOGUE_PASSWORD) == 33
-    assert PROLOGUE_BEATS[0][0] == "The Omarch Thesis"
+    assert PROLOGUE_BEATS[0][0] == "THE OMARCH THESIS"
     assert PROLOGUE_BEATS[1][:2] == (
-        "The End of the Personal",
+        "THE END OF THE PERSONAL",
         "But Big Desktop and Little Napoleon joined forces to call personal a privilege — and ownership a security risk.",
     )
     assert PROLOGUE_BEATS[2][:2] == (
-        "The Reckoning",
+        "THE RECKONING",
         "The silent orbs ushered {character_name} toward the door. Choice would be erased. What-You-See-Is-What-You-Regret computing would persist.",
     )
     assert PROLOGUE_BEATS[3][:2] == (
-        "The Mind Machine",
+        "THE MIND MACHINE",
         "{character_name} was taken to a machine that previously existed only as a terrifying rumor.",
     )
     assert PROLOGUE_BEATS[4][1].startswith("They moved {character_name}'s consciousness")
@@ -167,7 +178,7 @@ def test_level_intro_holds_selection_then_reveals_the_loaded_level_under_white()
     assert sim.level_intro_target == 3
     assert sim.pending_chapter == 3
     assert sim.chapter_index == 0
-    assert LEVEL_INTRO_HOLD_TICKS == 120
+    assert LEVEL_INTRO_HOLD_TICKS == 180
 
     for _ in range(LEVEL_INTRO_WORLD_REVEAL_TICK - 1):
         sim.step(InputState(jump_pressed=True, pause=True))
@@ -209,6 +220,13 @@ def test_boss_fifteen_warps_use_boss_geometry_for_current_and_goliath_levels():
     assert boss_center_tiles - player_center_tiles == 15
 
 
+def _finish_boss_defeat(sim):
+    from omega_omarchy.sim import BOSS_SETTLE_TICKS, BOSS_DEFEAT_HOLD_TICKS
+    assert sim.scene == "boss-defeat"
+    for _ in range(BOSS_SETTLE_TICKS + BOSS_DEFEAT_HOLD_TICKS):
+        sim.step(InputState())
+
+
 def test_goliath_field_encounter_runs_penguin_duel_minions_then_surrender():
     sim = GameSim.from_play_now()
     sim.dev_warp("goliath-amalgam:boss-15")
@@ -221,6 +239,7 @@ def test_goliath_field_encounter_runs_penguin_duel_minions_then_surrender():
     assert boss.extra["base_cooldown"] == 64 * GOLIATH_FIRE_INTERVAL_MULTIPLIER
 
     assert sim._damage_side_enemy(boss, BOSS_FIELD_HEALTH)
+    _finish_boss_defeat(sim)
     assert sim.goliath_stage == "duel"
     assert boss.extra["converted"] is False
     assert boss.extra["hp"] == BOSS_FIELD_HEALTH
@@ -230,6 +249,7 @@ def test_goliath_field_encounter_runs_penguin_duel_minions_then_surrender():
     )
 
     assert sim._damage_side_enemy(boss, BOSS_FIELD_HEALTH)
+    _finish_boss_defeat(sim)
     minions = [entity for entity in sim.entities if entity.extra.get("goliath_minion")]
     assert sim.goliath_stage == "minions"
     assert boss.extra["converted"] is True
@@ -243,6 +263,8 @@ def test_goliath_field_encounter_runs_penguin_duel_minions_then_surrender():
     for index, minion in enumerate(minions, start=1):
         assert sim._damage_side_enemy(minion, 5)
         assert sim.goliath_minions_defeated == index
+        if index == 2:
+            _finish_boss_defeat(sim)
         assert sim.ending is (index == 2)
     assert sim.goliath_stage == "surrendered"
     assert "goliath" in sim.converted
@@ -264,6 +286,7 @@ def test_goliath_rpg_conversion_advances_one_phase_instead_of_ending_early():
     assert sim.combat.foe.id == "goliath-cyborg-penguin"
     sim.combat = replace(sim.combat, foe=replace(sim.combat.foe, converted=True))
     sim._finish_combat(converted=True)
+    _finish_boss_defeat(sim)
     assert sim.goliath_stage == "duel"
     assert sim.scene == "action"
     assert "goliath" not in sim.converted
@@ -273,6 +296,7 @@ def test_goliath_rpg_conversion_advances_one_phase_instead_of_ending_early():
     assert sim.combat.foe.id == "goliath"
     sim.combat = replace(sim.combat, foe=replace(sim.combat.foe, converted=True))
     sim._finish_combat(converted=True)
+    _finish_boss_defeat(sim)
     assert sim.goliath_stage == "minions"
     assert len([entity for entity in sim.entities if entity.extra.get("goliath_minion")]) == 2
     assert sim.ending is False
@@ -319,6 +343,14 @@ def test_five_omega_blocks_open_a_door_to_the_cow_level():
     sim.step(InputState(up=True, up_pressed=True))
     assert sim.map_index == sim.secret_map_index
     assert sim.active_palette == "cow"
+    exits = [
+        entity
+        for entity in sim.entities
+        if entity.kind == "omega-door" and entity.extra.get("exit")
+    ]
+    assert len(exits) == 2
+    assert min(entity.x for entity in exits) < 8
+    assert max(entity.x for entity in exits) >= COW_LEVEL_WIDTH - 4
     assert sim.omega_letters == "", "the Cow Level begins a fresh OMEGA accounting run"
     assert sim.omega_door_spawned, "resetting OMEGA must not revoke the existing route"
     animals = [
@@ -340,8 +372,15 @@ def test_cow_level_breaks_up_its_foundation_with_a_step_and_low_ground():
     spec = GameSim._cow_level_spec()
     tiles = spec["tiles"]
     floor = COW_LEVEL_FLOOR
-    assert len(tiles) == 36 and len(tiles[0]) == 236
+    assert len(tiles) == COW_LEVEL_HEIGHT and len(tiles[0]) == COW_LEVEL_WIDTH
     assert all(tiles[floor - 1][x] == "#" for x in range(45, 51))
+    winds = spec["windColumns"]
+    assert winds
+    assert all(int(column["y"]) + int(column["height"]) == floor for column in winds)
+    assert tiles[floor - 1][7] == "."
+    assert tiles[floor - 2][7] == "="
+    assert tiles[floor - 3][7] == "^"
+    assert all(tiles[floor - 2][x] == "=" for x in (6, 7, 8))
     assert all(tiles[floor][x] == "." for x in range(90, 97))
     assert sum(row.count("B") for row in tiles) >= 35
     assert sum(row[108:].count("B") for row in tiles) >= 15
@@ -365,6 +404,9 @@ def test_cow_cannon_loads_aims_charges_and_breaks_unbreakable_contacts():
     assert low_geometry["base"] == high_geometry["base"]
     assert low_geometry["pivot"] == high_geometry["pivot"]
     assert low_geometry["muzzle"] != high_geometry["muzzle"]
+    assert low_geometry["base"][1] == pytest.approx(
+        (cannon.y + 1) * TILE + CANNON_GROUND_SINK - CANNON_BASE_HEIGHT
+    )
     hatch_x, hatch_y = cow_cannon_geometry(cannon, sim.cannon_angle)["hatch"]
     sim.body = replace(
         sim.body,
@@ -377,6 +419,10 @@ def test_cow_cannon_loads_aims_charges_and_breaks_unbreakable_contacts():
     sim.step(InputState())
     assert sim.cannon_loaded
     assert sim.cannon_entry_lock_ticks == CANNON_ENTRY_LOCK_TICKS
+    idle_x, idle_y = sim.body.center[0] - 160.0, sim.body.center[1] - 90.0
+    cam_x, cam_y = sim.camera_target()
+    assert cam_x == pytest.approx(idle_x + CANNON_CAMERA_BIAS_RIGHT_TILES * TILE)
+    assert cam_y == pytest.approx(idle_y - CANNON_CAMERA_BIAS_UP_TILES * TILE)
 
     # A held entry jump cannot spill into charge; a fresh post-lock press can.
     sim.step(InputState(jump=True, jump_pressed=True))
@@ -425,6 +471,44 @@ def test_cow_cannon_loads_aims_charges_and_breaks_unbreakable_contacts():
     sim._step_action(InputState())
     assert not sim.cannon_launch_active
     assert all("CANNON RUN COMPLETE" not in message for message in sim.messages)
+
+
+def test_cannon_flight_camera_looks_further_up_on_steep_shots():
+    sim = GameSim.from_play_now()
+    sim.dev_warp("cow")
+    assert sim.body is not None
+    sim.body = replace(sim.body, x=80 * TILE, y=24 * TILE, vx=2.0, vy=-2.0, on_ground=False)
+    sim.cannon_loaded = False
+    sim.cannon_launch_active = True
+    sim.cannon_angle = CANNON_MIN_ANGLE
+    flat_x, flat_y = sim.camera_target()
+    sim.cannon_angle = CANNON_MAX_ANGLE
+    steep_x, steep_y = sim.camera_target()
+    assert steep_y < flat_y
+    assert steep_x > sim.body.center[0] - 160.0
+    assert (sim.body.center[1] - 90.0) - steep_y >= (CANNON_FLIGHT_CAMERA_BIAS_MAX_TILES * 0.7) * TILE
+
+
+def test_cow_hatch_stoop_lets_a_slide_reach_the_left_exit():
+    sim = GameSim.from_play_now()
+    sim.dev_warp("cow")
+    assert sim.body is not None
+    floor = COW_LEVEL_FLOOR
+    sim.body = replace(
+        sim.body,
+        x=7 * TILE + 3,
+        y=floor * TILE - 12,
+        vx=-2.4,
+        vy=0.0,
+        on_ground=True,
+        sliding=True,
+        height=12,
+        facing=-1,
+    )
+    start_x = sim.body.x
+    sim._step_action(InputState(left=True, down=True))
+    assert sim.body.x < start_x
+    assert sim.body.vy >= 0, "the raised hatch bumper must not bounce a sliding pass"
 
 
 def test_cannon_launch_ends_when_landing_on_a_moving_platform():

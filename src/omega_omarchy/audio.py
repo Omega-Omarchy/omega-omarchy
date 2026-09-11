@@ -252,7 +252,9 @@ class AudioManager:
             return False
 
     def _desired_music(self, scene: str, *, in_combat: bool) -> str | None:
-        if scene in {"pause", "audio-settings", "items", "remap", "customize"}:
+        if scene in {"pause", "audio-settings", "items", "remap", "customize", "boss-defeat"}:
+            if self.music_cue == "credits-roll":
+                return None
             return self.music_cue or None
         table = self.manifest.get("sceneMusic")
         if isinstance(table, dict):

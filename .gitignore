@@ -36,8 +36,11 @@ Thumbs.db
 /build/
 /dist/audit-local/
 /dist/native-local/
+/dist/website/
 /dist/*.tar.gz
 /dist/*.sha256
+# Local music reference awaiting the documented redistribution permission.
+/assets/source/audio/music/omarchy-oligarchy/
 
 # Machine-local VM/ISO artifacts (never commit)
 *.iso

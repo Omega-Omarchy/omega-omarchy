@@ -11,7 +11,7 @@ from .reachability import find_boss, find_spawn, normalize_ladder_tiles, validat
 MAX_OPS = 24
 MAX_PLACED = 16
 ALLOWED_TILES = {".", "=", "#", "L", "+", "^"}
-FORBIDDEN_REMOVE = {"S", "X", "!"}
+FORBIDDEN_REMOVE = {"S", "X", "!", "K"}
 OP_KINDS = {"place", "remove", "move", "mirror"}
 
 

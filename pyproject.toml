@@ -18,6 +18,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+audio-authoring = [
+  "librosa>=0.11,<0.12",
+  "soundfile>=0.13,<0.14",
+  "scipy>=1.14,<2",
+]
 dev = [
   "pytest==9.0.3",
 ]
@@ -52,7 +57,7 @@ addopts = "-q"
 pythonpath = ["src"]
 
 [tool.omega-omarchy]
-generator_version = "3.8.0"
+generator_version = "3.10.0"
 schema_version = "1.0.0"
 fixture_seed = "omega-fixture-1"
 internal_width = 320

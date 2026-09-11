@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="tokyo-night">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1a1b26">
+  <meta name="description" content="Omega Omarchy news, releases, and development updates direct from the repository.">
+  <title>News — Omega Omarchy</title>
+  <meta property="og:title" content="News — Omega Omarchy">
+  <meta property="og:description" content="Announcements, releases, and the latest work on the corrupted install.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://omegaomarchy.org/news/">
+  <meta property="og:image" content="https://omegaomarchy.org/assets/social-one-choice-og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:alt" content="Omega Omarchy: One choice? Think again. Goliath looms beside the green Omega emblem.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://omegaomarchy.org/assets/social-one-choice-x.png">
+  <meta name="twitter:image:alt" content="Omega Omarchy: One choice? Think again. The revolution will be customized.">
+  <link rel="canonical" href="https://omegaomarchy.org/news/">
+  <link rel="icon" href="/assets/icon.png" type="image/png">
+  <link rel="stylesheet" href="/style.css">
+  <script>try{const t=localStorage.getItem('omega-site-theme');if(['tokyo-night','everforest','gruvbox'].includes(t))document.documentElement.dataset.theme=t}catch{}</script>
+  <script src="/theme.js" defer></script>
+  <script type="module" src="/news.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<!-- SITE_HEADER -->
+<main id="main" class="news-page wrap">
+  <h1 class="news-accessible-title">News</h1>
+  <div class="news-toolbar">
+    <div id="news-filters" class="control-group" role="group" aria-label="Filter news" hidden>
+      <button type="button" data-news-filter="all" aria-pressed="true">All</button>
+      <button type="button" data-news-filter="news" aria-pressed="false">News</button>
+      <button type="button" data-news-filter="release" aria-pressed="false">Releases</button>
+      <button type="button" data-news-filter="commit" aria-pressed="false">Commits</button>
+    </div>
+    <a class="text-link" href="https://github.com/Omega-Omarchy/omega-omarchy">View repository ↗</a>
+  </div>
+  <p id="news-status" class="news-status" role="status">Repository history included with this site.</p>
+  <noscript><p class="news-status">This page includes repository history from the latest site build. Enable JavaScript for live GitHub updates and filters.</p></noscript>
+  <div id="news-feed" class="news-feed"><!-- NEWS_ENTRIES --></div>
+  <p id="news-empty" class="news-empty" hidden>No entries in this category yet.</p>
+  <div class="news-bottom"><a class="text-link" href="/">← Back to the game</a><a class="text-link" href="https://github.com/Omega-Omarchy/omega-omarchy/releases">All releases ↗</a><a class="text-link" href="https://github.com/Omega-Omarchy/omega-omarchy/commits/HEAD/">Full commit history ↗</a></div>
+</main>
+<!-- SITE_FOOTER -->
+<script id="news-snapshot" type="application/json"><!-- NEWS_DATA --></script>
+</body>
+</html>

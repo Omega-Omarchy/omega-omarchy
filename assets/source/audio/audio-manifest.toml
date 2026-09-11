@@ -7,8 +7,8 @@ title = "Make It Come Alive"
 source_container = "Make It Come Alive.mp4"
 source_container_sha256 = "c503516eea6d201b0d4db6ce1329581aeadf44642faedeb3e23949a905c7a0ec"
 decoded_master_sha256 = "3763901165fe93bf3660d450faa8940fbd19df6a6236196f19578a03aa198e32"
-provenance = "Maintainer supplied for the private development build."
-rights = "Public redistribution must be confirmed during the audio rights audit."
+provenance = "Maintainer supplied; creator permission reported by the maintainer."
+rights = "Creator granted use with or without attribution. Archive the permission exchange and verify that public source-master redistribution is within scope before cutover."
 
 [[music]]
 id = "credits-theme"
@@ -19,6 +19,45 @@ end = 233.360544
 loop = false
 sixteen_bit_style = "snes"
 gain = 0.82
+
+[music.prepared.sixteen-bit]
+file = "music/make-it-come-alive/accepted/sixteen-bit.ogg"
+sha256 = "a412036106613066adf2b1e70570dfff008412a68813823288518ccb4fd04482"
+loop = false
+
+[music.prepared.high]
+file = "music/make-it-come-alive/accepted/high.ogg"
+sha256 = "8b4a23612f2f88030c2c8382269c3e5a76c8505e6f6d316e77789cc68629c731"
+loop = false
+
+[music.prepared.ultra]
+file = "music/make-it-come-alive/accepted/ultra.ogg"
+sha256 = "5aa8d30eca2056a7ce9d3577d7b95ce7bffecadabf79c20a68144d359906e286"
+loop = false
+
+[[music]]
+id = "credits-roll"
+bus = "music"
+caption = "Music: Super Key Love — Jeremy Dixon"
+start = 0.0
+end = 429.863991
+loop = false
+gain = 0.82
+
+[music.prepared.sixteen-bit]
+file = "music/super-key-love/sixteen-bit.ogg"
+sha256 = "efdfa8fe49806441b9eee7ca5764924ad1a2701a612ba96ac10be1d5da539e22"
+loop = false
+
+[music.prepared.high]
+file = "music/super-key-love/high.ogg"
+sha256 = "f80b587e39157b1d70f08b1f157ac69416d19bfd7e45e5a75e9dd6756941f749"
+loop = false
+
+[music.prepared.ultra]
+file = "music/super-key-love/ultra.ogg"
+sha256 = "90d965c61b0eaa85f53e2fc6d9f39ae419cc552cbc5f4461408d01ece0876983"
+loop = false
 
 [[sfx]]
 id = "ui"
@@ -77,5 +116,6 @@ priority = 7
 max_voices = 4
 
 [scene_music]
-chapter-credits = "credits-theme"
-credits = "credits-theme"
+chapter-credits = "credits-roll"
+credits = "credits-roll"
+ending = "credits-theme"

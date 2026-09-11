@@ -28,8 +28,20 @@ def test_web_stage_contains_authoritative_runtime_and_bounded_art(tmp_path):
     assert "import pygame" in source
     assert (stage / "omega_omarchy" / "sim.py").is_file()
     assert (stage / "omega_omarchy" / "render.py").is_file()
+    assert (stage / "assets/ui/social/goliath-profile.png").is_file()
     assert not (stage / "omega_omarchy" / "assets.py").exists()
+    assert not (stage / "omega_omarchy" / "character_build.py").exists()
+    assert (stage / "omega_omarchy" / "character_pack.py").is_file()
+    assert (stage / "assets/character-creation/agent-kit.zip").is_file()
+    for character in ("omarch-king", "omarch-queen"):
+        assert (stage / "assets/character-packs" / character / "manifest.json").is_file()
+        assert (stage / "assets/character-packs" / character / "ultra/prologue-transfer.png").is_file()
     assert not (stage / "omega_omarchy" / "audio_build.py").exists()
+    assert not (stage / "omega_omarchy" / "credits_build.py").exists()
+    assert (stage / "omega_omarchy/data/credits.json").is_file()
+    assert (stage / "assets/ui/credits/credits-sans.otf").is_file()
+    assert (stage / "assets/audio/ultra/music/credits-roll.ogg").is_file()
+    assert not (stage / "omega_omarchy" / "music_diagnostic.py").exists()
     assert not (stage / "assets" / "source").exists()
     assert (stage / "assets" / "audio" / "audio-manifest.json").is_file()
     for fidelity in ("sixteen-bit", "high", "ultra"):

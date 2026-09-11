@@ -16,6 +16,7 @@ from .identity import GENERATOR_VERSION, SCHEMA_VERSION
 # . empty  # solid  = platform  B block  D kick-break tile  P penguin  S spawn
 # X boss-anchor  L ladder  + ladder/deck crossing  ^ bumper  O omarchy-logo  E enemy  ! progression-anchor
 # H hidden-penguin (optional, not required)  C collectible-item  G gate
+# I invisible solid platform  K unbreakable workshop-skyway separator
 #
 # Jump envelope: ~3 tiles high, 3-tile gaps are jumpable; 8-tile gaps are not.
 # Chapter one is a single authored map, not concatenated 20x12 scraps.
@@ -28,7 +29,17 @@ def _rows(*lines: str) -> tuple[str, ...]:
     return lines
 
 
-# Later-chapter chunks stay 20x12. Chapter one is a single authored map.
+# Later-chapter scaffolding is padded to a playable sky, not a 12-row strip.
+AUTHORED_CHUNK_HEIGHT = 34
+CHAPTER_ONE_SKY = 12
+
+
+def _pad_sky(rows: tuple[str, ...], height: int = AUTHORED_CHUNK_HEIGHT) -> tuple[str, ...]:
+    width = len(rows[0])
+    missing = height - len(rows)
+    if missing <= 0:
+        return rows
+    return ('.' * width,) * missing + rows
 
 
 def _chunk(
@@ -124,7 +135,8 @@ def _freeze(grid: list[list[str]]) -> tuple[str, ...]:
 def _c1_authored() -> tuple[str, ...]:
     """First level: ~5–8 minutes of authored beats on one map.
 
-    Ground walkway is row 16 (solid at 17). Pits drop to row 18 (solid at 19).
+    Ground walkway is row 16 (solid at 17) in the original 22-row sketch.
+    Empty sky is prepended so the authored map has a second story of air.
     The OMARCHY logo lives on an upper route; a sealed crate holds a secret
     penguin that ordinary jumping cannot reach.
     """
@@ -213,6 +225,8 @@ def _c1_authored() -> tuple[str, ...]:
     _vline(g, 196, 10, 16, "#")
     _hline(g, 175, 198, 9, "=")
 
+    if CHAPTER_ONE_SKY:
+        g = [["." for _ in range(w)] for _ in range(CHAPTER_ONE_SKY)] + g
     return _freeze(g)
 
 
@@ -366,18 +380,20 @@ def authored_chunks() -> list[dict[str, Any]]:
         "goliath-amalgam": [_core(), _flat(), _gap()],
     }
     for chapter in CAMPAIGN_ROSTER[1:]:
-        chunks.append(_chunk(f"{chapter.id}-start", chapter.id, "start", _start_for(chapter.id)))
+        chunks.append(_chunk(f"{chapter.id}-start", chapter.id, "start", _pad_sky(_start_for(chapter.id))))
         for index, tiles in enumerate(mids[chapter.id]):
             role = "mid"
-            chunks.append(_chunk(f"{chapter.id}-mid-{index}", chapter.id, role, tiles))
-        chunks.append(_chunk(f"{chapter.id}-boss", chapter.id, "boss", _boss_arena(chapter.id), tags=("boss",)))
+            chunks.append(_chunk(f"{chapter.id}-mid-{index}", chapter.id, role, _pad_sky(tiles)))
+        chunks.append(
+            _chunk(f"{chapter.id}-boss", chapter.id, "boss", _pad_sky(_boss_arena(chapter.id)), tags=("boss",))
+        )
     # Dedicated optional logo chunk reused in test mode for later chapters.
     chunks.append(
         _chunk(
             "shared-optional-logo",
             "shared",
             "optional",
-            _c1_secret(),
+            _pad_sky(_c1_secret()),
             tags=("secret", "logo"),
         )
     )

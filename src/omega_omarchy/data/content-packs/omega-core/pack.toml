@@ -2,7 +2,7 @@ id = "omega-core-1"
 version = "1.0.0"
 schemaVersion = "1.0.0"
 gameSchemaVersion = "1.0.0"
-generatorVersion = "3.8.0"
+generatorVersion = "3.12.0"
 license = "LicenseRef-Omega-Private-Alpha"
 authors = ["Omega Omarchy contributors"]
 entryPoints = ["chapters/corrupted-install.json"]
@@ -11,7 +11,7 @@ loadAfter = []
 loadBefore = []
 loadOrder = 0
 capabilities = ["chapter-profile"]
-contentDigest = "sha256:37d63a90bda91e801d65a3f20bd7aedc9bd014e8f1e8714baf050b6eba416029"
+contentDigest = "sha256:59861491da7ae41b32fc267661961eed19135e47ecb6584886a416435f379cd7"
 
 [[files]]
 path = "ATTRIBUTION.md"
@@ -27,6 +27,6 @@ mediaType = "text/plain"
 
 [[files]]
 path = "chapters/corrupted-install.json"
-digest = "sha256:3d1ecdb90080d1b6b105f1d13c5adea7280f2f8d02ad50d2698ecf9cf9e9e233"
+digest = "sha256:150917ab2492d68b764b4ffc5bf59d45f5d9a654a7c758ace0b18274266801e9"
 bytes = 1004
 mediaType = "application/json"

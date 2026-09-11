@@ -31,6 +31,9 @@ from .combat import (
     CombatState,
 )
 from .generation import SealedWorld, generate_world
+from .edit_challenge import cache_goal
+from .reachability import normalize_ladder_tiles, reachable_from
+from .skyway import add_skyway
 from pathlib import Path
 
 from .content import ContentCompatibilityError, load_content, require_exact_content
@@ -60,6 +63,9 @@ from .presentation import CHAR_WORLD_HEIGHT, apply_presentation, crt_controls, c
 
 FLIGHT_TICKS = 36
 NETWORK_TICKS = 54
+SKYWAY_TRANSFER_TICKS = 24
+BOSS_SETTLE_TICKS = 48
+BOSS_DEFEAT_HOLD_TICKS = 180
 STARTING_INVENTORY = ("logic-bomb", "logic-bomb", "patch-cable")
 STARTING_ITEM_STRENGTH = 25
 MAX_ITEM_STRENGTH = 100
@@ -90,7 +96,7 @@ CHAPTER_COMPLETE_TALLY_TICKS = 42
 LEVEL_INTRO_MAP_FADE_TICKS = 18
 LEVEL_INTRO_WHITE_HOLD_TICKS = 6
 LEVEL_INTRO_BUILD_TICKS = 72
-LEVEL_INTRO_HOLD_TICKS = 120
+LEVEL_INTRO_HOLD_TICKS = 180
 LEVEL_INTRO_EXIT_FADE_TICKS = 18
 LEVEL_INTRO_EXIT_HOLD_TICKS = 8
 LEVEL_INTRO_LEVEL_FADE_TICKS = 24
@@ -108,7 +114,7 @@ GUST_INFLUENCE_TILES = 1.4
 GUST_MAX_PULL = 1.15
 GUST_CENTER_DEAD_ZONE = 2.0
 COW_LEVEL_WIDTH = 236
-COW_LEVEL_HEIGHT = 36
+COW_LEVEL_HEIGHT = 64
 COW_LEVEL_FLOOR = COW_LEVEL_HEIGHT - 4
 CANNON_BARREL_WIDTH = 152.0
 CANNON_BARREL_HEIGHT = 76.0
@@ -132,6 +138,11 @@ CANNON_ENTRY_X_TOLERANCE = 22.0
 CANNON_ENTRY_Y_TOLERANCE = 24.0
 CANNON_MIN_POWER = 7.2
 CANNON_MAX_POWER = 19.8
+CANNON_CAMERA_BIAS_RIGHT_TILES = 9
+CANNON_CAMERA_BIAS_UP_TILES = 4
+CANNON_GROUND_SINK = TILE / 3
+CANNON_FLIGHT_CAMERA_BIAS_MIN_TILES = 0.0
+CANNON_FLIGHT_CAMERA_BIAS_MAX_TILES = 3.0
 BOSS_FIELD_HEALTH = 30
 BATTLE_INTER_ACTION_TICKS = 8
 GOLIATH_STAGES = ("penguin", "duel", "minions", "surrendered")
@@ -141,22 +152,22 @@ BOSS_GATE_GLYPHS = frozenset({"G", "g"})
 
 PROLOGUE_BEATS: tuple[tuple[str, str, str], ...] = (
     (
-        "The Omarch Thesis",
+        "THE OMARCH THESIS",
         "{character_name} believed a computer should become more personal every time its owner changed it.",
         "title",
     ),
     (
-        "The End of the Personal",
+        "THE END OF THE PERSONAL",
         "But Big Desktop and Little Napoleon joined forces to call personal a privilege — and ownership a security risk.",
         "orb-capture",
     ),
     (
-        "The Reckoning",
+        "THE RECKONING",
         "The silent orbs ushered {character_name} toward the door. Choice would be erased. What-You-See-Is-What-You-Regret computing would persist.",
         "orb-door",
     ),
     (
-        "The Mind Machine",
+        "THE MIND MACHINE",
         "{character_name} was taken to a machine that previously existed only as a terrifying rumor.",
         "orb-machine",
     ),
@@ -269,7 +280,7 @@ def cow_cannon_geometry(entity: Entity, angle: float) -> dict[str, tuple[float, 
     """Return shared base/barrel anchors for the Cow Level cannon."""
 
     left = entity.x * TILE
-    ground = (entity.y + 1) * TILE
+    ground = (entity.y + 1) * TILE + CANNON_GROUND_SINK
     pivot = (
         left + CANNON_BASE_WIDTH * CANNON_BASE_PIVOT[0],
         ground - CANNON_BASE_HEIGHT + CANNON_BASE_HEIGHT * CANNON_BASE_PIVOT[1],
@@ -290,6 +301,7 @@ def cow_cannon_geometry(entity: Entity, angle: float) -> dict[str, tuple[float, 
     return {
         "pivot": pivot,
         "base": (left, ground - CANNON_BASE_HEIGHT),
+        "ground": (left, ground),
         "hatch": rotate(CANNON_HATCH),
         "muzzle": rotate(CANNON_MUZZLE),
     }
@@ -307,6 +319,7 @@ class GameSim:
     entities: list[Entity] = field(default_factory=list)
     chapter_map_tiles: list[list[str]] = field(default_factory=list)
     chapter_map_originals: list[list[str]] = field(default_factory=list)
+    chapter_map_upper: list[dict[str, Any]] = field(default_factory=list)
     chapter_map_entities: list[list[Entity]] = field(default_factory=list)
     map_index: int = 0
     inventory: list[str] = field(default_factory=lambda: list(STARTING_INVENTORY))
@@ -334,6 +347,9 @@ class GameSim:
     oligarchy: bool = False
     ending: bool = False
     credits: bool = False
+    credits_ticks: int = 0
+    credits_elapsed: float = 0.0
+    credits_return_scene: str = "pause"
     tick: int = 0
     settings: dict[str, Any] = field(default_factory=dict)
     ghosts: list[dict[str, Any]] = field(default_factory=list)
@@ -370,6 +386,11 @@ class GameSim:
     floaters: list[dict[str, Any]] = field(default_factory=list)
     edit_tile_index: int = 0
     edit_reward: tuple[int, int] | None = None
+    edit_start: tuple[int, int] = (0, 0)
+    edit_baseline_reachable: set[tuple[int, int]] = field(default_factory=set)
+    edit_reachable: set[tuple[int, int]] = field(default_factory=set)
+    edit_new_reachable: set[tuple[int, int]] = field(default_factory=set)
+    edit_goal_ready: bool = False
     edit_move_cooldown: int = 0
     debug_hitboxes: bool = False
     post_boss_ticks: int = 0
@@ -388,7 +409,12 @@ class GameSim:
     battle_delay_ticks: int = 0
     battle_actor: str = ""
     battle_flash_ticks: int = 0
+    battle_stage_ticks: int = 0
+    battle_player_action: str = "reason"
+    boss_defeat: dict[str, Any] = field(default_factory=dict)
+    boss_defeat_ticks: int = 0
     network_ticks: int = 0
+    network_start: tuple[float, float] = (0.0, 0.0)
     network_operation: str = ""
     network_protocol: str = ""
     network_destination: tuple[int, int] = (0, 0)
@@ -607,6 +633,8 @@ class GameSim:
             "f8",
             "f9",
             "f10",
+            "f11",
+            "f12",
         }:
             self.remap_feedback = "That key is reserved for QA. Choose another."
             return True
@@ -934,7 +962,7 @@ class GameSim:
         self.enemy_projectiles = [shot for shot in self.enemy_projectiles if shot.get("boss") != "goliath"]
         self.entities[:] = [entity for entity in self.entities if not entity.extra.get("goliath_minion")]
         self._spawn_goliath_minions(self.entities, boss)
-        self.messages.append("@goliath_placeholder blocked you on X — two proxy accounts deploy.")
+        self.messages.append("@goliathfyi blocked you on X — two proxy accounts deploy.")
         self.flash_ticks = 16
         self.flash_kind = "combat"
         self.note("hit")
@@ -972,7 +1000,7 @@ class GameSim:
         self.messages.append("Both proxy accounts collapse. Out of minions, Goliath surrenders.")
         self._award_score(3500, "Goliath surrender")
         self.note("convert")
-        self._advance_after_boss("goliath")
+        self._begin_boss_defeat(boss, "goliath")
 
     def _tick_particles(self) -> None:
         live = []
@@ -1637,17 +1665,20 @@ class GameSim:
         for x in range(90, 97):
             grid[floor][x] = "."
         grid[floor - 1][4] = "S"
-        # A first bumper makes the cannon's high rear hatch reachable, while
-        # the remaining launch lanes keep the herd route moving after landing.
-        for x in (7, 27, 56, 88, 122, 158, 196, 224):
+        # Hatch bumper sits on a one-tile stoop so a slide still clears the
+        # walkway to the left-hand EXIT. Remaining bumpers keep launch lanes.
+        for x in (6, 7, 8):
+            grid[floor - 2][x] = "="
+        grid[floor - 3][7] = "^"
+        for x in (27, 56, 88, 122, 158, 196, 224):
             grid[floor - 1][x] = "^"
         for x0, y, length in (
             (34, floor - 7, 10),
             (69, floor - 12, 12),
             (111, floor - 8, 9),
-            (141, floor - 15, 14),
+            (141, floor - 22, 14),
             (181, floor - 9, 11),
-            (209, floor - 13, 14),
+            (209, floor - 18, 14),
         ):
             for x in range(x0, x0 + length):
                 grid[y][x] = "="
@@ -1665,7 +1696,7 @@ class GameSim:
                 y = round(y_pixels / TILE)
                 if y >= floor:
                     break
-                if 2 <= y < floor and grid[y][x] == ".":
+                if 20 <= y < floor and grid[y][x] == ".":
                     grid[y][x] = "C" if (x + arc_index) % 4 == 0 else "B"
 
         # Beyond the cannon arena the secret route follows ordinary placement
@@ -1681,7 +1712,7 @@ class GameSim:
             if grid[floor - 4][x] == ".":
                 grid[floor - 4][x] = "B"
         for platform_index, (x0, y, length) in enumerate(
-            ((111, floor - 8, 9), (141, floor - 15, 14), (181, floor - 9, 11), (209, floor - 13, 14))
+            ((111, floor - 8, 9), (141, floor - 22, 14), (181, floor - 9, 11), (209, floor - 18, 14))
         ):
             penguin_x = x0 + length // 2
             grid[y - 1][penguin_x] = "P"
@@ -1698,10 +1729,10 @@ class GameSim:
             "tiles": ["".join(row) for row in grid],
             "palette": "cow",
             "windColumns": [
-                {"x": 52, "y": 17, "width": 2, "height": 15, "strength": 0.52},
-                {"x": 101, "y": 13, "width": 2, "height": 19, "strength": 0.48},
-                {"x": 164, "y": 11, "width": 2, "height": 21, "strength": 0.56},
-                {"x": 220, "y": 12, "width": 2, "height": 20, "strength": 0.52},
+                {"x": 52, "y": floor - 22, "width": 2, "height": 22, "strength": 0.52},
+                {"x": 101, "y": floor - 26, "width": 2, "height": 26, "strength": 0.48},
+                {"x": 164, "y": floor - 28, "width": 2, "height": 28, "strength": 0.56},
+                {"x": 220, "y": floor - 24, "width": 2, "height": 24, "strength": 0.52},
             ],
             "movingPlatforms": [
                 {"x": 59, "y": floor - 8, "width": 5, "axis": "vertical", "range": 4, "phase": 0.2},
@@ -1713,10 +1744,22 @@ class GameSim:
         if 0 <= self.secret_map_index < len(self.chapter_map_tiles):
             return self.secret_map_index
         spec = self._cow_level_spec()
+        spec["tiles"], spec["upperTraversal"] = add_skyway(list(spec["tiles"]), self.world.identity.seed + ":cow", "cow", pad=False)
+        # An optional workshop shelf by the far exit keeps the cannon's
+        # launch lane clear while giving this independently mounted map access.
+        rows = list(spec["tiles"])
+        ex, ey = COW_LEVEL_WIDTH - 14, COW_LEVEL_FLOOR - 4
+        for x in range(ex - 2, ex + 3):
+            rows[ey + 1] = rows[ey + 1][:x] + "=" + rows[ey + 1][x + 1:]
+        rows[ey] = rows[ey][:ex] + "O" + rows[ey][ex + 1:]
+        spec["tiles"] = rows
         tiles = list(spec["tiles"])
         entities = self._entities_for_map(tiles, self.chapter, spec, self.chapter_index)
         floor = COW_LEVEL_FLOOR
         entities.append(Entity("omega-door", 2, floor - 1, extra={"exit": True, "secret": True}))
+        entities.append(
+            Entity("omega-door", COW_LEVEL_WIDTH - 4, floor - 1, extra={"exit": True, "secret": True})
+        )
         entities.append(
             Entity(
                 "cow-cannon",
@@ -1749,6 +1792,7 @@ class GameSim:
         self.secret_map_index = len(self.chapter_map_tiles)
         self.chapter_map_tiles.append(tiles)
         self.chapter_map_originals.append(list(tiles))
+        self.chapter_map_upper.append(spec["upperTraversal"])
         self.chapter_map_entities.append(entities)
         self.chapter_map_palettes.append("cow")
         return self.secret_map_index
@@ -1877,13 +1921,38 @@ class GameSim:
     def camera_target(self) -> tuple[float, float]:
         """Return the exact camera destination for the current player/map."""
 
+        if self.boss_defeat and (self.scene == "boss-defeat" or self.scene == "pause" and self.paused_from == "boss-defeat"):
+            return self.boss_defeat["cameraX"], self.boss_defeat["cameraY"]
+
         if self.body is None or not self.tiles:
             return 0.0, 0.0
-        look = 24 * self.body.facing
+        look = 0.0 if self.cannon_loaded or self.cannon_launch_active else 24.0 * self.body.facing
         max_x = max(0.0, len(self.tiles[0]) * TILE - 320.0)
         max_y = max(0.0, len(self.tiles) * TILE - 180.0)
         target_x = self.body.center[0] - 160.0 + look
         target_y = self.body.center[1] - 90.0
+        if self.scene == "edit":
+            # Keep a quiet central editing band, then pan across the entire
+            # playfield as the cursor crosses it. The hero stays in place.
+            cursor_y = (self.edit_cursor[1] + 0.5) * TILE
+            target_x = self.cam_x
+            target_y = min(self.cam_y, cursor_y - 32.0) if cursor_y < self.cam_y + 32.0 else max(self.cam_y, cursor_y - 128.0)
+        elif self.scene == "flight" and self.flight_direction == "out":
+            # Frame the construction space above the left-behind player.
+            target_y = self.body.feet[1] - 158.0
+        elif self.cannon_loaded:
+            target_x += CANNON_CAMERA_BIAS_RIGHT_TILES * TILE
+            target_y -= CANNON_CAMERA_BIAS_UP_TILES * TILE
+        elif self.cannon_launch_active:
+            span = max(1.0, CANNON_MAX_ANGLE - CANNON_MIN_ANGLE)
+            t = max(0.0, min(1.0, (self.cannon_angle - CANNON_MIN_ANGLE) / span))
+            tiles = CANNON_FLIGHT_CAMERA_BIAS_MIN_TILES + (
+                CANNON_FLIGHT_CAMERA_BIAS_MAX_TILES - CANNON_FLIGHT_CAMERA_BIAS_MIN_TILES
+            ) * t
+            radians = math.radians(self.cannon_angle)
+            magnitude = tiles * TILE
+            target_x += math.cos(radians) * magnitude
+            target_y -= math.sin(radians) * magnitude
         return (
             max(0.0, min(target_x, max_x)),
             max(0.0, min(target_y, max_y)),
@@ -1945,13 +2014,17 @@ class GameSim:
         chapter = self.world.chapters[index]
         map_specs = list(chapter.get("maps") or ())
         if not map_specs:
-            map_specs = [{"id": f"{chapter['chapterId']}-main", "tiles": list(chapter["tiles"])}]
+            map_specs = [{"id": f"{chapter['chapterId']}-main", "tiles": list(chapter["tiles"]), "upperTraversal": chapter.get("upperTraversal") or {}}]
         self.chapter_map_tiles = [list(spec["tiles"]) for spec in map_specs]
         self.chapter_map_originals = [list(spec["tiles"]) for spec in map_specs]
+        self.chapter_map_upper = [dict(spec.get("upperTraversal") or {}) for spec in map_specs]
         self.chapter_map_entities = [
             self._entities_for_map(self.chapter_map_tiles[map_index], chapter, spec, index)
             for map_index, spec in enumerate(map_specs)
         ]
+        for map_index, upper in enumerate(self.chapter_map_upper):
+            for lift in upper.get("lifts", []):
+                self.chapter_map_entities[map_index].extend(self._skyway_lift_pair(lift))
         base_palette = str(chapter.get("palette") or CAMPAIGN_ROSTER[index].palette)
         self.chapter_map_palettes = [str(spec.get("palette") or base_palette) for spec in map_specs]
         self.secret_map_index = -1
@@ -1966,6 +2039,11 @@ class GameSim:
         self.editing = False
         self.edit_ops = []
         self.edit_player_ghost = None
+        self.edit_reward = None
+        self.edit_baseline_reachable = set()
+        self.edit_reachable = set()
+        self.edit_new_reachable = set()
+        self.edit_goal_ready = False
         self.combat = None
         self.projectiles = []
         self.enemy_projectiles = []
@@ -1978,6 +2056,8 @@ class GameSim:
         self.network_ticks = 0
         self.network_operation = ""
         self.network_protocol = ""
+        self.boss_defeat = {}
+        self.boss_defeat_ticks = 0
         self.network_cooldown = 0
         self.network_armed = True
         self.network_destination_map = 0
@@ -2203,14 +2283,14 @@ class GameSim:
     def character_name(self) -> str:
         if self.world is not None:
             return str(self.world.character.get("name") or DEFAULT_CHARACTER_NAME)
-        return DEFAULT_CHARACTER_NAME
+        return self.installer.choices.character.name or DEFAULT_CHARACTER_NAME
 
     @property
     def story_copy(self) -> str:
         _, copy, _ = PROLOGUE_BEATS[max(0, min(self.story_beat, len(PROLOGUE_BEATS) - 1))]
         return copy.format(character_name=self.character_name)
 
-    def step(self, inp: InputState) -> None:
+    def step(self, inp: InputState, *, frame_seconds: float = 1 / 60) -> None:
         self.tick += 1
         if self.audio_caption_ticks > 0:
             self.audio_caption_ticks -= 1
@@ -2280,7 +2360,7 @@ class GameSim:
             if inp.interact or inp.jump_pressed:
                 self.dismiss_oligarchy()
             return
-        if self.scene in {"chapter-complete", "chapter-credits"}:
+        if self.scene == "chapter-complete":
             self._step_chapter_complete(inp)
             return
         if self.scene == "reroll-confirm":
@@ -2295,10 +2375,11 @@ class GameSim:
         if self.scene == "network":
             self._step_network(inp)
             return
-        if self.scene in {"ending", "credits"}:
-            if inp.interact or inp.jump_pressed:
-                self.credits = True
-                self.scene = "credits"
+        if self.scene == "boss-defeat":
+            self._step_boss_defeat()
+            return
+        if self.scene in {"ending", "credits", "chapter-credits"}:
+            self._step_credits(inp, frame_seconds=frame_seconds)
             return
         if self.scene == "turn":
             self._step_turn(inp)
@@ -2313,16 +2394,17 @@ class GameSim:
         return bool(inp.jump_pressed or inp.action_pressed or inp.interact)
 
     def _step_installer(self, inp: InputState) -> None:
+        self.installer.preload_characters()
         gum = self.installer.gum_page() is not None
         if gum and (inp.up_pressed or inp.down_pressed):
             self.installer.cycle(-1 if inp.up_pressed else 1)
             self.note("ui")
             return
-        if (not gum or self.installer.step == "confirm") and inp.left_pressed:
+        if (not gum or self.installer.step in {"confirm", "character"}) and inp.left_pressed:
             self.installer.cycle(-1)
             self.note("ui")
             return
-        if (not gum or self.installer.step == "confirm") and inp.right_pressed:
+        if (not gum or self.installer.step in {"confirm", "character"}) and inp.right_pressed:
             self.installer.cycle(1)
             self.note("ui")
             return
@@ -2478,11 +2560,11 @@ class GameSim:
                 boss_id = str(entity.extra.get("boss") or boss_spec.id)
                 if boss_id == "goliath" and self.goliath_stage == "penguin":
                     self._award_score(1500, "cyborg penguin disabled", x=entity.x * TILE + 8, y=entity.y * TILE)
-                    self._start_goliath_duel(entity)
+                    self._begin_boss_defeat(entity, boss_id, next_phase="duel")
                     return True
                 if boss_id == "goliath" and self.goliath_stage == "duel":
                     self._award_score(2500, "Goliath argument defeated", x=entity.x * TILE + 8, y=entity.y * TILE)
-                    self._start_goliath_minion_phase(entity)
+                    self._begin_boss_defeat(entity, boss_id, next_phase="minions")
                     return True
                 entity.extra["converted"] = True
                 entity.extra["ability_flash"] = 0
@@ -2495,7 +2577,7 @@ class GameSim:
                 self.messages.append("FIELD ARGUMENT COLLAPSED — the boss converts without an RPG detour.")
                 self._award_score(2500, f"{boss_spec.name} converted")
                 self.note("convert")
-                self._advance_after_boss(boss_id)
+                self._begin_boss_defeat(entity, boss_id)
             else:
                 self.messages.append("The boss's field argument weakens. Keep the pressure on.")
                 self._award_score(25, "boss pressure", x=entity.x * TILE + 8, y=entity.y * TILE)
@@ -3374,6 +3456,7 @@ class GameSim:
                     cells.add((tx, ty))
 
         launch_vx, launch_vy = body.vx, body.vy
+        protected_lifts = self.skyway_reserved_cells()
         for entity in list(self.entities):
             if entity.kind in {"block", "omega-block"} and entity.alive:
                 if (int(entity.x), int(entity.y)) in cells:
@@ -3386,7 +3469,7 @@ class GameSim:
         for tx, ty in cells:
             if not (0 <= ty < len(self.tiles) and 0 <= tx < len(self.tiles[ty])):
                 continue
-            if self.tiles[ty][tx] not in SOLID | {"L"}:
+            if (tx, ty) in protected_lifts or self.tiles[ty][tx] == "K" or self.tiles[ty][tx] not in SOLID | {"L"}:
                 continue
             row = list(self.tiles[ty])
             row[tx] = "."
@@ -3577,6 +3660,9 @@ class GameSim:
                         y=entity.y * TILE,
                         combo_event="pickup",
                     )
+                    if entity.extra.get("edit_route_bonus"):
+                        self._award_score(300, "workshop route completed", x=entity.x * TILE + 8, y=entity.y * TILE)
+                        self.messages.append("Your route paid off. Cache recovered: +300.")
                 elif entity.kind == "logo":
                     entity.alive = False
                     self.note("logo")
@@ -3707,6 +3793,7 @@ class GameSim:
         self.player_bs = self.combat.player.bs
         self.battle_actor = str(stage["actor"])
         self.battle_delay_ticks = int(stage["ticks"])
+        self.battle_stage_ticks = self.battle_delay_ticks
         self.battle_flash_ticks = min(12, self.battle_delay_ticks)
         self._show_combat_deltas(before, self.combat)
         additions = self.combat.log[len(before.log) :]
@@ -3768,6 +3855,7 @@ class GameSim:
         has_reuse: bool,
     ) -> None:
         assert self.combat is not None
+        self.battle_player_action = "item" if use_item else str(action or "reason")
         stages: list[dict[str, Any]] = []
         staged = self.combat
 
@@ -3941,10 +4029,10 @@ class GameSim:
                 self.flash_kind = "convert"
                 if self.goliath_stage == "penguin":
                     self._award_score(1500, f"{foe_name} disabled")
-                    self._start_goliath_duel(boss)
+                    self._begin_boss_defeat(boss, boss_id, next_phase="duel")
                 else:
                     self._award_score(2500, f"{foe_name} defeated")
-                    self._start_goliath_minion_phase(boss)
+                    self._begin_boss_defeat(boss, boss_id, next_phase="minions")
             return
         for entity in self.entities:
             if entity.extra.get("in_combat"):
@@ -3980,14 +4068,65 @@ class GameSim:
                 if entity.extra.get("goliath_minion"):
                     self._count_goliath_minion(entity)
         if converted and boss_id:
+            boss = next((entity for entity in engaged if entity.kind == "boss"), None)
+            self._begin_boss_defeat(boss, boss_id)
+
+    def _begin_boss_defeat(self, boss: Entity | None, boss_id: str, *, next_phase: str = "advance") -> None:
+        """Finish the physical encounter before displaying score or next phase."""
+        if boss is None:
             self._advance_after_boss(boss_id)
+            return
+        start_y = boss.y + float(boss.extra.get("offset_y") or 0.0) / TILE
+        start_x = boss.x + float(boss.extra.get("offset_x") or 0.0) / TILE
+        column = max(0, min(len(self.tiles[0]) - 1, int(start_x)))
+        floor_y = next((row - 1 for row in range(max(0, int(start_y) + 1), len(self.tiles))
+                        if self.tiles[row][column] in SOLID), len(self.tiles) - 5)
+        boss.x, boss.y = start_x, start_y
+        boss.extra.update(converted=True, in_combat=False, ability_flash=0,
+                          offset_x=0.0, offset_y=0.0, defeat_settling=True)
+        self.boss_defeat = {"bossId": boss_id, "nextPhase": next_phase,
+                            "startY": start_y, "floorY": float(floor_y)}
+        self.boss_defeat_ticks = 0
+        self.enemy_projectiles = []
+        self.flash_ticks = 0
+        self.scene = "boss-defeat"
+        if self.body:
+            self.body = replace(self.body, vx=0.0, vy=0.0)
+        # Keep the landing in view without moving the player's world position.
+        self.cam_x = max(0.0, min(len(self.tiles[0]) * TILE - 320, (boss.x + .5) * TILE - 225))
+        self.cam_y = max(0.0, min(len(self.tiles) * TILE - 180, (floor_y + 1) * TILE - 145))
+        self.boss_defeat.update(cameraX=self.cam_x, cameraY=self.cam_y)
+
+    def _step_boss_defeat(self) -> None:
+        state = self.boss_defeat
+        if not state:
+            self.scene = "action"
+            return
+        boss = next((entity for entity in self.entities if entity.kind == "boss"
+                     and entity.extra.get("boss") == state["bossId"]), None)
+        self.boss_defeat_ticks += 1
+        progress = min(1.0, self.boss_defeat_ticks / BOSS_SETTLE_TICKS)
+        if boss is not None:
+            # Accelerate down to the floor, then hold the registered defeat.
+            boss.y = state["startY"] + (state["floorY"] - state["startY"]) * progress * progress
+            boss.extra["defeat_settling"] = progress < 1
+        if self.boss_defeat_ticks < BOSS_SETTLE_TICKS + BOSS_DEFEAT_HOLD_TICKS:
+            return
+        self.boss_defeat = {}
+        self.scene = "action"
+        if boss is not None and state["nextPhase"] == "duel":
+            self._start_goliath_duel(boss)
+        elif boss is not None and state["nextPhase"] == "minions":
+            self._start_goliath_minion_phase(boss)
+        else:
+            self._advance_after_boss(state["bossId"])
 
     def _advance_after_boss(self, boss_id: str) -> None:
         spec = CAMPAIGN_ROSTER[self.chapter_index]
         self.messages.append(spec.boss.converted_line)
         if spec.boss.id == "goliath":
             self.ending = True
-            self.scene = "ending"
+            self.start_credits(cinematic=True, return_scene="stage-map")
             self.messages.append("The revolution will be customized.")
             return
         next_index = self.chapter_index + 1
@@ -4049,8 +4188,34 @@ class GameSim:
             self.save_to_disk()
             return
         if inp.jump_pressed or inp.interact:
-            self.scene = "chapter-credits" if self.scene == "chapter-complete" else "chapter-complete"
+            self.start_credits(return_scene="chapter-complete")
             self.note("ui")
+
+    def start_credits(self, *, cinematic: bool = False, return_scene: str = "pause") -> None:
+        self.credits_ticks = 0
+        self.credits_elapsed = 0.0
+        self.credits_return_scene = return_scene
+        self.credits = not cinematic
+        self.scene = "ending" if cinematic else ("chapter-credits" if return_scene == "chapter-complete" else "credits")
+        self.sfx.clear()
+        self.audio_caption = ""
+
+    def _step_credits(self, inp: InputState, *, frame_seconds: float = 1 / 60) -> None:
+        from .credits import FPS, roll_duration, title_duration
+
+        # Wall time in the live app keeps a slow frame from lengthening the
+        # roll past its recording. Fixed steps remain deterministic in replays.
+        self.credits_elapsed += max(0.0, frame_seconds)
+        self.credits_ticks = round(self.credits_elapsed * FPS)
+        # The entry button cannot immediately dismiss the next sequence.
+        skip = self.credits_ticks > 30 and (inp.pause or inp.jump_pressed or inp.interact)
+        duration = title_duration() if self.scene == "ending" else roll_duration()
+        if skip or self.credits_ticks >= math.ceil(duration * FPS):
+            if self.scene == "ending":
+                self.start_credits(return_scene=self.credits_return_scene)
+            else:
+                self.credits = False
+                self.scene = self.credits_return_scene
 
     def _continue_development_chapters(self) -> None:
         if self.web_chapter_one:
@@ -4203,17 +4368,29 @@ class GameSim:
         self.network_direction = int(entity.extra.get("direction") or 1)
         self.network_protocol = str(entity.extra.get("protocol") or "ethernet")
         self.network_operation = str(entity.extra.get("operation") or "route negotiation")
-        self.network_ticks = NETWORK_TICKS
+        self.network_ticks = SKYWAY_TRANSFER_TICKS if self.network_protocol == "skyway" else NETWORK_TICKS
+        self.network_start = (self.body.x, self.body.y)
         self.network_armed = False
         self.scene = "network"
         self.body = replace(self.body, vx=0.0, vy=0.0)
-        self.messages.append(f"{self.network_protocol.upper()}: {self.network_operation}.")
+        if self.network_protocol != "skyway":
+            self.messages.append(f"{self.network_protocol.upper()}: {self.network_operation}.")
         self.note("ui")
 
     def _step_network(self, inp: InputState) -> None:
         """Run a short deterministic connection/traversal interstitial."""
 
         self.network_ticks = max(0, self.network_ticks - 1)
+        if self.network_protocol == "skyway" and self.body is not None:
+            tx, ty = self.network_destination
+            target_x = tx * TILE + (TILE - self.body.width) / 2
+            target_y = (ty + 1) * TILE - self.body.height
+            progress = 1 - self.network_ticks / SKYWAY_TRANSFER_TICKS
+            progress = progress * progress * (3 - 2 * progress)
+            self.body = replace(self.body,
+                                x=self.network_start[0] + (target_x - self.network_start[0]) * progress,
+                                y=self.network_start[1] + (target_y - self.network_start[1]) * progress)
+            self._snap_camera()
         if self.network_ticks > 0 or self.body is None:
             return
         tx, ty = self.network_destination
@@ -4255,14 +4432,15 @@ class GameSim:
         # Merely waiting on the arrival tile can never bounce back.
         self.network_armed = False
         self.scene = "action"
-        self.messages.append(f"Link established. Traversed by {self.network_protocol.upper()}.")
+        if self.network_protocol != "skyway":
+            self.messages.append(f"Link established. Traversed by {self.network_protocol.upper()}.")
         self.note("collect")
 
     def _edit_bounds(self) -> tuple[int, int, int, int]:
         min_x = max(0, int(self.cam_x // TILE))
-        min_y = max(0, int(self.cam_y // TILE))
+        min_y = 0
         max_x = min(len(self.tiles[0]) - 1, int((self.cam_x + 320 - 1) // TILE))
-        max_y = min(len(self.tiles) - 1, int((self.cam_y + 180 - 1) // TILE))
+        max_y = len(self.tiles) - 1
         return min_x, min_y, max_x, max_y
 
     @staticmethod
@@ -4278,7 +4456,7 @@ class GameSim:
     def edit_reserved_cells(self) -> set[tuple[int, int]]:
         """Cells occupied by the left-behind player pose or live helpers."""
 
-        reserved: set[tuple[int, int]] = set()
+        reserved: set[tuple[int, int]] = self.skyway_reserved_cells()
         ghost = self.edit_player_ghost
         if ghost and int(ghost.get("map_index", -1)) == self.map_index:
             feet_x = float(ghost["feet_x"])
@@ -4312,6 +4490,11 @@ class GameSim:
             if 0 <= y < len(self.tiles) and 0 <= x < len(self.tiles[0])
         }
 
+    def skyway_reserved_cells(self) -> set[tuple[int, int]]:
+        return {(int(entity.x), int(entity.y) + offset)
+                for entity in self.entities if entity.alive and entity.extra.get("skyway")
+                for offset in (-2, -1, 0, 1)}
+
     def _begin_return_flight(self) -> None:
         self.editing = False
         self.scene = "flight"
@@ -4327,27 +4510,108 @@ class GameSim:
         self.edit_cursor = (max(min_x, min(max_x, tx)), max(min_y, min(max_y, ty - 4)))
         self.edit_ops = []
         self.edit_tile_index = 0
+        self.edit_move_cooldown = 0
+        # Broken crates and other changes made during play belong to this
+        # event's baseline too. Cancel must restore exactly what was visible.
+        self.original_tiles = list(self.tiles)
+        self.chapter_map_originals[self.map_index] = self.original_tiles
         self.zone_history = [list(self.tiles)]
-        # Stage a visible high cache with no access route. It is optional and
-        # therefore safe to solve with any combination of platforms/ladders.
-        reward_x = max(min_x + 5, min(max_x - 4, tx + 7))
-        reward_y = max(min_y + 2, min(max_y - 3, ty - 7))
-        if reward_y + 1 < len(self.tiles):
-            for px in range(max(min_x, reward_x - 2), min(max_x + 1, reward_x + 3)):
-                for target in (self.tiles, self.original_tiles):
-                    row = list(target[reward_y + 1])
-                    if row[px] not in {"S", "X", "!"}:
-                        row[px] = "="
-                    target[reward_y + 1] = "".join(row)
-            if not any(e.alive and e.kind == "item" and e.x == reward_x and e.y == reward_y for e in self.entities):
-                item = COMMON_ITEMS[(self.chapter_index + reward_x) % len(COMMON_ITEMS)]
-                self.entities.append(Entity("item", reward_x, reward_y, extra={"item": item, "edit_reward": True}))
-            self.edit_reward = (reward_x, reward_y)
+        self.edit_start = (tx, ty)
+        self.edit_goal_ready = False
+        self.edit_baseline_reachable = reachable_from(self.tiles, self.edit_start)
+        occupied = self.edit_reserved_cells() | {(e.x, e.y) for e in self.entities if e.alive}
+        upper = self.active_upper_route
+        self.edit_reward = None if upper else cache_goal(self.tiles, self.edit_start, self._edit_bounds(), occupied, self.edit_baseline_reachable)
+        if self.edit_reward:
+            reward_x, reward_y = self.edit_reward
+            item = COMMON_ITEMS[(self.chapter_index + reward_x) % len(COMMON_ITEMS)]
+            self.entities.append(Entity("item", reward_x, reward_y, extra={"item": item, "edit_reward": True, "edit_pending": True}))
+        self._refresh_edit_routes()
         self.messages.append(
             f"Edit view: {self.prompt_binding('action')} place · "
             f"{self.prompt_binding('item')} erase · {self.prompt_binding('turn')} tile type · "
-            f"{self.prompt_binding('jump')} seal. Build to the high cache."
+            f"{self.prompt_binding('jump')} seal. "
+            + ("Connect the gold cache, then collect it for +300." if self.edit_reward else "Free build: open a new route.")
         )
+
+    @property
+    def active_upper_route(self) -> dict[str, Any]:
+        return self.chapter_map_upper[self.map_index] if self.map_index < len(self.chapter_map_upper) else {}
+
+    def _new_edit_landings(self, tiles: list[str]) -> list[tuple[int, int]]:
+        left, top, right, bottom = self._edit_bounds()
+        reserved = self.edit_reserved_cells()
+        return [
+            (x, y) for x, y in self.edit_new_reachable
+            if left <= x <= right and top <= y <= bottom and y >= 2 and y + 1 < len(tiles)
+            and tiles[y][x] in {".", "L", "+"}
+            and tiles[y + 1][x] in {"#", "=", "I", "+", "B", "D", "G"}
+            and all(tiles[yy][x] in {".", "L", "+"} for yy in (y - 1, y - 2))
+            and (x, y) not in reserved
+            and not any(e.alive and int(e.x) == x and int(e.y) == y for e in self.entities)
+        ]
+
+    @staticmethod
+    def _skyway_lift_pair(lift: dict[str, Any]) -> list[Entity]:
+        lower, upper = lift["lower"], lift["upper"]
+        return [Entity("network", x, y, extra={
+            "skyway": True, "protocol": "skyway", "operation": "Ascending to the skyway" if ascending else "Returning to your construction",
+            "destination": list(destination), "direction": 1,
+        }) for (x, y), destination, ascending in ((lower, upper, True), (upper, lower, False))]
+
+    def _build_skyway_lift(self) -> None:
+        upper = self.active_upper_route
+        if not upper or not self.edit_goal_ready:
+            return
+        candidates = self._new_edit_landings(self.tiles)
+        if not candidates:
+            return
+        lower = min(candidates, key=lambda p: (self.tiles[p[1] + 1][p[0]] != "+", abs(p[0] - self.edit_start[0]) + abs(p[1] - self.edit_start[1]), p))
+        destination = min(upper["entries"], key=lambda p: abs(p[0] - lower[0]))
+        lift = {"lower": list(lower), "upper": list(destination)}
+        upper["lifts"] = [*upper.get("lifts", []), lift]
+        upper["unlocked"] = True
+        self.entities.extend(self._skyway_lift_pair(lift))
+        # Keep runtime-map metadata with the sealed chapter. Cow's ephemeral
+        # map is persisted separately in progress along with its tile edits.
+        chapter = dict(self.chapter)
+        if chapter.get("maps") and self.map_index < len(chapter["maps"]):
+            maps = [dict(spec) for spec in chapter["maps"]]
+            maps[self.map_index]["upperTraversal"] = dict(upper)
+            chapter["maps"] = maps
+        elif self.map_index == 0:
+            chapter["upperTraversal"] = dict(upper)
+        self.world.chapters[self.chapter_index] = chapter
+        self.note("collect")
+
+    def _refresh_edit_routes(self) -> None:
+        # Sealing normalizes ladder ends. Forecast that same arrangement, and
+        # recompute only after edits/undo/reset rather than on every frame.
+        preview = normalize_ladder_tiles(self.tiles)
+        self.edit_reachable = reachable_from(preview, self.edit_start)
+        self.edit_new_reachable = self.edit_reachable - self.edit_baseline_reachable
+        was_ready = self.edit_goal_ready
+        if self.edit_reward is not None:
+            self.edit_goal_ready = self.edit_reward in self.edit_reachable
+        else:
+            self.edit_goal_ready = bool(self._new_edit_landings(preview))
+        if self.edit_goal_ready and not was_ready:
+            self.messages.append("Route connected in the forecast. Seal, then try it in play.")
+            self.note("ui")
+
+    def _finish_edit_reward(self, *, sealed: bool) -> None:
+        for entity in self.entities:
+            if not entity.extra.get("edit_pending"):
+                continue
+            entity.extra.pop("edit_pending", None)
+            if sealed:
+                # Collection is the proof and earns the bonus, even when the
+                # static forecast could not recognize a creative solution.
+                entity.extra["edit_route_bonus"] = True
+            else:
+                entity.alive = False
+        if not sealed:
+            self.edit_reward = None
 
     def _step_edit(self, inp: InputState) -> None:
         cx, cy = self.edit_cursor
@@ -4411,6 +4675,7 @@ class GameSim:
             else:
                 self.tiles = list(self.original_tiles)
                 self.chapter_map_tiles[self.map_index] = self.tiles
+                self._finish_edit_reward(sealed=False)
                 self.messages.append("Edit discarded.")
                 self._begin_return_flight()
             return
@@ -4465,22 +4730,34 @@ class GameSim:
         self.tiles = preview
         self.chapter_map_tiles[self.map_index] = self.tiles
         self.zone_history.append(list(self.tiles))
+        self._refresh_edit_routes()
         return True
 
     def _seal_edit(self) -> None:
         assert self.world is not None
         operations = self.effective_edit_ops()
+        if not operations:
+            self._finish_edit_reward(sealed=False)
+            self.messages.append("No changes to seal. Returning to play.")
+            self._begin_return_flight()
+            return
         chapter = dict(self.chapter)
         if len(self.chapter_map_tiles) > 1:
+            self.tiles = normalize_ladder_tiles(self.tiles)
             maps = [dict(spec) for spec in chapter.get("maps") or ()]
-            maps[self.map_index]["tiles"] = list(self.tiles)
-            chapter["maps"] = maps
+            if self.map_index < len(maps):
+                maps[self.map_index]["tiles"] = list(self.tiles)
+                chapter["maps"] = maps
+            elif self.map_index == 0:
+                chapter["tiles"] = list(self.tiles)
             self.world.chapters[self.chapter_index] = chapter
             self.original_tiles = list(self.tiles)
             self.chapter_map_originals[self.map_index] = self.original_tiles
             self.chapter_map_tiles[self.map_index] = self.tiles
             self.messages.append("Hardware-island delta sealed. Reversible within this world.")
             self._award_score(500, "world edit sealed")
+            self._finish_edit_reward(sealed=True)
+            self._build_skyway_lift()
             self._begin_return_flight()
             return
         chapter["tiles"] = list(self.original_tiles)
@@ -4503,6 +4780,8 @@ class GameSim:
         self.chapter_map_originals[self.map_index] = self.original_tiles
         self.messages.append("Zone delta sealed. Reversible.")
         self._award_score(500, "world edit sealed")
+        self._finish_edit_reward(sealed=True)
+        self._build_skyway_lift()
         self._begin_return_flight()
 
     def pause_rows(self) -> tuple[str, ...]:
@@ -4518,8 +4797,9 @@ class GameSim:
                 "controls",
                 "reroll",
                 "omega-code",
+                "credits",
             )
-        return ("fidelity", "display", "items", "audio", "controls", "reroll", "omega-code")
+        return ("fidelity", "display", "items", "audio", "controls", "reroll", "omega-code", "credits")
 
     def _adjust_crt_control(self, control: str, delta: int) -> None:
         current = dict(self.settings.get("crt") or {})
@@ -4545,6 +4825,9 @@ class GameSim:
             return
         delta = -1 if inp.left_pressed else (1 if inp.right_pressed else 0)
         selected = rows[self.pause_cursor]
+        if selected == "credits" and (inp.jump_pressed or inp.action_pressed):
+            self.start_credits()
+            return
         if delta and selected == "fidelity":
             self.set_presentation(fidelity=cycle_fidelity(self.fidelity, delta))
             self.note("ui")
@@ -5009,11 +5292,46 @@ class GameSim:
         )
         idx = int(progress.get("chapterIndex") or 0)
         self._load_chapter(idx)
+        secret = progress.get("workshopSecret")
+        if isinstance(secret, dict):
+            secret_index = self._ensure_secret_level()
+            rows = secret.get("tiles")
+            upper = secret.get("upperTraversal")
+            if (isinstance(rows, list) and len(rows) == COW_LEVEL_HEIGHT
+                    and all(isinstance(row, str) and len(row) == COW_LEVEL_WIDTH for row in rows)
+                    and isinstance(upper, dict)):
+                self.chapter_map_tiles[secret_index] = list(rows)
+                self.chapter_map_originals[secret_index] = list(rows)
+                self.chapter_map_upper[secret_index] = dict(upper)
+                self.secret_return_map = int(secret.get("returnMap") or 0)
+                self.secret_return_position = tuple(secret.get("returnPosition") or self.secret_return_position)
+                for lift in upper.get("lifts", []):
+                    self.chapter_map_entities[secret_index].extend(self._skyway_lift_pair(lift))
         restored_map = int(progress.get("mapIndex") or 0)
         if restored_map and restored_map < len(self.chapter_map_tiles):
             self._activate_map(restored_map, reset_body=True)
+        for cache in progress.get("workshopCaches") or ():
+            if not isinstance(cache, dict):
+                continue
+            map_index, x, y = cache.get("map"), cache.get("x"), cache.get("y")
+            if not all(isinstance(value, int) for value in (map_index, x, y)):
+                continue
+            if not 0 <= map_index < len(self.chapter_map_tiles):
+                continue
+            rows = self.chapter_map_tiles[map_index]
+            if not (0 <= y < len(rows) and 0 <= x < len(rows[0])) or cache.get("item") not in COMMON_ITEMS:
+                continue
+            self.chapter_map_entities[map_index].append(Entity("item", x, y, extra={
+                "item": cache["item"], "edit_reward": True, "edit_route_bonus": True,
+            }))
         restored_scene = str(progress.get("scene") or "action")
-        if (
+        defeat = progress.get("bossDefeat")
+        if (isinstance(defeat, dict) and defeat.get("bossId") == CAMPAIGN_ROSTER[idx].boss.id
+                and defeat.get("nextPhase") in {"advance", "duel", "minions"}
+                and restored_scene in {"boss-defeat", "pause"}):
+            boss = next((entity for entity in self.entities if entity.kind == "boss"), None)
+            self._begin_boss_defeat(boss, defeat["bossId"], next_phase=defeat["nextPhase"])
+        elif (
             idx < len(CAMPAIGN_ROSTER) - 1
             and restored_scene in {"chapter-complete", "chapter-credits"}
             and CAMPAIGN_ROSTER[idx].boss.id in self.converted
@@ -5022,6 +5340,8 @@ class GameSim:
             self.pending_chapter = int(pending) if pending is not None else idx + 1
             self.post_boss = True
             self.scene = restored_scene
+            if restored_scene == "chapter-credits":
+                self.start_credits(return_scene="chapter-complete")
         elif restored_scene == "stage-map" and progress.get("pendingChapter") is not None:
             self.post_boss = True
             self._open_stage_map(int(progress["pendingChapter"]), transition=False)
@@ -5106,12 +5426,23 @@ class GameSim:
             "inventory": list(self.inventory),
             "itemStrength": self.item_strength,
             "mapIndex": self.map_index,
+            "workshopSecret": ({"tiles": self.chapter_map_tiles[self.secret_map_index], "upperTraversal": self.chapter_map_upper[self.secret_map_index],
+                                 "returnMap": self.secret_return_map, "returnPosition": list(self.secret_return_position)}
+                               if 0 <= self.secret_map_index < len(self.chapter_map_upper) else None),
             "selectedItem": self.selected_item,
             "selectedAttack": self.current_attack,
             "score": self.score,
+            "workshopCaches": [
+                {"map": map_index, "x": int(entity.x), "y": int(entity.y), "item": entity.extra["item"]}
+                for map_index, entities in enumerate(self.chapter_map_entities)
+                for entity in entities
+                if entity.alive and entity.extra.get("edit_route_bonus")
+            ],
             "playerBS": self.player_bs,
             "goliathStage": self.goliath_stage,
             "goliathMinionsDefeated": self.goliath_minions_defeated,
+            "bossDefeat": ({key: self.boss_defeat[key] for key in ("bossId", "nextPhase")}
+                           if self.boss_defeat else None),
             "omegaLetters": self.omega_letters,
             "quality": self.quality,
             "rerollRootSeed": self.reroll_root_seed,

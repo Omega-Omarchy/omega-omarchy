@@ -22,7 +22,7 @@ from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_ASSET_DIRS = ("audio", "bosses", "characters", "fidelity", "items", "tiles", "ui")
+RUNTIME_ASSET_DIRS = ("audio", "bosses", "characters", "fidelity", "items", "tiles", "ui", "character-packs", "character-creation")
 RUNTIME_DISTRIBUTIONS = ("pygame-ce", "pillow", "qrcode", "numpy", "pyinstaller")
 ARTIFACT_FORMAT = "omega-native-linux-tar/2"
 
@@ -189,6 +189,8 @@ def build(output: Path, *, require_clean: bool = False) -> tuple[Path, Path]:
     dirty = bool(_git("status --porcelain"))
     if require_clean and dirty:
         raise ArtifactBuildError("release artifact requires a clean worktree")
+    from omega_omarchy.credits_build import build_credits
+
     for path in _required_asset_paths():
         if not path.is_dir():
             raise ArtifactBuildError(f"runtime assets are missing; run ./scripts/omega assets: {path}")
@@ -250,6 +252,9 @@ def build(output: Path, *, require_clean: bool = False) -> tuple[Path, Path]:
         binary = frozen / "omega-omarchy"
         if not binary.is_file():
             raise ArtifactBuildError("PyInstaller did not produce the expected executable")
+        # Credits include HEAD and cannot be a fixed-point tracked build output.
+        # Refresh the packaged data without dirtying the reviewed checkout.
+        build_credits(ROOT, target=frozen / "_internal/omega_omarchy/data/credits.json")
         bundle = temp / release_name
         # PyInstaller 6 uses relative in-tree symlinks for shared libraries.
         # Preserve them so the archive does not duplicate tens of MiB of native
@@ -267,7 +272,7 @@ def build(output: Path, *, require_clean: bool = False) -> tuple[Path, Path]:
         )
         docs = bundle / "docs"
         docs.mkdir()
-        for name in ("controls.md", "accessibility.md", "content-packs.md"):
+        for name in ("controls.md", "accessibility.md", "content-packs.md", "character-creation.md"):
             shutil.copyfile(ROOT / "docs" / name, docs / name)
         license_files = _copy_dependency_licenses(bundle / "licenses")
         dependencies = {

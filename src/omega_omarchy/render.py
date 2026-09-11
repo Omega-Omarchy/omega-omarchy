@@ -12,6 +12,7 @@ from pygame import Surface
 from . import INSTALLER_COMPLETION_ACTION
 from .runtime_assets import BRONZE, PALETTE, asset_dir
 from .accessibility import ACTION_LABELS
+from .character_pack import decode_png, pose_size, resolve_pack
 from .campaign import CAMPAIGN_ROSTER
 from .installer import (
     CONFIRM_PROMPT,
@@ -30,6 +31,7 @@ GUM_PURPLE = (173, 142, 230)
 BAR_FILL = (164, 172, 214)
 BAR_DOT = (80, 86, 112)
 from .physics import TILE
+from .invisible_platform import platform_alpha
 from .presentation import (
     CHAR_WORLD_HEIGHT,
     FIDELITIES,
@@ -120,7 +122,8 @@ def background_parallax_y(
 
     vertical_ascent = max(0.0, max_camera_y - camera_y)
     factor = max(0.0, min(0.28, 0.08 + depth * 0.13))
-    return round(min(40.0, vertical_ascent * factor) * raster_scale)
+    cap = max(40.0, max_camera_y * 0.14)
+    return round(min(cap, vertical_ascent * factor) * raster_scale)
 
 
 class Renderer:
@@ -148,6 +151,9 @@ class Renderer:
         self._last_frame: Surface | None = None
         self._stage_transition_source: Surface | None = None
         self._stage_transition_active = False
+        self._character_roots: dict[tuple[str, str], Path | None] = {}
+        self._character_errors: dict[tuple[str, str], str] = {}
+        self._credits_renderer = None
 
     def _load(self, rel: str) -> Surface:
         if rel not in self.cache:
@@ -164,16 +170,60 @@ class Renderer:
         return self._load(rel)
 
     def _active_fid(self, sim: GameSim) -> str:
-        if sim.scene == "installer":
+        if sim.scene == "installer" or (sim.scene in {"credits", "chapter-credits", "ending"} and sim.credits_return_scene == "installer"):
             step = sim.installer.step
             page = sim.installer.gum_page()
-            if step == "quality" and page:
+            if sim.scene == "installer" and step == "quality" and page:
                 idx = int(page.get("index") or 0)
                 if 0 <= idx < len(FIDELITIES):
                     return FIDELITIES[idx]
             return getattr(sim.installer.choices, "fidelity", "ultra") or "ultra"
         fid, _ = migrate_quality(sim.quality, sim.settings)
         return getattr(sim, "fidelity", None) or fid
+
+    def _character_sprite(self, sim: GameSim, pose: str) -> Surface:
+        if sim.scene == "installer" or sim.world is None:
+            self._character_roots.update(sim.installer.character_roots)
+        record = sim.installer.choices.character.to_record() if sim.scene == "installer" or sim.world is None else sim.world.character
+        pack_id, digest = str(record.get("assetPack") or ""), str(record.get("assetDigest") or "")
+        key = (pack_id, digest)
+        if pack_id and key not in self._character_roots:
+            try:
+                self._character_roots[key] = resolve_pack(record, assets=self.root)
+            except (ValueError, OSError, KeyError, TypeError) as error:
+                self._character_roots[key] = None
+                self._character_errors[key] = str(error)
+        root = self._character_roots.get(key)
+        if key in self._character_errors:
+            warning = self._character_errors[key] + " Using David art."
+            if warning not in sim.messages:
+                sim.messages.append(warning)
+        if root:
+            path = root / self._active_fid(sim) / f"{pose}.png"
+            key_path = str(path)
+            if key_path not in self.cache:
+                pixels = decode_png(path.read_bytes())
+                self.cache[key_path] = pygame.image.frombytes(pixels, pose_size(pose, self._active_fid(sim)), "RGBA").convert_alpha()
+            return self.cache[key_path]
+        # Legacy custom records had no complete art pack. Resolve the entire
+        # character to David consistently instead of mixing partial recolors.
+        return self._fid(sim, f"characters/david_{pose}.png")
+
+    def preload_character_portraits(self, session) -> None:
+        """Warm one selection image per frame using already validated packs."""
+        self._character_roots.update(session.character_roots)
+        for root in session.character_roots.values():
+            for fid in FIDELITIES:
+                path = root / fid / "portrait.png"
+                if str(path) not in self.cache:
+                    self.cache[str(path)] = pygame.image.frombytes(
+                        decode_png(path.read_bytes()), pose_size("portrait", fid), "RGBA").convert_alpha()
+                    return
+        for fid in FIDELITIES:
+            rel = f"fidelity/{fid}/characters/david_portrait.png"
+            if rel not in self.cache:
+                self._load(rel)
+                return
 
     def _layout(self, sim: GameSim) -> tuple[str, int, int, int]:
         fid = self._active_fid(sim)
@@ -368,11 +418,11 @@ class Renderer:
             self._world(surf, sim)
             self._chapter_complete(surf, sim)
         elif sim.scene == "chapter-credits":
-            self._chapter_credits(surf, sim)
+            self._cinematic_credits(surf, sim)
         elif sim.scene == "oligarchy":
             self._oligarchy(surf, sim)
         elif sim.scene in {"ending", "credits"}:
-            self._ending(surf, sim)
+            self._cinematic_credits(surf, sim)
         else:
             self._world(surf, sim)
             self._hud(surf, sim)
@@ -382,12 +432,17 @@ class Renderer:
                 self._flash(surf, sim)
         if sim.audio_captions and sim.audio_caption and sim.audio_caption_ticks > 0:
             self._audio_caption(surf, sim.audio_caption)
+        record = sim.installer.choices.character.to_record() if sim.scene == "installer" else (sim.world.character if sim.world else {})
+        missing_key = (str(record.get("assetPack") or ""), str(record.get("assetDigest") or ""))
+        if missing_key in self._character_errors:
+            pygame.draw.rect(surf, (42, 27, 21), self._lr(8, 2, 304, 14))
+            self.fit_text(surf, f"Missing {missing_key[0]} art · using David · reinstall saved pack", (12, 3, 296, 12), PALETTE["yellow"], max_size=7, min_size=5)
         fid, disp = migrate_quality(sim.quality, sim.settings)
         fid = self._active_fid(sim)
         disp = getattr(sim, "display", None) or disp
         crt = (sim.settings.get("crt") or {}) if sim.settings else {}
         reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)
-        if disp == "crt" and not reduced:
+        if disp == "crt" and not reduced and sim.scene not in {"ending", "credits", "chapter-credits"}:
             surf = self._crt(surf, crt)
         else:
             self._persist = None
@@ -618,6 +673,33 @@ class Renderer:
         shade.fill((0, 0, 10, shade_alpha))
         surf.blit(shade, (0, 0))
 
+    def _rig_part(self, surf: Surface, sim: GameSim, name: str, point: tuple[float, float], angle: float,
+                  size: tuple[int, int], pivot: tuple[float, float]) -> None:
+        image = self._fit(self._fid(sim, f"ui/custodian-{name}.png"), (size[0] * self._vs, size[1] * self._vs))
+        # Rotate around the measured hinge, not around the sprite's center.
+        offset = pygame.Vector2((size[0] / 2 - pivot[0]) * self._vs,
+                                (size[1] / 2 - pivot[1]) * self._vs).rotate(angle)
+        image = pygame.transform.rotate(image, -angle)
+        center = (round(point[0] * self._vs + offset.x), round(point[1] * self._vs + offset.y))
+        surf.blit(image, image.get_rect(center=center))
+
+    def _prologue_custodians(self, surf: Surface, sim: GameSim, staging: str, *, tick: int | None = None) -> None:
+        from .articulation import custodian_pose, custodian_x
+
+        reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)
+        tick = sim.story_ticks if tick is None else tick
+        for right, home in ((False, 94), (True, 238)):
+            x = custodian_x(home, tick, right=right, staging=staging, reduced=reduced)
+            pose = custodian_pose(x, 122, tick, right=right, reduced=reduced, corrupt=staging == "corrupt")
+            body = self._fit(self._fid(sim, "ui/custodian-body.png"), (30 * self._vs, 44 * self._vs))
+            surf.blit(body, self._lp(x - 15, 78))
+            self._rig_part(surf, sim, "upper", pose.shoulder, pose.angles[0], (36, 10), (4.5, 5))
+            self._rig_part(surf, sim, "fore", pose.elbow, pose.angles[1], (32, 9), (4, 4.5))
+            self._rig_part(surf, sim, "claw-closed" if pose.closed else "claw-open", pose.wrist, pose.angles[2], (22, 18), (3, 9))
+            joint = self._fit(self._fid(sim, "ui/custodian-joint.png"), (7 * self._vs, 7 * self._vs))
+            for point in (pose.shoulder, pose.elbow, pose.wrist):
+                surf.blit(joint, joint.get_rect(center=self._lp(*point)))
+
     def _prologue_hero(
         self,
         surf: Surface,
@@ -631,7 +713,7 @@ class Renderer:
         alpha: int = 255,
         angle: float = 0.0,
     ) -> None:
-        hero = self._fid(sim, f"characters/david_{frame}.png")
+        hero = self._character_sprite(sim, frame)
         height = max(1, round(logical_height * self._vs))
         width = max(1, round(hero.get_width() / max(1, hero.get_height()) * height))
         hero = self._fit(hero, (width, height))
@@ -841,6 +923,11 @@ class Renderer:
         whiteout.fill((255, 255, 255, max(0, min(255, alpha))))
         surf.blit(whiteout, (0, 0))
 
+    @staticmethod
+    def _transfer_angle(sim: GameSim) -> float:
+        kind = (sim.world.character if sim.world else {}).get("kind", "david")
+        return PROLOGUE_MIND_HERO_ANGLE + {"omarch-king": 8.0, "omarch-queen": 5.0}.get(kind, 0.0)
+
     def _prologue(self, surf: Surface, sim: GameSim) -> None:
         """Input-paced exposition with deterministic in-engine choreography."""
 
@@ -959,10 +1046,20 @@ class Renderer:
                         PROLOGUE_MIND_HERO_X,
                         PROLOGUE_MIND_HERO_FEET_Y,
                         PROLOGUE_MIND_HERO_HEIGHT,
-                        angle=PROLOGUE_MIND_HERO_ANGLE,
+                        angle=self._transfer_angle(sim),
                     )
+                if not campus:
+                    # Physical custodians stand in front of the projected waves.
+                    self._prologue_custodians(surf, sim, staging)
             except Exception:
                 pass
+
+        if staging == "corrupt" and not (sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion):
+            # Shake the scene only; narration remains comfortably readable.
+            phase = sim.story_ticks // 5
+            dx = (0, 1, 0, -1, 0, 0)[phase % 6]
+            dy = (0, 0, 0, 1, 0, -1, 0, 0)[phase % 8]
+            surf.blit(surf.copy(), self._lp(dx, dy))
 
         box = Surface((300 * self._vs, 55 * self._vs), pygame.SRCALPHA)
         box.fill((3, 5, 12, 232))
@@ -1177,7 +1274,7 @@ class Renderer:
         )
         surf.blit(rotated, destination)
 
-    def _level_intro_backdrop(self, surf: Surface, progress: float, *, reduced: bool) -> None:
+    def _level_intro_backdrop(self, surf: Surface, sim: GameSim, progress: float, *, reduced: bool) -> None:
         """Assemble a geometric title-card field out of the white transition."""
 
         progress = 1.0 if reduced else self._intro_ease(progress)
@@ -1257,6 +1354,25 @@ class Renderer:
                         self._lp(round(x), 37 + index * 34),
                     ],
                 )
+        # A lit arena vignette ties the card to the selected chapter. The
+        # character remains a separate, animated registered sprite above it.
+        spec = CAMPAIGN_ROSTER[max(0, min(sim.level_intro_target, len(CAMPAIGN_ROSTER) - 1))]
+        vignette = self._fit(self._fid(sim, f"bg/{spec.palette}/parallax-0.png"), (116 * self._vs, 122 * self._vs)).copy()
+        tint = Surface(vignette.get_size(), pygame.SRCALPHA)
+        tint.fill((8, 13, 27, 125))
+        vignette.blit(tint, (0, 0))
+        design.blit(vignette, self._lp(182, 12))
+        glow = Surface((116 * self._vs, 122 * self._vs), pygame.SRCALPHA)
+        for radius in range(50, 8, -3):
+            pygame.draw.circle(glow, (*SHIFT_CYAN, 4 + (50 - radius)), (58 * self._vs, 66 * self._vs), radius * self._vs)
+        design.blit(glow, self._lp(182, 12))
+        pygame.draw.arc(design, BRONZE, self._lr(190, 28, 98, 98), .2, 2.8, max(1, self._vs))
+        pygame.draw.arc(design, SHIFT_CYAN, self._lr(187, 25, 104, 104), 3.35, 5.9, max(1, self._vs))
+        pygame.draw.ellipse(design, (6, 10, 20), self._lr(194, 123, 92, 10))
+        pygame.draw.ellipse(design, BRONZE, self._lr(194, 123, 92, 10), max(1, self._vs))
+        for index in range(6):
+            pygame.draw.line(design, SHIFT_CYAN if index <= sim.level_intro_target else (42, 56, 65),
+                             self._lp(18 + index * 25, 112), self._lp(35 + index * 25, 112), max(2, 2 * self._vs))
         left = self._iw - width
         surf.blit(design, (left, 0), pygame.Rect(left, 0, width, self._ih))
 
@@ -1302,7 +1418,7 @@ class Renderer:
 
         suffix = "-converted" if spec.boss.id in sim.converted else ""
         try:
-            boss = self._fid(sim, f"bosses/{spec.boss.id}{suffix}.png")
+            boss = self._fid(sim, self._boss_pose_rel(sim, spec.boss.id, defeated=bool(suffix)))
             boss_height = max(1, round((27 + (102 - 27) * motion) * self._vs))
             boss_width = max(1, round(boss.get_width() / max(1, boss.get_height()) * boss_height))
             boss = self._fit(boss, (boss_width, boss_height))
@@ -1345,7 +1461,7 @@ class Renderer:
             surf,
             f"RECOVER // {spec.boss.capability.replace('-', ' ').upper()}",
             (detail_x, 84, 168, 10),
-            PALETTE.get("muted", PALETTE["fg"]),
+            (160, 183, 201),
             max_size=7,
             min_size=5,
         )
@@ -1415,7 +1531,7 @@ class Renderer:
             return
 
         build = max(0.0, min(1.0, (tick - map_end) / max(1, LEVEL_INTRO_BUILD_TICKS)))
-        self._level_intro_backdrop(surf, build, reduced=reduced)
+        self._level_intro_backdrop(surf, sim, build, reduced=reduced)
         self._level_intro_identity(surf, sim, motion, build)
 
         if tick >= hold_end:
@@ -1438,6 +1554,7 @@ class Renderer:
             self._wordmark(surf, 36, pulse=pulse, tick=sim.tick)
             self._center(surf, PROGRESS_TITLE, 84, PALETTE["fg"])
             self._progress_bar(surf, sim)
+            self.fit_text(surf, f"{round(sim.installer.progress_fraction * 100)}% · {sim.installer.total_elapsed_s:.1f}s", (80, 129, 160, 12), PALETTE["fg"], align="center", max_size=8, min_size=6)
             tip = PROGRESS_TIPS[(sim.tick // 90) % len(PROGRESS_TIPS)]
             self._center(surf, f"Tip: {tip}", 112, LIME_MARK)
             return
@@ -1468,6 +1585,9 @@ class Renderer:
         if step == "confirm":
             self._confirm_table(surf, sim)
             return
+        if step == "character":
+            self._character_setup(surf, sim)
+            return
         page = sim.installer.gum_page()
         if page is None:
             return
@@ -1492,15 +1612,51 @@ class Renderer:
             self.fit_text(surf, str(page["footnote"]), (24, 150, 272, 10), PALETTE["yellow"], max_size=8, min_size=6)
         self.fit_text(surf, page.get("nav") or NAV_HINT, (24, 164, 272, 10), PALETTE.get("muted", PALETTE["fg"]), max_size=8, min_size=6)
 
+    def _character_setup(self, surf: Surface, sim: GameSim) -> None:
+        session = sim.installer
+        if session.character_help_open:
+            self.fit_text(surf, "Create with your agent", (24, 54, 270, 12), PALETTE["fg"], max_size=10, min_size=7, bold=True)
+            lines = ["1. Give your agent the character kit + your idea.",
+                     "2. Generate all poses, then validate and build.",
+                     "3. Import the ZIP and choose your character.",
+                     "The kit includes 26 poses and exact art dimensions."]
+            import sys
+            if sys.platform == "emscripten":
+                lines += ["Download the agent kit below the game.", "Use Import character ZIP when it is ready."]
+            else:
+                lines += ["Saved to ~/.local/share/omega-omarchy/", "character-agent-kit.zip (or your XDG data folder)."]
+            for index, line in enumerate(lines):
+                self.fit_text(surf, line, (20, 70 + index * 12, 280, 11), PALETTE["fg"], max_size=8, min_size=6)
+            self.fit_text(surf, "Up/down returns to character selection", (20, 160, 280, 12), SHIFT_CYAN, max_size=8, min_size=6)
+            return
+        page = session.gum_page()
+        self.fit_text(surf, "Choose your character", (24, 54, 270, 12), PALETTE["fg"], max_size=10, min_size=7, bold=True)
+        index = session.character_index
+        options = page["options"]
+        start = max(0, min(index - 3, len(options) - 5))
+        for row, option_index in enumerate(range(start, min(len(options), start + 5))):
+            active = option_index == index
+            y = 70 + row * 13
+            if active:
+                pygame.draw.rect(surf, LIME_MARK, self._lr(18, y - 1, 188, 13), border_radius=2 * self._vs)
+            self.fit_text(surf, ("> " if active else "  ") + options[option_index], (21, y, 182, 12), PALETTE["dark"] if active else PALETTE["fg"], max_size=9, min_size=6)
+        if session.character_agent_selected:
+            self.fit_text(surf, "YOUR", (215, 79, 87, 16), GUM_PURPLE, align="center", max_size=15, min_size=8, bold=True)
+            self.fit_text(surf, "CHARACTER", (215, 99, 87, 14), SHIFT_CYAN, align="center", max_size=10, min_size=7, bold=True)
+        else:
+            portrait = self._character_sprite(sim, "portrait")
+            portrait = self._fit(portrait, (75 * self._vs, 75 * self._vs))
+            surf.blit(portrait, self._lp(223, 61))
+        name = session.choices.character.name or "Type a name"
+        self.fit_text(surf, "Name: " + name + ("_" if session.name_entry_started else ""), (20, 138, 280, 12), SHIFT_CYAN, max_size=9, min_size=7)
+        self.fit_text(surf, page["footnote"], (20, 151, 280, 10), PALETTE["yellow"], max_size=7, min_size=5)
+        self.fit_text(surf, page["nav"], (20, 165, 280, 10), PALETTE.get("muted", PALETTE["fg"]), max_size=7, min_size=6)
+
     def _progress_bar(self, surf: Surface, sim: GameSim) -> None:
         width = 88
         x = (320 - width) // 2
         y = 96
-        ticks = sim.installer.progress_ticks
-        if sim.installer.world is not None:
-            filled = min(width, 8 + ticks * 2)
-        else:
-            filled = min(width, 4 + sim.installer.phase_index * 6)
+        filled = round(width * sim.installer.progress_fraction)
         pygame.draw.rect(surf, BAR_FILL, self._lr(x, y, max(2, filled), 6))
         for i in range(filled + 2, width, 3):
             pygame.draw.rect(surf, BAR_DOT, self._lr(x + i, y + 2, 1, 1))
@@ -1511,13 +1667,10 @@ class Renderer:
         pygame.draw.rect(surf, PALETTE["accent"], self._lr(20, 68, 280, 74), self._vs)
         if self._fid_cur != "sixteen-bit":
             pygame.draw.rect(surf, (20, 22, 32), self._lr(21, 69, 278, 72))
-        self.fit_text(surf, "Field", (26, 69, 78, 10), PALETTE["fg"], max_size=8, min_size=6)
-        self.fit_text(surf, "Value", (112, 69, 180, 10), PALETTE["fg"], max_size=8, min_size=6)
-        pygame.draw.line(surf, PALETTE["accent"], self._lp(20, 79), self._lp(300, 79), self._vs)
-        pygame.draw.line(surf, PALETTE["accent"], self._lp(108, 68), self._lp(108, 142), self._vs)
+        pygame.draw.line(surf, PALETTE["accent"], self._lp(125, 68), self._lp(125, 142), self._vs)
         for i, (field, value) in enumerate(rows):
-            self.fit_text(surf, field, (26, 80 + i * 8, 78, 8), PALETTE["fg"], max_size=7, min_size=6)
-            self.fit_text(surf, str(value), (112, 80 + i * 8, 180, 8), PALETTE["fg"], max_size=7, min_size=6)
+            self.fit_text(surf, field, (26, 70 + i * 9, 96, 9), PALETTE["fg"], max_size=8, min_size=6)
+            self.fit_text(surf, str(value), (130, 70 + i * 9, 164, 9), PALETTE["fg"], max_size=8, min_size=6)
         self.fit_text(surf, CONFIRM_PROMPT, (24, 143, 270, 10), PALETTE["cyan"], max_size=8, min_size=6)
         yes = sim.installer.confirm_accept
         if yes:
@@ -1544,7 +1697,7 @@ class Renderer:
         surf.blit(overlay, (0, 0))
 
     def _goliath_arena_story_layer(self, surf: Surface, sim: GameSim, cam_x: int, cam_y: int) -> None:
-        """Affix Goliath's booth or placeholder X notice to the arena wall."""
+        """Affix Goliath's booth or blocked X profile to the arena wall."""
 
         boss = next(
             (
@@ -1596,28 +1749,34 @@ class Renderer:
         if stage not in {"minions", "surrendered"}:
             return
 
-        # A world-locked placeholder can later be replaced with the genuine
-        # account while preserving the scene's geometry and phase trigger.
+        # The account and portrait match Goliath's public persona; the blocked
+        # notice remains part of the fictional, world-locked boss encounter.
         x = round(arena_x - 154.0 - cam_x)
         y = round(floor_y - 112.0 - cam_y)
         if x > 320 or x + 148 < 0 or y > 180 or y + 83 < 0:
             return
         pygame.draw.rect(surf, (8, 8, 10), self._lr(x - 3, y - 3, 154, 89), border_radius=4 * self._vs)
         pygame.draw.rect(surf, (246, 247, 248), self._lr(x, y, 148, 83), border_radius=4 * self._vs)
-        self.fit_text(surf, "X", (x + 8, y + 5, 15, 14), (15, 18, 20), max_size=12, min_size=9, bold=True)
+        avatar = self._fit(self._load("ui/social/goliath-profile.png"), (24 * self._vs, 24 * self._vs)).copy()
+        mask = Surface(avatar.get_size(), pygame.SRCALPHA)
+        pygame.draw.circle(mask, (255, 255, 255, 255), (12 * self._vs, 12 * self._vs), 12 * self._vs)
+        avatar.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        surf.blit(avatar, self._lp(x + 7, y + 4))
+        self.fit_text(surf, "Goliath", (x + 36, y + 4, 88, 11), (15, 18, 20), max_size=8, min_size=7, bold=True)
+        self.fit_text(surf, "X", (x + 129, y + 7, 12, 12), (15, 18, 20), max_size=10, min_size=8, bold=True)
         self.fit_text(
             surf,
-            "@goliath_placeholder",
-            (x + 25, y + 7, 112, 10),
+            "@goliathfyi",
+            (x + 36, y + 16, 88, 10),
             (92, 99, 106),
             max_size=6,
             min_size=4,
         )
-        self.fit_text(surf, "You are blocked", (x + 10, y + 25, 128, 13), (15, 18, 20), max_size=10, min_size=7, bold=True)
+        self.fit_text(surf, "You are blocked", (x + 10, y + 31, 128, 13), (15, 18, 20), max_size=10, min_size=7, bold=True)
         self.wrapped_text(
             surf,
             "You can't follow or view this account's posts.",
-            (x + 10, y + 40, 128, 19),
+            (x + 10, y + 46, 128, 17),
             (83, 91, 98),
             max_lines=2,
             logical_size=6,
@@ -1670,8 +1829,16 @@ class Renderer:
         except Exception:
             corruption_effect = None
         deferred_ladders: list[tuple[int, int, int, int, str]] = []
-        for y, row in enumerate(sim.tiles):
-            for x, cell in enumerate(row):
+        map_h = len(sim.tiles)
+        map_w = len(sim.tiles[0]) if sim.tiles else 0
+        y0 = max(0, int(cam_y // TILE) - 1)
+        y1 = min(map_h, int((cam_y + INTERNAL[1]) // TILE) + 2)
+        x0 = max(0, int(cam_x // TILE) - 1)
+        x1 = min(map_w, int((cam_x + INTERNAL[0]) // TILE) + 2)
+        for y in range(y0, y1):
+            row = sim.tiles[y]
+            for x in range(x0, x1):
+                cell = row[x]
                 px, py = int(x * tw - cam_x * vs), int(y * tw - cam_y * vs)
                 if px < -tw or py < -tw or px > self._iw or py > self._ih:
                     continue
@@ -1703,17 +1870,35 @@ class Renderer:
                                 pygame.draw.line(surf, color, (dx, dy + vs), (dx + vs, dy), max(1, vs))
                             else:
                                 pygame.draw.rect(surf, color, (dx, dy, 3 * vs, 5 * vs), max(1, vs))
-                if cell in {"#", "=", "^", "D", "G"}:
-                    key = f"tiles/{pal}_{cell}.png"
+                if cell in {"#", "=", "I", "^", "D", "G"}:
+                    alpha = 255
+                    if cell == "I":
+                        run_x = x
+                        while run_x > 0 and row[run_x - 1] == "I":
+                            run_x -= 1
+                        alpha = platform_alpha(sim.body, x, y, sim.tick, run_x=run_x, reduced_motion=sim.accessibility.reduced_motion)
+                        if not alpha:
+                            continue
+                    art_cell = "=" if cell == "I" else cell
+                    key = f"tiles/{pal}_{art_cell}.png"
                     try:
                         tile = self._fid(sim, key)
                     except Exception:
                         try:
-                            tile = self._load(f"tiles/{pal}_{cell}.png")
+                            tile = self._load(f"tiles/{pal}_{art_cell}.png")
                         except Exception:
                             pygame.draw.rect(surf, PALETTE["brown"], (px, py, tw, tw))
                             continue
                     tile = self._fit(tile, (tw, tw))
+                    if cell == "I":
+                        green_key = f"invisible-green:{fid}:{pal}:{tw}"
+                        if green_key not in self.cache:
+                            green = pygame.transform.grayscale(tile)
+                            green.fill((48, 48, 48, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                            green.fill((*LIME_MARK, 255), special_flags=pygame.BLEND_RGBA_MULT)
+                            self.cache[green_key] = green
+                        tile = self.cache[green_key].copy()
+                        tile.set_alpha(alpha)
                     variant = (x * 17 + y * 31 + sim.chapter_index * 13) % 4
                     if cell in {"#", "="} and variant:
                         tile = pygame.transform.flip(tile, variant in {1, 3}, variant == 2 and cell == "#")
@@ -1736,23 +1921,28 @@ class Renderer:
             py = int(entity.y * tw - cam_y * vs)
             width = int(float(entity.extra.get("width") or 1) * tw)
             height = int(float(entity.extra.get("height") or 6) * tw)
+            vis_top = max(py, -tw)
+            vis_bottom = min(py + height, self._ih + tw)
+            if vis_bottom <= vis_top:
+                continue
+            vis_h = vis_bottom - vis_top
             try:
                 wind = self._fid(sim, "effects/wind-column.png")
                 draw_width = max(width + 8 * vs, round(width * 1.9))
-                gust = self._fit(wind, (draw_width, max(1, height)))
+                gust = self._fit(wind, (draw_width, max(1, vis_h)))
                 # A slow alternating mirror gives the modeled ribbons a
                 # second silhouette without inventing a duplicate asset.
                 if ((sim.tick + int(entity.x) * 7) // 9) % 2:
                     gust = pygame.transform.flip(gust, True, False)
                 sway = round(__import__("math").sin((sim.tick + int(entity.x) * 7) / 12.0) * vs)
-                surf.blit(gust, (px - (draw_width - width) // 2 + sway, py))
+                surf.blit(gust, (px - (draw_width - width) // 2 + sway, vis_top))
             except Exception:
-                veil = Surface((max(1, width), max(1, height)), pygame.SRCALPHA)
+                veil = Surface((max(1, width), max(1, vis_h)), pygame.SRCALPHA)
                 for line in range(4):
                     lx = int((line + 1) * width / 5)
-                    offset = int((sim.tick * (2 + line) + line * 13) % max(1, height))
-                    pygame.draw.line(veil, (*SHIFT_CYAN, 190), (lx, height - offset), (lx, max(0, height - offset - 10 * vs)), max(1, vs))
-                surf.blit(veil, (px, py))
+                    offset = int((sim.tick * (2 + line) + line * 13) % max(1, vis_h))
+                    pygame.draw.line(veil, (*SHIFT_CYAN, 190), (lx, vis_h - offset), (lx, max(0, vis_h - offset - 10 * vs)), max(1, vs))
+                surf.blit(veil, (px, vis_top))
             pygame.draw.arc(surf, BRONZE, (px, py + height - 5 * vs, width, 8 * vs), 0.0, 3.14, max(1, vs))
         for entity in sim.entities:
             if not entity.alive or entity.kind not in {"tilt-platform", "moving-platform"}:
@@ -1794,6 +1984,8 @@ class Renderer:
         for entity in sim.entities:
             if not entity.alive:
                 continue
+            if entity.kind == "boss" and (entity.extra.get("in_combat") or sim.scene == "chapter-complete"):
+                continue
             px = int(entity.x * tw - cam_x * vs + float(entity.extra.get("offset_x") or 0.0) * vs)
             py = int(entity.y * tw - cam_y * vs + float(entity.extra.get("offset_y") or 0.0) * vs)
             if entity.kind == "penguin":
@@ -1814,6 +2006,9 @@ class Renderer:
                 except Exception:
                     pygame.draw.rect(surf, PALETTE["cyan"], (px + 4 * vs, py + 4 * vs, 8 * vs, 8 * vs))
             elif entity.kind == "network":
+                if entity.extra.get("skyway"):
+                    self._ring_portal(surf, sim, px / vs + 8, py / vs + 16)
+                    continue
                 protocol = str(entity.extra.get("protocol") or "ethernet")
                 rel = "items/patch-cable.png" if protocol == "ethernet" else "items/fork-beacon.png"
                 try:
@@ -1849,6 +2044,27 @@ class Renderer:
                     bob = round(__import__("math").sin(sim.tick / 11.0) * vs)
                     surf.blit(door, (px + tw // 2 - dw // 2, py + tw - dh + bob))
                     pygame.draw.ellipse(surf, (*LIME_MARK, 150), (px - 6 * vs, py + 11 * vs, tw + 12 * vs, 7 * vs), max(1, vs))
+                    if entity.extra.get("exit"):
+                        sign_h = 6 * vs
+                        sign_w = 18 * vs
+                        sign_rect = (
+                            px + tw // 2 - sign_w // 2,
+                            py + tw - dh - sign_h - 3 * vs + bob,
+                        )
+                        try:
+                            sign = self._fit(self._fid(sim, "items/exit-sign.png"), (sign_w, sign_h))
+                            surf.blit(sign, sign_rect)
+                        except Exception:
+                            self.fit_text(
+                                surf,
+                                "EXIT",
+                                (px // vs - 16, py // vs - 36, 48, 12),
+                                (255, 70, 64),
+                                align="center",
+                                max_size=8,
+                                min_size=6,
+                                bold=True,
+                            )
                 except Exception:
                     pygame.draw.rect(surf, LIME_MARK, (px - 4 * vs, py - 30 * vs, tw + 8 * vs, 46 * vs), max(2, vs))
             elif entity.kind == "cow-cannon":
@@ -1886,7 +2102,7 @@ class Renderer:
                                 if full_power and (sim.tick // 6) % 2
                                 else LIME_MARK
                             )
-                            glyph = self._font(logical_size=6, bold=True).render(label, True, label_color)
+                            glyph = self._font(logical_size=7, bold=True).render(label, True, label_color)
                             if glyph.get_width() > panel.width - 4 * vs:
                                 glyph = pygame.transform.smoothscale(
                                     glyph,
@@ -1911,7 +2127,7 @@ class Renderer:
                         round((pivot_x + rotated_dx - cam_x) * vs),
                         round((pivot_y + rotated_dy - cam_y) * vs),
                     )
-                    ground_y = round(((entity.y + 1) * TILE - cam_y) * vs)
+                    ground_y = round((geometry["ground"][1] - cam_y) * vs)
                     shadow_x = round((entity.x * TILE + 35 - cam_x) * vs)
                     pygame.draw.ellipse(
                         surf,
@@ -1969,11 +2185,11 @@ class Renderer:
                     boss_id = entity.extra.get("boss") or CAMPAIGN_ROSTER[sim.chapter_index].boss.id
                     goliath_stage = str(entity.extra.get("goliath_stage") or "")
                     if boss_id == "goliath" and goliath_stage == "penguin":
-                        rel = "bosses/goliath-cyborg-penguin.png"
-                    elif boss_id == "goliath" and goliath_stage == "minions":
+                        rel = self._boss_pose_rel(sim, "goliath-cyborg-penguin", defeated=bool(entity.extra.get("converted")) and not entity.extra.get("defeat_settling"), active=bool(entity.extra.get("ability_flash")), idle_motion=sim.scene != "boss-defeat")
+                    elif boss_id == "goliath" and goliath_stage == "minions" and sim.scene != "boss-defeat":
                         rel = "bosses/goliath.png"
                     else:
-                        rel = f"bosses/{boss_id}-converted.png" if entity.extra.get("converted") else f"bosses/{boss_id}.png"
+                        rel = self._boss_pose_rel(sim, boss_id, defeated=bool(entity.extra.get("converted")) and not entity.extra.get("defeat_settling"), active=bool(entity.extra.get("ability_flash")), idle_motion=sim.scene != "boss-defeat")
                 else:
                     variant = str(entity.extra.get("variant") or "dogma-sprite")
                     suffix = "-converted" if entity.extra.get("converted") else ""
@@ -2014,23 +2230,6 @@ class Renderer:
                         angle = cadence * 2.2
                     if entity.extra.get("converted"):
                         scale_y += math.sin((sim.tick + int(entity.x) * 9) / 8.0) * 0.025
-                else:
-                    behavior = str(entity.extra.get("behavior") or "stamp-hop")
-                    pulse = math.sin(phase * (2.6 if behavior == "charge" else 1.7))
-                    scale_x = 1.0 + pulse * (0.045 if behavior != "amalgam" else 0.065)
-                    scale_y = 1.0 - pulse * (0.035 if behavior != "hover" else 0.055)
-                    angle = {
-                        "stamp-hop": math.sin(phase * 2.0) * 2.5,
-                        "hover": math.sin(phase * 1.4) * 4.5,
-                        "charge": math.sin(phase * 3.0) * 3.5,
-                        "phase": math.sin(phase * 2.2) * 7.0,
-                        "orbit": math.sin(phase) * 9.0,
-                        "amalgam": math.sin(phase * 1.8) * 5.0,
-                        "cyber-penguin": math.sin(phase * 2.4) * 3.0,
-                    }.get(behavior, 0.0)
-                    if int(entity.extra.get("ability_flash") or 0) > 0:
-                        scale_x += 0.07
-                        scale_y += 0.07
                 # Quantized transforms create readable authored beats without
                 # resampling every Ultra sprite every frame. A bounded cache
                 # keeps the animation inexpensive on the same modest hardware
@@ -2131,13 +2330,10 @@ class Renderer:
             self._edit_ghost(surf, sim, cam_x, cam_y)
         if sim.scene in {"flight", "edit", "turn"} or sim.combat is not None or sim.cannon_loaded:
             return
-        who = "custom" if sim.world and sim.world.character.get("kind") == "custom" else "david"
         frame = sim.side_sprite_frame()
-        try:
-            sprite = self._fid(sim, f"characters/{who}_{frame}.png")
-        except Exception:
-            legacy = "sixteen-bit"
-            sprite = self._load(f"characters/{who}_{legacy}_side-idle.png")
+        if sim.scene == "network" and sim.network_protocol == "skyway":
+            frame = "side-jump" if sim.network_destination[1] * TILE < sim.body.y else "side-fall"
+        sprite = self._character_sprite(sim, frame)
         target_h = CHAR_WORLD_HEIGHT * vs
         nh = target_h
         nw = max(1, int(sprite.get_width() / max(1, sprite.get_height()) * nh))
@@ -2188,12 +2384,8 @@ class Renderer:
         ghost_data = sim.edit_player_ghost
         if not ghost_data or int(ghost_data.get("map_index", -1)) != sim.map_index:
             return
-        who = "custom" if sim.world and sim.world.character.get("kind") == "custom" else "david"
         frame = str(ghost_data.get("frame") or "side-idle")
-        try:
-            sprite = self._fid(sim, f"characters/{who}_{frame}.png")
-        except Exception:
-            sprite = self._load(f"characters/{who}_sixteen-bit_side-idle.png")
+        sprite = self._character_sprite(sim, frame)
         nh = CHAR_WORLD_HEIGHT * self._vs
         nw = max(1, int(sprite.get_width() / max(1, sprite.get_height()) * nh))
         sprite = self._fit(sprite, (nw, nh))
@@ -2296,7 +2488,7 @@ class Renderer:
             hp = sum(max(0.0, float(entity.extra.get("hp") or 0.0)) for entity in minions)
             maximum = sum(max(1.0, float(entity.extra.get("max_hp") or 5.0)) for entity in minions)
             self._side_meter(surf, 310, 37, hp, maximum, "MINIONS", PALETTE["yellow"], label_left=True)
-        if sim.messages:
+        if sim.messages and sim.scene != "boss-defeat":
             foot = Surface((self._iw, 14 * self._vs), pygame.SRCALPHA)
             foot.fill((10, 12, 20, 220))
             surf.blit(foot, (0, 166 * self._vs))
@@ -2352,9 +2544,14 @@ class Renderer:
         xy: tuple[int, int],
         actor_id: str,
     ) -> None:
-        """Ground and pulse the sprite whose queued turn is resolving."""
+        """Move only the actor whose queued turn is resolving."""
 
-        active = sim.battle_actor == actor_id and sim.battle_flash_ticks > 0
+        active = sim.battle_actor == actor_id and sim.battle_delay_ticks > 0
+        if active and not (sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion):
+            progress = 1 - sim.battle_delay_ticks / max(1, sim.battle_stage_ticks)
+            motion = __import__("math").sin(progress * __import__("math").pi)
+            direction = -1 if actor_id == "foe" else 1
+            xy = (xy[0] + round(direction * 6 * motion * self._vs), xy[1] - round(2 * motion * self._vs))
         if active:
             pygame.draw.ellipse(
                 surf,
@@ -2367,11 +2564,21 @@ class Renderer:
                 ),
             )
         surf.blit(image, xy)
-        if active and (sim.battle_flash_ticks // 2) % 2 == 0:
+        if active and sim.battle_flash_ticks > 0 and (sim.battle_flash_ticks // 2) % 2 == 0:
             flash = image.copy()
             flash.fill((110, 100, 62, 0), special_flags=pygame.BLEND_RGBA_ADD)
             flash.set_alpha(150)
             surf.blit(flash, xy)
+
+    @staticmethod
+    def _battle_player_pose(sim: GameSim) -> str:
+        if sim.battle_actor != "player" or sim.battle_delay_ticks <= 0:
+            return "battle"
+        progress = 1 - sim.battle_delay_ticks / max(1, sim.battle_stage_ticks)
+        if progress < .15 or progress > .85:
+            return "battle"
+        return {"patch": "side-action", "demonstrate": "side-air-action",
+                "fork": "side-action", "item": "side-bomb"}.get(sim.battle_player_action, "side-bomb")
 
     def _battle_ui(self, surf: Surface, sim: GameSim, *, tactical: bool) -> None:
         """A staged, windowed JRPG encounter rather than portrait telemetry."""
@@ -2403,10 +2610,11 @@ class Renderer:
         self.fit_text(surf, f"FOCUS {battle.focus:02d}", (244, 8, 58, 13), SHIFT_CYAN, align="right", max_size=8, min_size=6)
         intent = str(battle.foe_intent or "entrench")
         counter = INTENT_COUNTERS.get(intent, "reason")
+        counter_label = "SHOW" if counter == "demonstrate" else counter.upper()
         self._panel(surf, (78, 27, 164, 15), fill=(11, 7, 16))
         self.fit_text(
             surf,
-            f"INTENT: {intent.replace('-', ' ').upper()}  ·  READ: {counter.upper()}",
+            f"INTENT: {intent.replace('-', ' ').upper()}  ·  READ: {counter_label}",
             (83, 30, 154, 9),
             PALETTE["yellow"],
             align="center",
@@ -2417,9 +2625,9 @@ class Renderer:
 
         try:
             if battle.boss_id and foe.id == "goliath-cyborg-penguin":
-                foe_rel = "bosses/goliath-cyborg-penguin.png"
+                foe_rel = self._boss_pose_rel(sim, "goliath-cyborg-penguin", active=sim.battle_actor == "foe" and sim.battle_delay_ticks > 0, idle_motion=False)
             else:
-                foe_rel = f"bosses/{battle.boss_id}.png" if battle.boss_id else f"enemies/{foe.id}.png"
+                foe_rel = self._boss_pose_rel(sim, battle.boss_id, active=sim.battle_actor == "foe" and sim.battle_delay_ticks > 0, idle_motion=False) if battle.boss_id else f"enemies/{foe.id}.png"
             foe_img = self._fid(sim, foe_rel)
             fh = (82 if battle.boss_id else 58) * self._vs
             fw = max(1, round(foe_img.get_width() / max(1, foe_img.get_height()) * fh))
@@ -2434,9 +2642,7 @@ class Renderer:
         except Exception:
             pass
         try:
-            who = "custom" if sim.world and sim.world.character.get("kind") == "custom" else "david"
-            # The battle asset is baked directly from the idle master.
-            hero = self._fid(sim, f"characters/{who}_battle.png")
+            hero = self._character_sprite(sim, self._battle_player_pose(sim))
             hh = 66 * self._vs
             hw = max(1, round(hero.get_width() / max(1, hero.get_height()) * hh))
             hero = self._fit(hero, (hw, hh))
@@ -2585,8 +2791,9 @@ class Renderer:
             "controls": ("CONTROLS", "remap"),
             "reroll": ("NEW WORLD", "confirm"),
             "omega-code": ("OMEGA CODE", "export"),
+            "credits": ("CREDITS", "roll"),
         }
-        row_h = 8 if len(row_ids) > 4 else 14
+        row_h = 7 if len(row_ids) > 10 else (8 if len(row_ids) > 4 else 14)
         start_y = 54 if len(row_ids) > 4 else 60
         for i, row_id in enumerate(row_ids):
             y = start_y + i * row_h
@@ -2615,11 +2822,7 @@ class Renderer:
                     min_size=5,
                 )
         try:
-            who = "custom" if sim.world and sim.world.character.get("kind") == "custom" else "david"
-            try:
-                port = self._fid(sim, f"characters/{who}_portrait.png")
-            except Exception:
-                port = self._fid(sim, "characters/david_portrait.png")
+            port = self._character_sprite(sim, "portrait")
             ph = 38 * self._vs
             portrait_box = self._lr(226, 38, 42, 44)
             pygame.draw.rect(surf, (18, 20, 32), portrait_box)
@@ -2921,8 +3124,33 @@ class Renderer:
             self.fit_text(surf, f"adopted={receipt.get('adopted')} {receipt.get('treatment', '')}", (24, 87, 270, 12), PALETTE["cyan"], max_size=8, min_size=6)
             self.wrapped_text(surf, str(receipt.get("reason", "")), (24, 102, 270, 28), PALETTE["fg"], max_lines=2, logical_size=8)
 
+    def _ring_portal(self, surf: Surface, sim: GameSim, x: float, feet_y: float, *, scale: float = 1.0) -> None:
+        size = (round(32 * scale * self._vs), round(12 * scale * self._vs))
+        pad = self._fit(self._fid(sim, "items/ring-pad.png"), size)
+        ring = self._fit(self._fid(sim, "items/ring-portal.png"), size)
+        left = round(x * self._vs - size[0] / 2)
+        surf.blit(pad, (left, round(feet_y * self._vs - size[1])))
+        reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)
+        for index in range(3):
+            phase = index / 3 if reduced else ((sim.tick / 95 + index / 3) % 1)
+            height = (4 + phase * 34) * scale
+            part = ring.copy()
+            part.set_alpha(round(230 * (1 - phase * .6)))
+            surf.blit(part, (left, round((feet_y - height) * self._vs - size[1] / 2)))
+
+    @staticmethod
+    def _boss_pose_rel(sim: GameSim, boss_id: str, *, defeated: bool = False, active: bool = False, idle_motion: bool = True) -> str:
+        reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)
+        suffix = "-defeated" if defeated else "-active" if active or (idle_motion and not reduced and sim.tick // 24 % 4 == 1) else ""
+        return f"bosses/{boss_id}{suffix}.png"
+
     def _network(self, surf: Surface, sim: GameSim) -> None:
         """Multimedia interstitial for deterministic hardware traversal."""
+
+        if sim.network_protocol == "skyway":
+            self._world(surf, sim)
+            self._hud(surf, sim)
+            return
 
         progress = max(0.0, min(1.0, 1.0 - sim.network_ticks / max(1, NETWORK_TICKS)))
         protocol_name = sim.network_protocol if sim.network_protocol in {"ethernet", "wifi"} else "ethernet"
@@ -2970,14 +3198,7 @@ class Renderer:
         pygame.draw.rect(surf, SHIFT_CYAN, self._lr(40, 156, max(2, round(240 * progress)), 5))
 
     def _flight(self, surf: Surface, sim: GameSim) -> None:
-        preset = sim.quality if sim.quality in {"eight-bit", "sixteen-bit", "clean-pixel", "crt", "high"} else "clean-pixel"
-        who = "david"
-        if sim.world and sim.world.character.get("kind") == "custom":
-            who = "custom"
-        try:
-            sprite = self._fid(sim, f"characters/{who}_flight.png")
-        except Exception:
-            sprite = self._load(f"characters/{who}_{preset}_flight.png")
+        sprite = self._character_sprite(sim, "flight")
         from .sim import FLIGHT_TICKS
 
         remaining = max(1, sim.flight_ticks)
@@ -3001,32 +3222,40 @@ class Renderer:
             start_x, start_y = self._iw // 2, self._ih // 2
         cx = round(start_x + (end_x - start_x) * progress)
         cy = round(start_y + (end_y - start_y) * progress)
-        # Anchor the visible silhouette, not its transparent source canvas.
-        # The final flight frame and the OTS edit frame now share the exact
-        # same centerline and bottom edge, eliminating their former snap.
-        surf.blit(sprite, (cx - sprite_bounds.centerx, cy - sprite_bounds.bottom))
+        # Flight and seated OTS art have different silhouettes. Matching their
+        # feet alone still makes the shoulders jump. Resolve into the actual
+        # seated image before the flight ends (and reverse this on return).
+        settle = max(0.0, min(1.0, (progress - 0.72) / 0.28))
+        if settle < 1:
+            moving = sprite.copy()
+            moving.set_alpha(round(255 * (1 - settle)))
+            surf.blit(moving, (cx - sprite_bounds.centerx, cy - sprite_bounds.bottom))
+        if settle > 0:
+            seated = ots.copy()
+            seated.set_alpha(round(255 * settle))
+            surf.blit(seated, (ots_x, ots_y))
         label = "flying back into play" if getattr(sim, "flight_direction", "out") == "in" else "flying into edit view"
         self.blit_text(surf, label, (8, 164), PALETTE["bright_green"])
 
     def _ots(self, surf: Surface, sim: GameSim) -> None:
         fid = self._active_fid(sim)
-        ots = self._ots_sprite(sim)
+        ots, ots_x, ots_y = self._ots_layout(sim)
         shade = Surface((self._iw, self._ih), pygame.SRCALPHA)
         shade.fill((0, 0, 0, 50 if fid == "sixteen-bit" else 80))
         surf.blit(shade, (0, 0))
-        max_h = 96 * self._vs
-        if ots.get_height() > max_h:
-            scale = max_h / ots.get_height()
-            ots = pygame.transform.smoothscale(ots, (int(ots.get_width() * scale), max_h))
-        _, ots_x, ots_y = self._ots_layout(sim, ots)
+        cursor_rect = self._lr(round(sim.edit_cursor[0] * TILE - sim.cam_x), round(sim.edit_cursor[1] * TILE - sim.cam_y), TILE, TILE)
+        if cursor_rect.colliderect(ots.get_rect(topleft=(ots_x, ots_y))):
+            ots = ots.copy()
+            ots.set_alpha(65)
         surf.blit(ots, (ots_x, ots_y))
+        controls_y = 6 if cursor_rect.bottom > 140 * self._vs else 146
         tile = ("=", "L", "^")[getattr(sim, "edit_tile_index", 0) % 3]
         try:
             pal = str(sim.chapter.get("palette") or CAMPAIGN_ROSTER[sim.chapter_index].palette)
             preview = self._fid(sim, f"tiles/{pal}_{tile}.png")
             preview = self._fit(preview, (16 * self._vs, 16 * self._vs))
-            surf.blit(preview, self._lp(88, 146))
-            pygame.draw.rect(surf, PALETTE["bright_green"], self._lr(88, 146, 16, 16), max(1, self._vs))
+            surf.blit(preview, self._lp(88, controls_y))
+            pygame.draw.rect(surf, PALETTE["bright_green"], self._lr(88, controls_y, 16, 16), max(1, self._vs))
         except Exception:
             pass
         self.fit_text(
@@ -3035,7 +3264,7 @@ class Renderer:
             f"{sim.prompt_binding('action', compact=True)} place · "
             f"{sim.prompt_binding('item', compact=True)} erase · "
             f"{sim.prompt_binding('jump', compact=True)} seal",
-            (108, 149, 204, 13),
+            (108, controls_y + 3, 204, 13),
             PALETTE["bright_green"],
             max_size=8,
             min_size=6,
@@ -3044,7 +3273,7 @@ class Renderer:
             surf,
             f"{sim.prompt_binding('interact', compact=True)} undo/cancel · "
             f"{sim.prompt_binding('customize', compact=True)} reset · {sim.edit_budget_used}/24",
-            (90, 163, 222, 12),
+            (90, controls_y + 17, 222, 12),
             PALETTE["cyan"],
             max_size=7,
             min_size=6,
@@ -3069,11 +3298,13 @@ class Renderer:
                 pygame.draw.line(surf, cursor_color, (rx + tw - 3 * vs, ry + 3 * vs), (rx + 3 * vs, ry + tw - 3 * vs), max(1, vs))
 
     def _ots_sprite(self, sim: GameSim) -> Surface:
-        who = "custom" if sim.world and sim.world.character.get("kind") == "custom" else "david"
-        try:
-            return self._fid(sim, f"characters/{who}_ots.png")
-        except Exception:
-            return self._load(f"characters/{who}_sixteen-bit_ots.png")
+        return self._character_sprite(sim, "ots")
+
+    def _cinematic_credits(self, surf: Surface, sim: GameSim) -> None:
+        if self._credits_renderer is None:
+            from .credits_render import CreditsRenderer
+            self._credits_renderer = CreditsRenderer(self)
+        self._credits_renderer.draw(surf, sim)
 
     def _ots_layout(self, sim: GameSim, ots: Surface | None = None) -> tuple[Surface, int, int]:
         ots = ots or self._ots_sprite(sim)
@@ -3093,7 +3324,7 @@ class Renderer:
             bounds = logo.get_bounding_rect(min_alpha=8)
             if bounds.width and bounds.height:
                 logo = logo.subsurface(bounds).copy()
-            max_w, max_h = 240 * self._vs, 44 * self._vs
+            max_w, max_h = 280 * self._vs, 40 * self._vs
             scale = min(max_w / logo.get_width(), max_h / logo.get_height())
             logo = self._fit(logo, (max(1, round(logo.get_width() * scale)), max(1, round(logo.get_height() * scale))))
             surf.blit(logo, ((self._iw - logo.get_width()) // 2, 54 * self._vs))
@@ -3131,7 +3362,7 @@ class Renderer:
         self.wrapped_text(
             surf,
             spec.boss.converted_line,
-            (46, 68, 228, 32),
+            (46, 75, 228, 34),
             PALETTE["fg"],
             max_lines=4,
             logical_size=7,
@@ -3139,7 +3370,7 @@ class Renderer:
         self.fit_text(
             surf,
             f"SCORE {sim.chapter_tally_score():07d}   PENGUINS {sim.chapter_tally_penguins():02d}",
-            (46, 102, 228, 12),
+            (46, 115, 228, 12),
             PALETTE["yellow"],
             align="center",
             max_size=9,
@@ -3153,7 +3384,7 @@ class Renderer:
         self.fit_text(
             surf,
             f"{jump} credits   {action} save",
-            (46, 116, 228, 11),
+            (46, 131, 228, 11),
             PALETTE["fg"],
             align="center",
             max_size=8,
@@ -3166,7 +3397,7 @@ class Renderer:
                 if sim.web_chapter_one
                 else f"{turn} {'CONTINUE DEVELOPMENT CHAPTERS' if sim.chapter_index == 0 else 'RETURN TO ROUTE MAP'}"
             ),
-            (42, 130, 236, 11),
+            (42, 145, 236, 11),
             PALETTE["accent"],
             align="center",
             max_size=8,
@@ -3228,50 +3459,6 @@ class Renderer:
             bold=True,
         )
 
-    def _chapter_credits(self, surf: Surface, sim: GameSim) -> None:
-        surf.fill(PALETTE["dark"])
-        self.fit_text(surf, "OMEGA OMARCHY", (30, 28, 260, 18), PALETTE["bright_green"], align="center", max_size=14, min_size=8, bold=True)
-        self.fit_text(surf, "OPEN DEVELOPMENT ALPHA", (30, 50, 260, 12), PALETTE["cyan"], align="center", max_size=9, min_size=6)
-        self.wrapped_text(
-            surf,
-            "Chapter 1: design, code, original art and audio by the Omega Omarchy project.",
-            (42, 72, 236, 28),
-            PALETTE["fg"],
-            max_lines=2,
-            logical_size=8,
-        )
-        self.wrapped_text(
-            surf,
-            "Unofficial parody project. Omarchy marks and real-person likeness rights are not granted by the code license.",
-            (42, 106, 236, 30),
-            PALETTE["yellow"],
-            max_lines=3,
-            logical_size=7,
-        )
-        jump = self._binding_pair(sim, "jump")
-        turn = self._binding_pair(sim, "turn")
-        self.fit_text(
-            surf,
-            (
-                f"{jump} back   Chapter 1 browser boundary"
-                if sim.web_chapter_one
-                else f"{jump} back   {turn} development chapters"
-            ),
-            (32, 153, 256, 11),
-            PALETTE["accent"],
-            align="center",
-            max_size=8,
-            min_size=6,
-        )
-
-    def _ending(self, surf: Surface, sim: GameSim) -> None:
-        surf.fill(PALETTE["dark"])
-        self.blit_text(surf, "GOLIATH CONVERTED", (80, 40), PALETTE["bright_green"])
-        self.fit_text(surf, "The Singularity demanded one future.", (28, 69, 264, 12), PALETTE["fg"], max_size=9, min_size=6)
-        self.fit_text(surf, "Omarchy lets its users make their own.", (28, 83, 264, 12), PALETTE["cyan"], max_size=9, min_size=6)
-        self.fit_text(surf, "The revolution will be customized.", (28, 107, 264, 12), PALETTE["yellow"], max_size=9, min_size=6)
-        self.fit_text(surf, "Credits — original art, audio, and code.", (28, 139, 264, 12), PALETTE["fg"], max_size=9, min_size=6)
-        self.fit_text(surf, "Private likeness refs were not shipped.", (28, 153, 264, 12), PALETTE["accent"], max_size=9, min_size=6)
 
 
 def save_surface(surf: Surface, path: Path) -> None:

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "introducing-omega-omarchy",
+    "type": "news",
+    "date": "2026-09-11T12:00:00-04:00",
+    "title": "A very normal installation. A very abnormal adventure.",
+    "paragraphs": [
+      "Meet Omega Omarchy: a free, open-source action-platformer about a Linux installation that goes spectacularly off script. Choose your character, configure your world, and find out what happens when the installer starts making decisions of its own.",
+      "Chapter 1 takes you from setup and a consciousness-transfer prologue into procedural platforming, tactical encounters, and terrain you can rewrite. Play as David, The Omarch King, or The Omarch Queen—or give your agent the character kit and bring someone entirely your own.",
+      "This is where we’ll share game news, releases, and the work happening in the repository. The revolution will be customized. So will the patch notes."
+    ],
+    "url": "/news/#introducing-omega-omarchy"
+  }
+]

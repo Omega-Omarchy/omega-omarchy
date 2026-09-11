@@ -1,7 +1,7 @@
 # Contributing to Omega Omarchy
 
-Omega Omarchy is a founder-led technical alpha. These rules define the intended
-contribution surface. Repository visibility stays with the lead maintainer.
+Omega Omarchy is a founder-led open-source game. Chapter 1 is playable at
+https://omegaomarchy.org/play/. These rules describe the contribution process.
 
 ## Direction and scope
 
@@ -12,8 +12,9 @@ polished 10–15 minute Chapter 1. Later chapters are development scaffolding.
 
 Targeted contributions are welcome in art, audio, accessibility, level content,
 enemies, methods, tests, performance, tooling, and declarative content packs.
-Read `GOVERNANCE.md`, `ROADMAP.md`, and the current NO-GO gates in
-`docs/OPEN-SOURCE-CUTOVER.md` before starting broad work.
+Read `GOVERNANCE.md` and `ROADMAP.md` before starting broad work. The historical
+pre-launch checklist remains in `docs/OPEN-SOURCE-CUTOVER.md`; future release
+verification and repository checks are covered by `docs/github-setup.md`.
 
 ## Set up and verify
 
@@ -31,7 +32,9 @@ Testing is issue-dependent. Select the smallest scope that covers the behavior
 and its adjacent invariants; do not run the whole suite merely by default.
 `./scripts/omega release-check` is the explicit full asset, pack, test,
 identity, native-smoke, and web-export gate for merges or release candidates
-whose risk warrants it.
+whose risk warrants it. For the full suite, install optional authoring test
+dependencies with `.venv/bin/python -m pip install -e ".[audio-authoring]"`;
+CI installs these explicitly without adding them to the player runtime.
 
 Useful focused commands:
 
@@ -49,6 +52,19 @@ For browser work, build with `./scripts/omega web`, serve with
 `./scripts/omega web-serve`, and follow [docs/web.md](docs/web.md). Do not open
 the generated index through `file://` or replace the browser target with a
 separate gameplay implementation.
+
+For the website, use `./scripts/omega website` and `./scripts/omega website-serve`.
+Node.js 24+ runs its motion/news tests and the level editor's state tests:
+
+```sh
+node --test website/motion.test.mjs website/news.test.mjs tests/level_editor_state.test.cjs
+.venv/bin/python -m unittest discover -s website -p 'test_*.py'
+.venv/bin/python website/check.py
+```
+
+Dependency changes must keep shared pins in `pyproject.toml` and
+`requirements/*.txt` consistent and pass the dependency review and audit jobs.
+Dependabot updates are reviewed like other changes; they are not auto-merged.
 
 ## Change discipline
 

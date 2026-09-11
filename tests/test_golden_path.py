@@ -1,5 +1,7 @@
 """Ordinary-input first-chapter playthrough. No private skips."""
 
+import pytest
+
 from omega_omarchy.physics import TILE, InputState
 from omega_omarchy.sim import (
     LEVEL_INTRO_TICKS,
@@ -34,8 +36,9 @@ def _gap_ahead(sim: GameSim) -> bool:
     return False
 
 
-def test_ordinary_keys_from_greeter_to_chapter_one_completion():
-    sim = GameSim.new("omega-fixture-1")
+@pytest.mark.parametrize("seed", ["omega-fixture-1", "chapter-design-a", "chapter-design-b"])
+def test_ordinary_keys_from_greeter_to_chapter_one_completion(seed):
+    sim = GameSim.new(seed)
     assert sim.scene == "installer"
     assert sim.installer.step == "greeter"
     _confirm(sim)

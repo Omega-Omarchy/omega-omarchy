@@ -9,8 +9,9 @@ from typing import Any
 
 from . import INSTALLER_COMPLETION_ACTION
 from .character import DAVID, FALLBACK_CHARACTER_NAME, Character, parse_character
+from .character_pack import character_preload_steps
 from .content import load_content
-from .generation import SealedWorld, generate_world
+from .generation import SealedWorld, generate_world_steps
 from .audio import AUDIO_FIDELITIES, DEFAULT_AUDIO, cycle_audio_fidelity, normalize_audio_settings
 from .presentation import DISPLAYS, FIDELITIES, apply_presentation, cycle_display, cycle_fidelity
 
@@ -107,7 +108,7 @@ INPUT_MODES = ("keyboard", "gamepad", "auto")
 DIFFICULTIES = ("casual", "standard", "precise")
 A11Y_PROFILES = ("default", "precision-assist", "reduced-motion")
 SEED_PRESETS = ("omega-fixture-1", "omega-daily", "custom-42")
-CHAR_KINDS = ("david", "custom")
+CHAR_KINDS = ("david", "omarch-king", "omarch-queen", "custom")
 
 
 def _cycle(options: tuple[str, ...], current: str, delta: int) -> str:
@@ -185,6 +186,60 @@ class InstallerSession:
     awaiting_release: bool = False
     name_entry_started: bool = False
     content_paths: tuple[Path, ...] = ()
+    character_roster: list[Character] | None = None
+    character_agent_selected: bool = False
+    character_help_open: bool = False
+    character_notice: str = ""
+    character_roots: dict[tuple[str, str], Path] = field(default_factory=dict)
+    characters_ready: bool = False
+    _character_work: Any = field(default=None, repr=False)
+    _generation_work: Any = field(default=None, repr=False)
+    progress_fraction: float = 0.0
+    progress_label: str = "Preparing installation"
+    completion_progress_ticks: int = 0
+    _started_at: float | None = field(default=None, repr=False)
+    _finished_at: float | None = field(default=None, repr=False)
+    realtime: bool = False
+
+    def preload_characters(self, *, files: int = 4) -> None:
+        if self.characters_ready:
+            return
+        if self._character_work is None:
+            self.character_roster = [DAVID]
+            self._character_work = character_preload_steps()
+        for _ in range(files):
+            try:
+                result = next(self._character_work)
+            except StopIteration:
+                self.characters_ready = True
+                self._character_work = None
+                break
+            if isinstance(result, str):
+                self.character_notice = "An incomplete character pack was skipped."
+            elif result is not None:
+                character, root = result
+                self.character_roster.append(character)
+                self.character_roots[(character.asset_pack, character.asset_digest)] = root
+
+    def refresh_characters(self) -> list[Character]:
+        self.characters_ready = False
+        self._character_work = None
+        self.character_roots.clear()
+        while not self.characters_ready:
+            self.preload_characters()
+        return self.character_roster
+
+    @property
+    def character_options(self) -> list[Character]:
+        return self.character_roster if self.character_roster is not None else self.refresh_characters()
+
+    @property
+    def character_index(self) -> int:
+        if self.character_agent_selected:
+            return len(self.character_options)
+        current = self.choices.character
+        return next((i for i, char in enumerate(self.character_options)
+                     if (char.kind, char.asset_pack, char.asset_digest) == (current.kind, current.asset_pack, current.asset_digest)), 0)
 
     @property
     def step(self) -> str:
@@ -204,8 +259,10 @@ class InstallerSession:
 
     @property
     def total_elapsed_s(self) -> float:
-        """Wall-clock generation plus every authored progress-screen delay."""
-
+        """Use the live clock in-app and the simulated 60 Hz clock headlessly."""
+        if self.realtime and self._started_at is not None:
+            end = self._finished_at if self._finished_at is not None else time.perf_counter()
+            return max(0.0, end - self._started_at)
         return self.elapsed_s + self.progress_ticks / INSTALL_TICK_HZ
 
     def copy_deck(self) -> dict[str, Any]:
@@ -254,7 +311,12 @@ class InstallerSession:
         if step == "input":
             c.input_mode = _cycle(INPUT_MODES, c.input_mode, delta)
         elif step == "character":
-            return
+            index = (self.character_index + delta) % (len(self.character_options) + 1)
+            self.character_agent_selected = index == len(self.character_options)
+            self.character_help_open = False
+            self.name_entry_started = False
+            if not self.character_agent_selected:
+                self.choices.character = self.character_options[index]
         elif step == "seed":
             c.seed = _cycle(SEED_PRESETS, c.seed if c.seed in SEED_PRESETS else SEED_PRESETS[0], delta)
         elif step == "difficulty":
@@ -284,7 +346,8 @@ class InstallerSession:
 
     def edit_character_name(self, text: str = "", *, backspace: bool = False) -> bool:
         """Edit the focused character-name field without changing the model."""
-
+        if self.character_agent_selected:
+            return False
         current = self.choices.character.name
         if backspace:
             updated = current[:-1]
@@ -330,9 +393,9 @@ class InstallerSession:
         pages = {
             "input": ("Select input", list(INPUT_MODES), INPUT_MODES.index(c.input_mode) if c.input_mode in INPUT_MODES else 0),
             "character": (
-                "Name your character",
-                [f"{c.character.name or 'Type a name'}{'_' if self.name_entry_started else ''}"],
-                0,
+                "Choose your character",
+                [("David" if char.kind == "david" else char.name) for char in self.character_options] + ["Create with your agent"] if self.step == "character" else [],
+                self.character_index if self.step == "character" else 0,
             ),
             "seed": (
                 "Select world seed",
@@ -350,12 +413,12 @@ class InstallerSession:
                 A11Y_PROFILES.index(c.accessibility_profile) if c.accessibility_profile in A11Y_PROFILES else 0,
             ),
             "quality": (
-                "Select art fidelity",
+                "Select video detail",
                 list(FIDELITIES),
                 FIDELITIES.index(c.fidelity) if c.fidelity in FIDELITIES else 0,
             ),
             "sound": (
-                "Select sound fidelity",
+                "Select audio quality",
                 list(AUDIO_FIDELITIES),
                 AUDIO_FIDELITIES.index(c.audio_fidelity) if c.audio_fidelity in AUDIO_FIDELITIES else 2,
             ),
@@ -379,9 +442,9 @@ class InstallerSession:
             return None
         prompt, options, index = pages[self.step]
         labels = {
-            "sixteen-bit": "16-bit  ·  SNES class",
-            "high": "high-detail pixel",
-            "ultra": "ultra  ·  illustrated pixel",
+            "sixteen-bit": "16-bit · classic pixel art",
+            "high": "High · detailed pixel art",
+            "ultra": "Ultra · illustrated pixel art",
             "clean": "clean pixel",
             "crt": "CRT simulation",
             "off": "off — start fresh locally",
@@ -390,6 +453,10 @@ class InstallerSession:
             "manual-public": "manual-public",
             "agent-under-saved-policy": "agent-under-saved-policy",
         }
+        if self.step == "sound":
+            labels.update({"sixteen-bit": "16-bit · chiptunes and retro effects",
+                           "high": "High · retro-filtered music and effects",
+                           "ultra": "Ultra · full-range music and effects"})
         shown = [labels.get(opt, opt) for opt in options]
         footnote = ""
         if self.step == "limitless":
@@ -399,11 +466,11 @@ class InstallerSession:
         elif self.step == "input":
             footnote = "Keyboard is enough. Gamepad optional."
         elif self.step == "character":
-            footnote = "Names can be changed now; deeper character creation comes later."
+            footnote = self.character_notice or ("Preparing character art..." if not self.characters_ready and self._character_work is not None else "Same abilities. Your character, your name.")
         elif self.step == "quality":
             footnote = "Ultra adds detail. Change fidelity later in Pause."
         elif self.step == "sound":
-            footnote = "Sound quality is independent from visual fidelity."
+            footnote = "Music and sound effects. Change audio later in Pause."
         elif self.step == "display":
             footnote = "CRT is a display treatment. Reduced-motion wins."
         return {
@@ -413,7 +480,7 @@ class InstallerSession:
             "index": index,
             "footnote": footnote,
             "ownerHint": SETUP_OWNER_HINT if machine else "",
-            "nav": "type name  •  backspace edit  •  enter submit" if self.step == "character" else NAV_HINT,
+            "nav": "up/down choose · type name · enter select" if self.step == "character" else NAV_HINT,
         }
 
     def confirm_rows(self) -> list[tuple[str, str]]:
@@ -422,10 +489,10 @@ class InstallerSession:
             ("Character", c.character.name),
             ("Seed", c.seed),
             ("Difficulty", c.difficulty),
-            ("Fidelity", c.fidelity),
-            ("Sound", c.audio_fidelity),
+            ("Video", c.fidelity),
+            ("Audio", c.audio_fidelity),
             ("Display", c.display),
-            ("Limitless", "on" if c.limitless_enabled else "off"),
+            ("Limitless Library", "on" if c.limitless_enabled else "off"),
             ("Sharing", c.share_policy),
         ]
 
@@ -433,6 +500,22 @@ class InstallerSession:
         if self.step == "complete":
             return
         if self.step == "character":
+            if self.character_agent_selected:
+                self.character_help_open = True
+                import sys
+                if sys.platform != "emscripten":
+                    from .runtime_assets import asset_dir
+                    from .save import user_data_dir
+                    import shutil
+
+                    destination = user_data_dir() / "character-agent-kit.zip"
+                    try:
+                        destination.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copyfile(asset_dir() / "character-creation/agent-kit.zip", destination)
+                        self.character_notice = f"Agent kit saved: {destination}"
+                    except OSError:
+                        self.character_notice = "Export a kit with: ./scripts/omega character-kit PATH"
+                return
             self._finalize_character_name()
         if self.step == "confirm" and not self.confirm_accept:
             self.step_index = PARODY_STEPS.index("character")
@@ -445,7 +528,14 @@ class InstallerSession:
         self.step_index = min(self.step_index + 1, len(PARODY_STEPS) - 1)
         if self.step == "progress":
             self.progress_ticks = 0
-            self.run_generation()
+            self.completion_progress_ticks = 0
+            self.world = None
+            self._generation_work = None
+            self.elapsed_s = 0.0
+            self.progress_fraction = 0.0
+            self.progress_label = "Preparing installation"
+            self._started_at = time.perf_counter()
+            self._finished_at = None
 
     def prev_step(self) -> None:
         if self.step_index > 0 and self.step not in {"progress", "complete"}:
@@ -454,6 +544,8 @@ class InstallerSession:
     def enter_complete(self) -> None:
         if self.world is None:
             self.run_generation()
+        if self._finished_at is None:
+            self._finished_at = time.perf_counter()
         self.step_index = PARODY_STEPS.index("complete")
         self.play_now_armed = False
         self.complete_ticks = 0
@@ -464,17 +556,39 @@ class InstallerSession:
         self.enter_complete()
 
     def tick_progress(self) -> None:
-        """Advance the dotted bar; generation is already finished."""
+        """Run one preparation unit after the progress screen has been shown."""
 
         self.progress_ticks += 1
-        filled = min(len(PROGRESS_PHASES), 1 + self.progress_ticks // 6)
-        self.phase_index = min(len(PROGRESS_PHASES) - 1, filled - 1)
-        if self.world is not None and self.progress_ticks >= PROGRESS_BASE_TICKS + INSTALL_BREATH_TICKS:
+        if self.world is None:
+            self.advance_generation()
+            return
+        self.completion_progress_ticks += 1
+        if self.completion_progress_ticks >= PROGRESS_BASE_TICKS + INSTALL_BREATH_TICKS:
             self.enter_complete()
 
-    def run_generation(self) -> SealedWorld:
+    def advance_generation(self) -> None:
         self.generating = True
         started = time.perf_counter()
+        if self._started_at is None:
+            self._started_at = started
+        try:
+            if self._generation_work is None:
+                self._generation_work = self._prepare_world()
+            fraction, self.progress_label = next(self._generation_work)
+            self.progress_fraction = max(self.progress_fraction, fraction)
+            self.phase_index = min(len(PROGRESS_PHASES) - 1, int(self.progress_fraction * len(PROGRESS_PHASES)))
+        except StopIteration as done:
+            self.world = done.value
+            self._generation_work = None
+            self.generating = False
+            self.progress_fraction = 1.0
+            self.progress_label = "Installation complete"
+            self.phase_index = len(PROGRESS_PHASES) - 1
+        finally:
+            self.elapsed_s += max(0.0, time.perf_counter() - started)
+
+    def _prepare_world(self):
+        yield 0.01, "Loading world content"
         accessibility = self.choices.accessibility_profile
         if self.choices.precision_assist and accessibility == "default":
             accessibility = "precision-assist"
@@ -495,7 +609,7 @@ class InstallerSession:
         }
         settings = apply_presentation(settings, quality=self.choices.quality)
         settings = normalize_audio_settings(settings, legacy_fidelity=self.choices.fidelity)
-        world = generate_world(
+        return (yield from generate_world_steps(
             self.choices.seed,
             difficulty=self.choices.difficulty,
             accessibility_profile=accessibility,
@@ -503,12 +617,18 @@ class InstallerSession:
             settings=settings,
             force_logo=self.force_logo,
             content=load_content(self.content_paths),
-        )
-        self.world = world
-        self.generating = False
-        self.elapsed_s = max(0.0, time.perf_counter() - started)
-        self.phase_index = len(PROGRESS_PHASES) - 1
-        return world
+        ))
+
+    def run_generation(self) -> SealedWorld:
+        if self.world is not None:
+            self.world = None
+            self._generation_work = None
+            self.elapsed_s = 0.0
+            self._started_at = time.perf_counter()
+            self._finished_at = None
+        while self.world is None:
+            self.advance_generation()
+        return self.world
 
     def play_now(self) -> SealedWorld:
         if self.world is None:

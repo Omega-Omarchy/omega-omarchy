@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Omega Workshop · Level editor</title>
+<style>/*EDITOR_CSS*/</style>
+<body>
+<header><div><p class="eyebrow">OMEGA OMARCHY / DEVELOPMENT TOOLS</p><h1>Level workshop</h1></div><a href="index.html">Route atlas ↗</a></header>
+<div class="toolbar">
+  <label>Map<select id="map-select" aria-label="Map"></select></label>
+  <label>Zoom<select id="zoom" aria-label="Zoom"><option value="fit">Fit map</option><option value="0.25">25%</option><option value="0.5">50%</option><option value="0.75">75%</option><option value="1" selected>100%</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select></label>
+  <button id="lock" aria-pressed="true">🔒 Map locked</button>
+  <button id="undo" disabled>Undo</button><button id="redo" disabled>Redo</button>
+  <button id="validate" class="primary">Check traversal</button>
+  <button id="export">Export draft</button><button id="import">Import draft</button><input id="import-file" type="file" accept="application/json,.json" hidden>
+</div>
+<div class="palette-bar"><div id="palette" role="toolbar" aria-label="Tile selection"></div></div>
+<div class="view-tools">
+  <label>Tool<select id="tool" aria-label="Editor tool"><option value="paint">Paint tiles</option><option value="select">Select / inspect</option><option value="pan">Pan map</option></select></label>
+  <label><input type="checkbox" id="grid" checked> Grid</label>
+  <label><input type="checkbox" id="reach-overlay" checked> Reachability</label>
+  <label><input type="checkbox" id="changes-overlay" checked> Changed tiles</label>
+  <button id="spawn">Go to spawn</button>
+  <span id="map-info"></span>
+</div>
+<div id="viewport" tabindex="0" aria-label="Level canvas. Arrow keys select a tile. Enter paints when unlocked. Space and drag pans.">
+  <canvas id="map-canvas" aria-label="Editable level map"></canvas>
+</div>
+<div class="statusline"><span id="cursor-info">Select a tile to inspect it.</span><span id="draft-status" role="status"></span></div>
+<section class="lower-panels">
+  <div class="panel"><div class="panel-title"><h2>Traversal</h2><span id="validation-badge" class="badge">Not checked</span></div>
+    <p id="validation-summary">Check boss access, edit pickups, ladders and penguin routes using the game's checker.</p>
+    <ul id="validation-errors"></ul><button id="repair" disabled>Repair ladder ends</button>
+    <p class="hint">Traversal checks standing clearance, slide tunnels, ladders, and normal or double jumps. It does not simulate enemies or moving-platform timing. Invisible platforms are shown here for editing. Dashed objects are moving platforms and wind.</p>
+  </div>
+  <div class="panel"><div class="panel-title"><h2>Undo history</h2><span id="change-count" class="badge">0 changes</span></div>
+    <label>Return to a level<select id="history" aria-label="Undo history"></select></label>
+    <button id="reset" disabled>Reset to original</button>
+    <p class="hint">100 undo levels per map. A drag is one level. Draft tiles are saved in this browser; undo history lasts for this session. Export keeps a portable copy.</p>
+  </div>
+</section>
+<footer>Locked maps can be inspected and panned. Unlock to paint. Ctrl/Cmd+Z undo · Shift+Ctrl/Cmd+Z redo · Enter paint · Delete erase. Spawn and boss anchors are protected. Drafts do not modify the game's source or active saves.</footer>
+<script id="editor-data" type="application/json"><!--EDITOR_DATA--></script>
+<script>/*EDITOR_JS*/</script>
+</body></html>

@@ -24,6 +24,7 @@ from .physics import InputState
 from .render import INTERNAL, Renderer, save_surface
 from .runtime_assets import asset_dir
 from .sim import CHAPTER_COMPLETE_TALLY_TICKS, GameSim
+from .character_pack import poll_browser_import, restore_browser_characters
 
 SCALE = 4
 
@@ -67,6 +68,22 @@ def key_code_to_name(code: int) -> str:
     if len(name) == 1:
         return name.upper()
     return " ".join(part.title() for part in name.split())
+
+
+def _handle_credits_shortcut(sim: GameSim, key: int, audio: AudioManager | None = None) -> bool:
+    """Preview either sequence without abandoning the current game/session."""
+    if key not in {pygame.K_F11, pygame.K_F12}:
+        return False
+    return_scene = (
+        sim.credits_return_scene
+        if sim.scene in {"credits", "chapter-credits", "ending"}
+        else sim.scene
+    )
+    sim.start_credits(cinematic=key == pygame.K_F12, return_scene=return_scene)
+    if audio is not None:
+        # Repeating a shortcut must restart the recording with the timeline.
+        audio._stop_music()
+    return True
 
 
 def _held(keys: object, code: int) -> bool:
@@ -218,7 +235,9 @@ async def run_game_async(
         os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
     pygame.init()
     pygame.joystick.init()
+    restore_browser_characters()
     sim = GameSim.new(seed, content_packs)
+    sim.installer.realtime = not headless
     sim.web_chapter_one = sys.platform == "emscripten"
     audio = AudioManager(browser=sim.web_chapter_one, enabled=not headless)
     if skip_installer or headless or dev_warp:
@@ -241,6 +260,13 @@ async def run_game_async(
     running = True
     remaining = ticks
     while running:
+        import_message = poll_browser_import()
+        if import_message:
+            sim.installer.refresh_characters()
+            sim.installer.character_notice = import_message
+            sim.messages.append(import_message)
+            from platform import window as browser_window
+            browser_window.omegaCharacterImportStatus = import_message
         just: set[int] = set()
         just_buttons: set[tuple[int, int]] = set()
         for event in pygame.event.get():
@@ -250,6 +276,8 @@ async def run_game_async(
                 audio.unlock()
                 sim.last_input_device = "keyboard"
                 if sim.capture_remap_key(key_code_to_name(event.key)):
+                    continue
+                if _handle_credits_shortcut(sim, event.key, audio):
                     continue
                 if sim.scene == "installer" and sim.installer.step == "character":
                     if event.key == pygame.K_BACKSPACE:
@@ -315,7 +343,7 @@ async def run_game_async(
         inp = _map_keys(keys, just, joy, sim.accessibility)
         if sim.scene == "oligarchy" and (inp.interact or inp.jump_pressed):
             sim.dismiss_oligarchy()
-        sim.step(inp)
+        sim.step(inp, frame_seconds=clock.get_time() / 1000)
         active_audio_settings = (
             sim.installer.choices.to_record() if sim.scene == "installer" else sim.settings
         )
@@ -326,6 +354,8 @@ async def run_game_async(
             cues=tuple(sim.sfx),
         )
         sim.sfx.clear()
+        if sim.scene == "installer":
+            renderer.preload_character_portraits(sim.installer)
         frame = renderer.frame(sim)
         if window.get_size() != frame.get_size():
             pygame.transform.scale(frame, window.get_size(), window)

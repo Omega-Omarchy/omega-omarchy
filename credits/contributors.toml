@@ -1,0 +1,16 @@
+# Preferred screen names, keyed by GitHub login. This is the opt-in override.
+# Add Git author names/emails to aliases when commits do not use GitHub noreply.
+# Unmapped noreply addresses display their GitHub username. Other identities
+# retain their recorded Git author name until associated with a login here.
+[contributors.jeremydixon22]
+name = "Jeremy Dixon"
+aliases = ["Jeremy Dixon", "jeremydixon22@users.noreply.github.com"]
+
+# Optional, reviewed GitHub profile overrides. Normal builds never query the
+# network. A contributor may pin their public profile name here instead of an
+# explicit override above: [github_profiles.login] name = "Public profile name"
+# ./scripts/omega credits --refresh-github can populate the separate
+# github-identities.json cache from GitHub; explicit names here take priority.
+
+[production]
+lead = "jeremydixon22"

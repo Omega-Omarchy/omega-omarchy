@@ -21,7 +21,7 @@ from typing import Any
 from .chiptune import SUPPORTED_STYLES, convert_to_chiptune
 
 
-BUILD_VERSION = "omega-audio-render/8-poc"
+BUILD_VERSION = "omega-audio-render/9-prepared-cues"
 TIERS = ("sixteen-bit", "high", "ultra")
 SFX_TIER_FILTERS = {
     "ultra": "aresample=44100,alimiter=limit=0.95",
@@ -364,6 +364,43 @@ def _build_digest(source_manifest: Path, source_files: list[Path]) -> str:
     return f"sha256:{digest.hexdigest()}"
 
 
+def _prepared_music_files(cue: dict[str, Any], source_root: Path) -> dict[str, Path]:
+    """Resolve explicitly selected authoring renders before any runtime writes.
+
+    These are already arranged, encoded cue files. Their hashes bind a reviewed
+    render to the build; they must never run through mixed-audio resynthesis.
+    """
+    entries = cue.get("prepared", {})
+    if not isinstance(entries, dict) or set(entries) - set(TIERS):
+        raise RuntimeError("prepared music must map known fidelity tiers to files")
+    result = {}
+    for tier, entry in entries.items():
+        if not isinstance(entry, dict) or not isinstance(entry.get("file"), str):
+            raise RuntimeError("prepared music needs a file and its sha256")
+        relative = Path(entry["file"])
+        if relative.is_absolute() or ".." in relative.parts:
+            raise RuntimeError("prepared music path must stay within assets/source/audio")
+        path = source_root / relative
+        try:
+            path.resolve().relative_to(source_root.resolve())
+        except ValueError as exc:
+            raise RuntimeError("prepared music path escapes assets/source/audio") from exc
+        expected = entry.get("sha256", "")
+        if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
+            raise RuntimeError("prepared music requires its exact lowercase sha256")
+        if not path.is_file() or path.suffix.lower() != ".ogg":
+            raise RuntimeError(f"prepared music Ogg is missing: {path}")
+        with path.open("rb") as source:
+            if source.read(4) != b"OggS":
+                raise RuntimeError(f"prepared music is not an Ogg file: {path}")
+        if _sha256(path) != expected:
+            raise RuntimeError(f"prepared music checksum mismatch: {path}")
+        if type(entry.get("loop")) is not bool or entry["loop"] != bool(cue.get("loop", True)):
+            raise RuntimeError("prepared music loop behavior must match its semantic cue")
+        result[tier] = path
+    return result
+
+
 def _validate_config(config: dict[str, Any], source_root: Path) -> None:
     if config.get("schema_version") != 1:
         raise RuntimeError("unsupported audio source-manifest schema")
@@ -393,6 +430,7 @@ def _validate_config(config: dict[str, Any], source_root: Path) -> None:
                 raise RuntimeError(f"invalid or duplicate audio cue id: {cue_id!r}")
             known.add(cue_id)
             if kind == "music":
+                _prepared_music_files(cue, source_root)
                 music_ids.add(cue_id)
                 start = float(cue.get("start", -1))
                 end = float(cue.get("end", -1))
@@ -413,7 +451,7 @@ def _validate_config(config: dict[str, Any], source_root: Path) -> None:
 
 
 def build_audio_assets(asset_root: Path, *, force: bool = False) -> Path:
-    """Render all runtime tiers directly from source masters."""
+    """Build tiers from masters or explicitly selected, verified authoring cues."""
 
     asset_root = Path(asset_root)
     source_root = asset_root / "source" / "audio"
@@ -431,6 +469,8 @@ def build_audio_assets(asset_root: Path, *, force: bool = False) -> Path:
     if expected_master_digest and actual_master_digest != expected_master_digest:
         raise RuntimeError("decoded audio master does not match its provenance digest")
     source_files = [music_master]
+    prepared_music = {str(cue['id']): _prepared_music_files(cue, source_root) for cue in config['music']}
+    source_files.extend({path for entries in prepared_music.values() for path in entries.values()})
     for cue in config["sfx"]:
         source_files.append(source_root / "sfx" / str(cue["id"]) / "master.wav")
     build_digest = _build_digest(source_manifest, source_files)
@@ -492,19 +532,25 @@ def build_audio_assets(asset_root: Path, *, force: bool = False) -> Path:
         paths = {}
         durations = {}
         levels = {}
+        source_digests = {}
+        render_methods = {}
         for tier in TIERS:
             target = runtime_root / tier / "music" / f"{cue_id}.ogg"
-            _render_music(
-                ffmpeg,
-                music_master,
-                target,
-                tier,
-                start=float(source_cue["start"]),
-                end=float(source_cue["end"]),
-                crossfade=float(source_cue.get("crossfade", 0.0)),
-                loop=bool(source_cue.get("loop", True)),
-                sixteen_bit_style=str(source_cue.get("sixteen_bit_style") or "snes"),
-            )
+            prepared = prepared_music[cue_id].get(tier)
+            if prepared is not None:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(prepared, target)
+                render_methods[tier] = "prepared-authoring-render"
+            else:
+                _render_music(
+                    ffmpeg, music_master, target, tier,
+                    start=float(source_cue["start"]), end=float(source_cue["end"]),
+                    crossfade=float(source_cue.get("crossfade", 0.0)),
+                    loop=bool(source_cue.get("loop", True)),
+                    sixteen_bit_style=str(source_cue.get("sixteen_bit_style") or "snes"),
+                )
+                render_methods[tier] = "source-master"
+            source_digests[tier] = f"sha256:{_sha256(prepared or music_master)}"
             paths[tier] = target.relative_to(runtime_root).as_posix()
             durations[tier] = _probe_duration(ffprobe, target)
             levels[tier] = _probe_levels(ffmpeg, target)
@@ -517,7 +563,9 @@ def build_audio_assets(asset_root: Path, *, force: bool = False) -> Path:
             "files": paths,
             "durations": durations,
             "levels": levels,
-            "sourceDigest": f"sha256:{_sha256(music_master)}",
+            "sourceDigest": source_digests["ultra"],
+            "sourceDigests": source_digests,
+            "renderMethods": render_methods,
         }
 
     output = {

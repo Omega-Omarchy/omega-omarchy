@@ -17,7 +17,7 @@ def test_identity_binds_seed_generator_schema_and_content():
     world = generate_world(SEED, force_logo=True)
     rec = world.identity.to_record()
     assert rec["seed"] == SEED
-    assert rec["generatorVersion"] == "3.8.0"
+    assert rec["generatorVersion"] == "3.12.0"
     assert rec["schemaVersion"] == "1.0.0"
     assert rec["contentPackIds"] == ["omega-core-1"]
     assert rec["contentDigest"].startswith("sha256:")

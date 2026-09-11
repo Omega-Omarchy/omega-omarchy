@@ -1,6 +1,6 @@
 {
-  "buildDigest": "sha256:23a34c27cf13ea85923fa5d04e32a8833d53614d14a2eeb53cf7494070623900",
-  "buildVersion": "omega-audio-render/7",
+  "buildDigest": "sha256:a8fb2f09549ee17fc18db09f48075237dcea66a69092745506a97f29c1d5f5bd",
+  "buildVersion": "omega-audio-render/9-prepared-cues",
   "cues": {
     "bomb": {
       "bus": "sfx",
@@ -86,6 +86,48 @@
       "priority": 8,
       "sourceDigest": "sha256:bbcaf248274614f7adbcbb61d6ffda8f58cb09df3833560eda44cd16503916dd"
     },
+    "credits-roll": {
+      "bus": "music",
+      "caption": "Music: Super Key Love \u2014 Jeremy Dixon",
+      "durations": {
+        "high": 429.863991,
+        "sixteen-bit": 429.863991,
+        "ultra": 429.863991
+      },
+      "files": {
+        "high": "high/music/credits-roll.ogg",
+        "sixteen-bit": "sixteen-bit/music/credits-roll.ogg",
+        "ultra": "ultra/music/credits-roll.ogg"
+      },
+      "gain": 0.82,
+      "kind": "music",
+      "levels": {
+        "high": {
+          "meanDbfs": -14.7,
+          "peakDbfs": 0.0
+        },
+        "sixteen-bit": {
+          "meanDbfs": -14.7,
+          "peakDbfs": 0.0
+        },
+        "ultra": {
+          "meanDbfs": -14.6,
+          "peakDbfs": 0.0
+        }
+      },
+      "loop": false,
+      "renderMethods": {
+        "high": "prepared-authoring-render",
+        "sixteen-bit": "prepared-authoring-render",
+        "ultra": "prepared-authoring-render"
+      },
+      "sourceDigest": "sha256:90d965c61b0eaa85f53e2fc6d9f39ae419cc552cbc5f4461408d01ece0876983",
+      "sourceDigests": {
+        "high": "sha256:f80b587e39157b1d70f08b1f157ac69416d19bfd7e45e5a75e9dd6756941f749",
+        "sixteen-bit": "sha256:efdfa8fe49806441b9eee7ca5764924ad1a2701a612ba96ac10be1d5da539e22",
+        "ultra": "sha256:90d965c61b0eaa85f53e2fc6d9f39ae419cc552cbc5f4461408d01ece0876983"
+      }
+    },
     "credits-theme": {
       "bus": "music",
       "caption": "Music: Make It Come Alive",
@@ -116,7 +158,17 @@
         }
       },
       "loop": false,
-      "sourceDigest": "sha256:3763901165fe93bf3660d450faa8940fbd19df6a6236196f19578a03aa198e32"
+      "renderMethods": {
+        "high": "prepared-authoring-render",
+        "sixteen-bit": "prepared-authoring-render",
+        "ultra": "prepared-authoring-render"
+      },
+      "sourceDigest": "sha256:5aa8d30eca2056a7ce9d3577d7b95ce7bffecadabf79c20a68144d359906e286",
+      "sourceDigests": {
+        "high": "sha256:8b4a23612f2f88030c2c8382269c3e5a76c8505e6f6d316e77789cc68629c731",
+        "sixteen-bit": "sha256:a412036106613066adf2b1e70570dfff008412a68813823288518ccb4fd04482",
+        "ultra": "sha256:5aa8d30eca2056a7ce9d3577d7b95ce7bffecadabf79c20a68144d359906e286"
+      }
     },
     "hit": {
       "bus": "sfx",
@@ -233,12 +285,13 @@
   },
   "defaultFidelity": "ultra",
   "rights": {
-    "provenance": "Maintainer supplied for the private development build.",
-    "publicRedistribution": "Public redistribution must be confirmed during the audio rights audit."
+    "provenance": "Maintainer supplied; creator permission reported by the maintainer.",
+    "publicRedistribution": "Creator granted use with or without attribution. Archive the permission exchange and verify that public source-master redistribution is within scope before cutover."
   },
   "sceneMusic": {
-    "chapter-credits": "credits-theme",
-    "credits": "credits-theme"
+    "chapter-credits": "credits-roll",
+    "credits": "credits-roll",
+    "ending": "credits-theme"
   },
   "schemaVersion": 1,
   "tiers": [

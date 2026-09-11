@@ -399,6 +399,16 @@ def test_branded_blocks_and_network_interstitials_derive_from_ultra_masters():
         assert int(xs.max() - xs.min() + 1) >= minimum_width[fidelity]
 
 
+def test_exit_sign_reads_as_a_lit_building_code_plaque():
+    from omega_omarchy.assets import draw_exit_sign
+
+    sign = draw_exit_sign((56, 18))
+    pixels = np.asarray(sign.convert("RGBA"))
+    red = (pixels[:, :, 0] > 120) & (pixels[:, :, 1] < 90) & (pixels[:, :, 3] > 200)
+    assert red.any()
+    assert pixels[0, 0, 3] > 0 or pixels[9, 28, 3] > 0
+
+
 def test_cow_level_door_and_prologue_art_derive_for_every_fidelity():
     root = build_assets(asset_dir())
     sizes = []

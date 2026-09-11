@@ -113,6 +113,7 @@ def test_new_sessions_default_to_ultra_and_crt_exposes_independent_controls():
         "controls",
         "reroll",
         "omega-code",
+        "credits",
     )
     sim.scene = "pause"
     before_scanline = float(sim.settings["crt"]["scanline"])
@@ -419,7 +420,7 @@ def test_edit_cursor_is_bounded_and_edits_preview_undo_reset_then_cancel():
     sim = GameSim.from_play_now()
     sim._enter_edit()
     bounds = sim._edit_bounds()
-    for _ in range(40):
+    for _ in range((max(bounds[2] - bounds[0], bounds[3] - bounds[1]) + 1) * 6):
         sim.step(InputState(left=True, up=True))
     assert sim.edit_cursor == (bounds[0], bounds[1])
     sim.step(InputState(turn_pressed=True))
@@ -429,7 +430,7 @@ def test_edit_cursor_is_bounded_and_edits_preview_undo_reset_then_cancel():
     sim.step(InputState(action_pressed=True))
     assert sim.edit_ops[-1]["tile"] == "L"
     assert sim.tiles[cy][cx] == "L"
-    assert sim.edit_reward is not None
+    assert sim.active_upper_route, "the workshop now opens the map's upper traversal tier"
     sim.step(InputState(interact=True))
     assert sim.scene == "edit"
     assert not sim.edit_ops
@@ -706,7 +707,7 @@ def test_boss_can_be_converted_entirely_in_side_view():
     assert boss.extra["converted"] is True
     assert boss_id in sim.converted
     assert CAMPAIGN_ROSTER[0].boss.capability in sim.converted
-    assert sim.scene == "chapter-complete"
+    assert sim.scene == "boss-defeat"
     assert sim.combat is None
 
 

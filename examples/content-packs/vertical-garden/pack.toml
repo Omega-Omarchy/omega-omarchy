@@ -2,7 +2,7 @@ id = "example.vertical-garden"
 version = "1.0.0"
 schemaVersion = "1.0.0"
 gameSchemaVersion = "1.0.0"
-generatorVersion = "3.8.0"
+generatorVersion = "3.12.0"
 license = "CC0-1.0"
 authors = ["Omega Omarchy contributors"]
 entryPoints = ["chapters/vertical-garden-addon.json"]
@@ -11,7 +11,7 @@ loadAfter = ["omega-core-1"]
 loadBefore = []
 loadOrder = 100
 capabilities = ["chapter-profile"]
-contentDigest = "sha256:bce5bd7861ccec6523a5a74739612f6cf346121522e63c0f1fd5a46ca4cf5f4e"
+contentDigest = "sha256:bd5ddb45dcc724320d4de940816366d702019ff1bac2b5011892e22e81ecfccc"
 
 [[files]]
 path = "ATTRIBUTION.md"

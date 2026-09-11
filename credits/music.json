@@ -1,0 +1,38 @@
+{
+  "roll": {
+    "cue": "credits-roll",
+    "title": "Super Key Love (Oh Omarchy — theme from Omega Omarchy)",
+    "artist": "Jeremy Dixon",
+    "duration": 429.863991,
+    "sourceSha256": "72849287d39ad016540bf118411873c1da79b5c4fa280bb27d1dd48df242f88c",
+    "source": "assets/source/audio/music/super-key-love/source.mp3"
+  },
+  "songs": [
+    {
+      "title": "Super Key Love",
+      "cue": "credits-roll",
+      "source": "assets/source/audio/music/super-key-love/source.mp3",
+      "artist": "Jeremy Dixon",
+      "use": "End credits recording"
+    },
+    {
+      "title": "Make It Come Alive",
+      "cue": "credits-theme",
+      "source": "assets/source/audio/music/make-it-come-alive/master-ultra.flac",
+      "artist": "Coded Jason ft. The Gen X Ancients",
+      "permission": {"status": "direct creator permission", "confirmedBy": "Jeremy Dixon", "confirmedOn": "2026-09-11", "scope": "Use in Omega Omarchy with or without attribution"},
+      "use": "Closing cast sequence"
+    },
+    {
+      "title": "Beware the Omarchy Oligarchy",
+      "artist": "Rich Kilmer",
+      "use": "Music development and Omarchy inspiration"
+    },
+    {
+      "title": "Boot Up Your New Digital World",
+      "artist": "Suvikyi",
+      "permission": {"status": "direct creator permission", "confirmedBy": "Jeremy Dixon", "confirmedOn": "2026-09-11", "scope": "Use of her song in Omega Omarchy"},
+      "use": "Music development and Omarchy inspiration"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ from typing import Any
 
 from .canonical import canonical_json_bytes, sha256_json
 
-GENERATOR_VERSION = "3.8.0"
+GENERATOR_VERSION = "3.12.0"
 SCHEMA_VERSION = "1.0.0"
 COMPATIBILITY_TARGET = "omega-omarchy/linux-web/1"
 

@@ -34,14 +34,40 @@ Build/test-only packages are pinned in `requirements/ci.txt`. They are not
 intended to be imported as game features, although the PyInstaller bootloader
 and its applicable exception are part of the player artifact.
 
-## Music recording pending rights review
+## Music recordings and permissions
+
+Jeremy Dixon supplied **Super Key Love (Oh Omarchy — theme from Omega Omarchy)**
+for the credit roll on 2026-09-11. Its embedded artist field credits Jeremy Dixon.
+The game preserves the supplied MP3
+and full-length prepared Ogg encodes. The song follows the project's asset
+license scope, not the source-code MIT license.
+
+The maintainer confirmed **Coded Jason ft. The Gen X Ancients** as the artist
+credit for **Make It Come Alive** on 2026-09-11.
 
 The private alpha includes the maintainer-supplied recording *Make It Come
 Alive*. The project preserves a decoded FLAC master and derives Ultra, High,
-and sixteen-bit runtime interpretations from it. Authorship, ownership, and
-public redistribution terms are not asserted here; the recording and its
-derivatives must remain private until the rights gate in
-`docs/OPEN-SOURCE-CUTOVER.md` is resolved.
+and sixteen-bit runtime interpretations from it. The maintainer reports direct
+creator permission to use the work with or without attribution. Before public
+cutover, retain the permission exchange and confirm that it covers the intended
+binary release and public source-master distribution; this notice does not
+broaden that grant.
+
+The cinematic credits use a subset of **Noto Sans CJK**, under the SIL Open Font
+License 1.1. Its complete distributed notice is retained at
+`assets/ui/credits/FONT-LICENSE.txt`. The supplied credit-roll sample was used
+as a layout reference; its image and watermark are not shipped.
+
+The staged level cue is Rich Kilmer's *Beware the Omarchy Oligarchy*, sourced
+from a maintainer-supplied video and independently matched to the copy in
+`omacom/radio.omarchy.org`. The radio repository states that submissions must
+be the submitter's own work, but specifies no license. The project therefore
+does not infer reuse or redistribution rights from its public availability.
+
+Suvikyi's *Boot Up Your New Digital World* is under local conversion review and
+is not currently bundled. Jeremy Dixon explicitly reconfirmed direct permission
+from Suvikyi to utilize her song in Omega Omarchy on 2026-09-11. That confirmation
+is recorded in `credits/music.json`; Suvikyi remains its credited artist.
 
 ## Branding references
 

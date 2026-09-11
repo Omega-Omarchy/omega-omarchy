@@ -1,0 +1,72 @@
+# Nginx 1.24 on ocd-web-core. Deploy only after the named certificate exists.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name omegaomarchy.org www.omegaomarchy.org;
+    location ^~ /.well-known/acme-challenge/ {
+        root /srv/omegaomarchy/acme;
+        default_type text/plain;
+    }
+    location / { return 301 https://omegaomarchy.org$request_uri; }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name www.omegaomarchy.org;
+    ssl_certificate /etc/letsencrypt/live/omegaomarchy.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/omegaomarchy.org/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    return 301 https://omegaomarchy.org$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name omegaomarchy.org;
+    root /srv/omegaomarchy/current;
+    index index.html;
+    ssl_certificate /etc/letsencrypt/live/omegaomarchy.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/omegaomarchy.org/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    open_file_cache off;
+    gzip on;
+    gzip_types text/css application/javascript application/json application/wasm image/svg+xml;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Strict-Transport-Security "max-age=86400" always;
+    error_page 404 /404.html;
+    # Cloudflare upgrades HTTP challenges to HTTPS after launch.
+    location ^~ /.well-known/acme-challenge/ {
+        root /srv/omegaomarchy/acme;
+        default_type text/plain;
+        add_header Cache-Control "no-store";
+    }
+    location ~ /\. { deny all; }
+
+    # Stable filenames revalidate promptly when a release is promoted.
+    location / {
+        try_files $uri $uri/ =404;
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header Strict-Transport-Security "max-age=86400" always;
+    }
+    location ~* \.(?:js|mjs|css|json)$ {
+        try_files $uri =404;
+        types { application/javascript js mjs; text/css css; application/json json; }
+        add_header Cache-Control "public, max-age=300, must-revalidate";
+        add_header X-Content-Type-Options nosniff always;
+    }
+    location ~* \.(?:apk|wasm)$ {
+        try_files $uri =404;
+        types { application/wasm wasm; application/octet-stream apk; }
+        add_header Cache-Control "public, max-age=300, s-maxage=86400, must-revalidate";
+        add_header X-Content-Type-Options nosniff always;
+    }
+    location ~* \.(?:png|webp|jpg|jpeg|svg|ico|woff2?|ttf|otf|ogg|zip)$ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=3600, s-maxage=86400, must-revalidate";
+        add_header X-Content-Type-Options nosniff always;
+    }
+}

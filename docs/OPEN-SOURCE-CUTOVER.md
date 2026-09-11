@@ -334,9 +334,13 @@ cutover.
 - [ ] Original art, animation, audio, writing, and generated source assets have
   an explicit asset license and a provenance record sufficient for redistribution
   and contribution review.
-- [ ] The author/rights holder and public source/binary redistribution terms for
-  *Make It Come Alive* are documented; otherwise its FLAC master and every
-  derived Ogg are removed from the public candidate and replaced.
+- [ ] The reported direct creator permissions for *Make It Come Alive* and
+  Suvikyi's *Boot Up Your New Digital World* are archived and confirmed to
+  cover both the intended binary release and any source masters/derivatives
+  retained in the public repository. *Beware the Omarchy Oligarchy* receives a
+  direct grant or documented license; its presence in the unlicensed Omarchy
+  Radio repository is not treated as a redistribution grant. Any uncleared
+  master and every derived Ogg are removed from the public candidate.
 - [ ] `THIRD_PARTY_NOTICES.md` lists every retained third-party component and
   asset with source, version/date, license or permission basis, modifications,
   and required notice text.

@@ -59,7 +59,13 @@ def test_goliath_phase_and_remaining_proxy_survive_save_restore(tmp_path: Path):
     sim.dev_warp("goliath-amalgam:boss-15")
     boss = next(entity for entity in sim.entities if entity.kind == "boss")
     sim._damage_side_enemy(boss, BOSS_FIELD_HEALTH)
+    from omega_omarchy.sim import BOSS_SETTLE_TICKS, BOSS_DEFEAT_HOLD_TICKS
+    from omega_omarchy.physics import InputState
+    for _ in range(BOSS_SETTLE_TICKS + BOSS_DEFEAT_HOLD_TICKS):
+        sim.step(InputState())
     sim._damage_side_enemy(boss, BOSS_FIELD_HEALTH)
+    for _ in range(BOSS_SETTLE_TICKS + BOSS_DEFEAT_HOLD_TICKS):
+        sim.step(InputState())
     first_proxy = next(entity for entity in sim.entities if entity.extra.get("goliath_minion"))
     sim._damage_side_enemy(first_proxy, 5)
     assert sim.goliath_stage == "minions"

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 __version__ = "0.1.0"
-GENERATOR_VERSION = "3.8.0"
+GENERATOR_VERSION = "3.12.0"
 SCHEMA_VERSION = "1.0.0"
 COMPATIBILITY_TARGET = "omega-omarchy/linux-web/1"
 FIXTURE_SEED = "omega-fixture-1"

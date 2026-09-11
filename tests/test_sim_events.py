@@ -156,6 +156,10 @@ def test_chapter_one_completion_is_terminal_until_development_opt_in():
     sim.step(InputState(jump_pressed=True))
     assert sim.scene == "chapter-credits"
     sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "chapter-credits", "Entry-button repeats must respect the credit input lock"
+    for _ in range(30):
+        sim.step(InputState())
+    sim.step(InputState(pause=True))
     assert sim.scene == "chapter-complete"
     sim.step(InputState(turn_pressed=True))
     assert sim.scene == "stage-map"

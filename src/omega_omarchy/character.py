@@ -1,8 +1,8 @@
-"""Default protagonist and a compact player-created character."""
+"""Player identity, legacy cosmetic fields, and an optional complete art pack."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from .canonical import sha256_json
@@ -19,16 +19,18 @@ FALLBACK_CHARACTER_NAME = "Player"
 @dataclass(frozen=True)
 class Character:
     name: str
-    kind: str  # "david" | "custom"
+    kind: str  # david | omarch-king | omarch-queen | custom
     body: str
     hair: str
     shirt: str
     philosophy: str
     palette: str
     derived_from_photo: bool = False
+    asset_pack: str = ""
+    asset_digest: str = ""
 
     def to_record(self) -> dict[str, Any]:
-        return {
+        record = {
             "body": self.body,
             "derivedFromPhoto": self.derived_from_photo,
             "hair": self.hair,
@@ -38,6 +40,9 @@ class Character:
             "philosophy": self.philosophy,
             "shirt": self.shirt,
         }
+        if self.asset_pack:
+            record.update(assetPack=self.asset_pack, assetDigest=self.asset_digest)
+        return record
 
     def digest(self) -> str:
         return sha256_json(self.to_record())
@@ -65,7 +70,7 @@ def parse_character(record: dict[str, Any] | None) -> Character:
     if not record:
         return DAVID
     kind = record.get("kind", "custom")
-    if kind == "david" and record.get("name", DEFAULT_CHARACTER_NAME) == DEFAULT_CHARACTER_NAME:
+    if kind == "david" and record.get("name", DEFAULT_CHARACTER_NAME) == DEFAULT_CHARACTER_NAME and not record.get("assetPack"):
         return DAVID
     hair = record.get("hair", "long-wave")
     body = record.get("body", "lean")
@@ -85,11 +90,13 @@ def parse_character(record: dict[str, Any] | None) -> Character:
     name = str(record.get("name") or FALLBACK_CHARACTER_NAME).strip()[:24] or FALLBACK_CHARACTER_NAME
     return Character(
         name=name,
-        kind="custom",
+        kind=kind if kind in {"david", "omarch-king", "omarch-queen", "custom"} else "custom",
         body=body,
         hair=hair,
         shirt=shirt,
         philosophy=philosophy,
         palette=palette,
         derived_from_photo=bool(record.get("derivedFromPhoto", False)),
+        asset_pack=str(record.get("assetPack") or ""),
+        asset_digest=str(record.get("assetDigest") or ""),
     )

@@ -75,7 +75,8 @@ def main(argv: list[str] | None = None) -> int:
         default="run",
         help=(
             "run|check|test|assets|web|dump-identity|dump-campaign|inspect|play-now|"
-            "validate-pack|seal-pack|review-pack|install-pack|list-packs|enable-pack|disable-pack|remove-pack"
+            "validate-pack|seal-pack|review-pack|install-pack|list-packs|enable-pack|disable-pack|remove-pack|"
+            "character-kit|build-character|validate-character-source|validate-character|install-character|list-characters"
         ),
     )
     parser.add_argument("target", nargs="?", help="content-pack source or installed pack id")
@@ -92,6 +93,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--inspect-dir", type=Path)
     parser.add_argument("--ticks", type=int, default=0)
     parser.add_argument("--web-out", type=Path, default=ROOT / "dist" / "web")
+    parser.add_argument("--out", type=Path, help="output directory for character authoring")
+    parser.add_argument("--character-pack", type=Path, action="append", default=[], help="bundle a compiled character pack in a browser build")
     parser.add_argument(
         "--content-pack",
         type=Path,
@@ -108,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     commands = {
+        "character-kit", "build-character", "validate-character-source", "validate-character", "install-character", "list-characters",
         "assets",
         "check",
         "disable-pack",
@@ -131,6 +135,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command not in commands:
         parser.error(f"unknown command: {args.command}")
     targeted_commands = {
+        "character-kit", "build-character", "validate-character-source", "validate-character", "install-character",
         "validate-pack",
         "seal-pack",
         "review-pack",
@@ -146,6 +151,41 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     store = PackStore()
+    if args.command in {"character-kit", "build-character", "validate-character-source", "validate-character", "install-character", "list-characters"}:
+        from .character_pack import available_characters, install_pack as install_character, install_zip, validate_pack as validate_character
+        from .character_build import build_pack as build_character, export_kit, validate_source, zip_pack
+        import zipfile
+
+        if args.command != "list-characters" and not args.target:
+            parser.error(f"{args.command} requires a path")
+        try:
+            target = Path(args.target) if args.target else None
+            if args.command == "character-kit":
+                print(export_kit(target, asset_dir()))
+            elif args.command == "build-character":
+                if args.out is None:
+                    parser.error("build-character requires --out DIRECTORY")
+                built = build_character(target, args.out)
+                print(built)
+                print(zip_pack(built, built.with_name(built.name + ".zip")))
+            elif args.command == "validate-character-source":
+                record, _ = validate_source(target)
+                print(f"VALID_CHARACTER_SOURCE {record['id']} poses=26")
+            elif args.command == "validate-character":
+                record = validate_character(target)
+                print(f"VALID_CHARACTER {record['id']} {record['digest']} poses=78")
+            elif args.command == "install-character":
+                print(install_zip(target.read_bytes()) if target.is_file() else install_character(target))
+            else:
+                characters, errors = available_characters()
+                for character in characters:
+                    print(f"{character.kind}: {character.name} {character.asset_pack} {character.asset_digest}")
+                for error in errors:
+                    print(f"SKIPPED {error}", file=sys.stderr)
+            return 0
+        except (ValueError, OSError, KeyError, TypeError, RuntimeError, zipfile.BadZipFile) as error:
+            print(f"CHARACTER_INVALID {_safe_display(str(error))}", file=sys.stderr)
+            return 2
     if args.command in {"review-pack", "install-pack"}:
         if not args.target:
             parser.error(f"{args.command} requires a pack directory or ZIP archive")
@@ -247,7 +287,7 @@ def main(argv: list[str] | None = None) -> int:
         if content_paths:
             print("PACK_INVALID the web preview does not support additional content packs", file=sys.stderr)
             return 2
-        dest = build_web(args.web_out, seed=args.seed)
+        dest = build_web(args.web_out, seed=args.seed, character_packs=tuple(args.character_pack))
         print(f"web={dest}")
         return 0
     if args.command == "validate-pack":

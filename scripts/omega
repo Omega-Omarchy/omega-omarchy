@@ -26,7 +26,11 @@ usage() {
   echo "  ./scripts/omega test-scope core|gameplay|combat|presentation|generation|content|installer|assets|audio|web|release"
   echo "  ./scripts/omega web [--web-out PATH]"
   echo "  ./scripts/omega web-serve"
+  echo "  ./scripts/omega website [--landing-only | --game-dir PATH]"
+  echo "  ./scripts/omega website-serve [--port 8820]"
+  echo "  ./scripts/omega editor [--seed SEED] [--port 8814]"
   echo "  ./scripts/omega audio"
+  echo "  ./scripts/omega credits [--check | --refresh-github]"
   echo "  ./scripts/omega chiptune SOURCE TARGET.wav [--style snes|genesis]"
   echo "  ./scripts/omega release-check"
   echo "Choose tests from the issue's affected behavior; the full gate is never the default."
@@ -48,7 +52,7 @@ test_scope() {
       set -- tests/test_render_layout.py tests/test_flight_render.py tests/test_gameplay_upgrade.py
       ;;
     generation)
-      set -- tests/test_generation.py tests/test_identity.py tests/test_zone_delta.py
+      set -- tests/test_generation.py tests/test_chapter_design.py tests/test_identity.py tests/test_zone_delta.py
       ;;
     content)
       set -- tests/test_content_packs.py tests/test_pack_store.py tests/test_zone_delta.py
@@ -95,6 +99,18 @@ case "$cmd" in
     ;;
   run)
     exec "$PY" -m omega_omarchy run "$@"
+    ;;
+  website)
+    exec "$PY" "$ROOT/website/build.py" "$@"
+    ;;
+  credits)
+    exec "$PY" -m omega_omarchy.credits_build "$@"
+    ;;
+  website-serve)
+    exec "$PY" "$ROOT/website/serve.py" "$@"
+    ;;
+  editor)
+    exec "$PY" "$ROOT/scripts/review-chapter-one.py" --serve "$@"
     ;;
   doctor)
     failed=0

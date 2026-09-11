@@ -53,8 +53,8 @@ def test_chapter_one_is_large_procedural_with_optional_logo_and_secret():
     tiles = chapter["tiles"]
     assert chapter["height"] >= 18
     assert chapter["width"] >= 256
-    assert chapter["algorithm"] == "macro-route-v9-penguin-routes"
-    assert chapter["height"] >= 46
+    assert chapter["algorithm"] == "macro-route-v13-descent-skyways"
+    assert chapter["height"] >= 60
     assert chapter["macroSectors"] >= 6
     assert chapter["recipeCount"] >= 4
     assert chapter["pitCount"] >= 1
@@ -79,7 +79,7 @@ def test_procedural_seeds_change_geometry_but_reproduce_exactly():
     assert first.chapters[0]["tiles"] == repeat.chapters[0]["tiles"]
     assert first.chapters[0]["tiles"] != other.chapters[0]["tiles"]
     assert all(chapter["width"] >= 256 for chapter in first.chapters)
-    assert first.receipt["generatorAlgorithm"] == "macro-route-v9-penguin-routes"
+    assert first.receipt["generatorAlgorithm"] == "macro-route-v13-descent-skyways"
 
 
 def test_macro_levels_include_sparse_steps_and_low_ground_without_touching_anchors():

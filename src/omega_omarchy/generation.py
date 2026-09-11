@@ -8,13 +8,15 @@ from typing import Any
 from .campaign import CAMPAIGN_ROSTER
 from .canonical import sha256_json
 from .character import DEFAULT_CHARACTER_NAME
+from .chapter_design import paint_chapter_one_section, plan_chapter_one
 from .content import ContentIndex, load_content
 from .identity import GENERATOR_VERSION, SCHEMA_VERSION, WorldIdentity
 from .reachability import find_spawn, normalize_ladder_tiles, reachable_from, validate_level
+from .skyway import SKYWAY_HEIGHT, add_skyway, garden_invisible_platforms, upper_route_report
 from .rng import Streams
 
 MAX_LAYOUT_RETRIES = 12
-ALGORITHM = "macro-route-v9-penguin-routes"
+ALGORITHM = "macro-route-v13-descent-skyways"
 
 NETWORK_OPERATIONS = (
     "Ethernet link training",
@@ -97,6 +99,8 @@ def _install_ground_relief(
     canvas: list[list[str]],
     floor: int,
     stream: Any,
+    *,
+    reserved_columns: set[int] | None = None,
 ) -> list[dict[str, Any]]:
     """Add sparse one-tile plateaus and depressions to the main foundation.
 
@@ -108,7 +112,7 @@ def _install_ground_relief(
 
     width = len(canvas[0])
     relief: list[dict[str, Any]] = []
-    reserved: set[int] = set()
+    reserved: set[int] = set(reserved_columns or ())
     kinds = ["step", "low"]
     if stream.chance(0.38):
         kinds.append("step" if stream.chance(0.5) else "low")
@@ -193,7 +197,7 @@ def _separate_edit_pickups(tiles: list[str]) -> list[str]:
     return _render(canvas)
 
 
-def _ensure_edit_pickup_count(tiles: list[str], target: int) -> list[str]:
+def _ensure_edit_pickup_count(tiles: list[str], target: int, *, min_rise: int = 4) -> list[str]:
     canvas = [list(row) for row in tiles]
     height, width = len(canvas), len(canvas[0])
 
@@ -218,7 +222,7 @@ def _ensure_edit_pickup_count(tiles: list[str], target: int) -> list[str]:
         candidates = [
             (x, y)
             for x in range(8, width - 8)
-            for y in range(3, max(4, height - 8))
+            for y in range(3, max(4, height - 4 - min_rise))
             if safe(x, y)
         ]
         if not candidates:
@@ -244,6 +248,29 @@ def _normalize_block_clearance(tiles: list[str]) -> list[str]:
                 # The only safe fallback is the explicitly allowed direct
                 # placement; this remains optional route geometry.
                 canvas[y + 1][x] = "="
+    return _render(canvas)
+
+
+def _ensure_workshop_routes(tiles: list[str]) -> list[str]:
+    """Keep every workshop trigger reachable before its skyway is unlocked."""
+    canvas = [list(row) for row in tiles]
+    reached = reachable_from(tiles, find_spawn(tiles))
+    stranded = [(x, y) for y, row in enumerate(tiles) for x, cell in enumerate(row) if cell == "O" and (x, y) not in reached]
+    for ox, oy in stranded:
+        candidates = [
+            (canvas[y + 1][x] != "=", abs(x - ox) + abs(y - oy), x, y)
+            for x, y in reached
+            if 3 <= x < len(tiles[0]) - 3 and 2 <= y < len(tiles) - 1
+            and canvas[y][x] == "." and canvas[y + 1][x] in {"=", "#"}
+            and all(canvas[yy][xx] not in {"L", "+", "O", "S", "X", "N"}
+                    for yy in range(y - 2, min(len(tiles), y + 3)) for xx in range(x - 2, x + 3))
+        ]
+        if not candidates:
+            raise RuntimeError("could not place a reachable workshop trigger")
+        _, _, x, y = min(candidates)
+        canvas[oy][ox] = "."
+        canvas[y][x] = "O"
+        canvas[y + 1][x] = "="
     return _render(canvas)
 
 
@@ -318,18 +345,35 @@ def _ensure_penguin_routes(tiles: list[str]) -> list[str]:
     return _render(canvas)
 
 
-def _traversal_features(tiles: list[str], floor: int, stream: Any) -> dict[str, list[dict[str, Any]]]:
+def _traversal_features(
+    tiles: list[str], floor: int, stream: Any, *, sections: list[dict[str, Any]] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
     """Place optional physical toys in open, reachable parts of the route."""
 
     width = len(tiles[0])
+    active = [section for section in sections or [] if section["beat"] in {"discovery", "traversal", "climax"}]
 
-    def open_span(preferred: int, span: int, y: int) -> int | None:
+    def allowed(x: int, span: int) -> bool:
+        return not sections or any(
+            int(section["x"]) + 2 <= x and x + span <= int(section["x"]) + int(section["width"]) - 2
+            for section in active
+        )
+
+    def preferred_position(index: int, fraction: float) -> int:
+        if not active:
+            return round(width * fraction)
+        section = active[index % len(active)]
+        return int(section["x"]) + stream.randint(4, int(section["width"]) - 8)
+
+    def open_span(
+        preferred: int, span: int, y: int, travel: int = 0, vertical_travel: int = 0,
+    ) -> int | None:
         candidates = sorted(range(18, width - span - 18), key=lambda x: (abs(x - preferred), x))
         for x in candidates:
-            if all(
+            if allowed(x - travel, span + travel * 2) and all(
                 tiles[yy][xx] == "."
-                for yy in range(max(0, y - 2), min(len(tiles), y + 2))
-                for xx in range(x, x + span)
+                for yy in range(max(0, y - 2 - vertical_travel), min(len(tiles), y + 2 + vertical_travel))
+                for xx in range(x - travel, x + span + travel)
             ):
                 return x
         return None
@@ -338,7 +382,7 @@ def _traversal_features(tiles: list[str], floor: int, stream: Any) -> dict[str, 
     for index, fraction in enumerate((0.18, 0.68)):
         span = 4 + ((stream.randint(0, 2) + index) % 3)
         y = floor - (5 + index * 2)
-        x = open_span(round(width * fraction), span, y)
+        x = open_span(preferred_position(index * 2, fraction), span, y)
         if x is not None:
             tilting.append(
                 {
@@ -354,8 +398,12 @@ def _traversal_features(tiles: list[str], floor: int, stream: Any) -> dict[str, 
     moving: list[dict[str, Any]] = []
     for index, (fraction, axis) in enumerate(((0.37, "vertical"), (0.84, "horizontal"))):
         span = 4 + index
-        y = floor - (8 if axis == "vertical" else 5)
-        x = open_span(round(width * fraction), span, y)
+        y = floor - (12 if axis == "vertical" else 6)
+        x = open_span(
+            preferred_position(index * 2 + 1, fraction), span, y,
+            travel=4 if sections and axis == "horizontal" else 0,
+            vertical_travel=5 if sections and axis == "vertical" else 0,
+        )
         if x is not None:
             moving.append(
                 {
@@ -364,20 +412,20 @@ def _traversal_features(tiles: list[str], floor: int, stream: Any) -> dict[str, 
                     "y": y,
                     "width": span,
                     "axis": axis,
-                    "range": 3 if axis == "vertical" else 4,
+                    "range": 5 if axis == "vertical" else 4,
                     "phase": round(stream.random() * 6.283, 4),
                 }
             )
 
     winds: list[dict[str, Any]] = []
     for index, fraction in enumerate((0.47, 0.77)):
-        preferred = round(width * fraction)
+        preferred = preferred_position(index * 2, fraction)
         candidates = sorted(range(18, width - 18), key=lambda x: (abs(x - preferred), x))
         for x in candidates:
-            top = floor - 7
-            if all(tiles[y][x] == "." for y in range(top, floor)) and tiles[floor][x] in {"#", "="}:
+            top = floor - 14
+            if allowed(x, 1) and all(tiles[y][x] == "." for y in range(top, floor)) and tiles[floor][x] in {"#", "="}:
                 winds.append(
-                    {"id": f"updraft-{index + 1}", "x": x, "y": top, "width": 1, "height": 7, "strength": 0.42}
+                    {"id": f"updraft-{index + 1}", "x": x, "y": top, "width": 1, "height": 14, "strength": 0.42}
                 )
                 break
     return {"tiltingPlatforms": tilting, "movingPlatforms": moving, "windColumns": winds}
@@ -491,52 +539,58 @@ def _paint_sector_recipe(
     """Layer a deterministic optional traversal recipe into a macro sector."""
 
     center = (x0 + x1) // 2
+
+    def rise(tiles: int) -> int:
+        return max(3, floor - tiles)
+
     if recipe == "switchback":
-        _platform(canvas, x0 + 3, center + 1, floor - 5)
-        _ladder(canvas, x0 + 5, floor - 6, floor - 1)
-        _platform(canvas, center - 1, x1 - 3, floor - 11)
-        _ladder(canvas, center + 1, floor - 12, floor - 5)
-        _put(canvas, x1 - 6, floor - 12, reward)
+        _platform(canvas, x0 + 3, center + 1, rise(5))
+        _ladder(canvas, x0 + 5, rise(6), floor - 1)
+        _platform(canvas, center - 1, x1 - 3, rise(11))
+        _ladder(canvas, center + 1, rise(12), rise(5))
+        _platform(canvas, x0 + 4, center, rise(18))
+        _ladder(canvas, x0 + 6, rise(19), rise(11))
+        _put(canvas, x1 - 6, rise(19), reward)
     elif recipe == "sky-well":
-        summit = floor - 21
+        summit = rise(28)
         _ladder(canvas, center, summit, floor - 1)
-        _platform(canvas, center - 8, center, floor - 7)
-        _platform(canvas, center, center + 9, floor - 13)
+        _platform(canvas, center - 8, center, rise(8))
+        _platform(canvas, center, center + 9, rise(16))
         _platform(canvas, center - 7, center + 8, summit)
         _put(canvas, center + 4, summit - 1, reward)
     elif recipe == "bumper-gallery":
-        for i, (dx, rise) in enumerate(((5, 1), (11, 6), (18, 11), (24, 16))):
+        for i, (dx, steps) in enumerate(((5, 1), (11, 6), (18, 11), (24, 16), (28, 22))):
             x = min(x1 - 4, x0 + dx)
-            y = floor - rise
+            y = rise(steps)
             _put(canvas, x, y, "^")
             if i:
                 _platform(canvas, x - 2, min(x1 - 2, x + 3), y + 2)
-        _put(canvas, min(x1 - 5, x0 + 25), floor - 18, reward)
+        _put(canvas, min(x1 - 5, x0 + 25), rise(24), reward)
     elif recipe == "twin-towers":
         left, right = x0 + 7, x1 - 7
-        _ladder(canvas, left, floor - 16, floor - 1)
-        _ladder(canvas, right, floor - 19, floor - 1)
-        _platform(canvas, left - 3, center, floor - 10)
-        _platform(canvas, center, right + 4, floor - 14)
-        _platform(canvas, left - 2, right + 3, floor - 20)
-        _put(canvas, center, floor - 21, reward)
-        _put(canvas, center + 2, floor - 21, "D")
-        _put(canvas, center + 3, floor - 21, "C")
+        _ladder(canvas, left, rise(22), floor - 1)
+        _ladder(canvas, right, rise(26), floor - 1)
+        _platform(canvas, left - 3, center, rise(12))
+        _platform(canvas, center, right + 4, rise(18))
+        _platform(canvas, left - 2, right + 3, rise(28))
+        _put(canvas, center, rise(29), reward)
+        _put(canvas, center + 2, rise(29), "D")
+        _put(canvas, center + 3, rise(29), "C")
     elif recipe == "suspended-chain":
-        heights = (floor - 6, floor - 10, floor - 14, floor - 10)
+        heights = (rise(6), rise(10), rise(16), rise(22), rise(16))
         for i, y in enumerate(heights):
-            left = x0 + 3 + i * 7
+            left = x0 + 3 + i * 6
             _platform(canvas, left, min(x1 - 2, left + 6), y)
-            if i in {0, 2}:
+            if i in {0, 2, 3}:
                 _ladder(canvas, left + 1, y - 1, floor - 1 if i == 0 else heights[i - 1] - 1)
-        _put(canvas, min(x1 - 4, x0 + 24), floor - 15, reward)
+        _put(canvas, min(x1 - 4, x0 + 24), rise(23), reward)
     elif recipe == "archive-stacks":
-        for i in range(4):
-            left = x0 + 3 + i * 7
-            top = floor - 4 - i * 3
+        for i in range(5):
+            left = x0 + 3 + i * 6
+            top = rise(4 + i * 4)
             _platform(canvas, left, min(x1 - 2, left + 7), top)
             _ladder(canvas, left + 1, top - 1, floor - 1)
-        _put(canvas, min(x1 - 4, x0 + 26), floor - 14, reward)
+        _put(canvas, min(x1 - 4, x0 + 26), rise(22), reward)
     elif recipe == "broken-bridge":
         y = floor - 9
         _platform(canvas, x0 + 3, center - 2, y)
@@ -575,7 +629,7 @@ def _paint_macro_level(
     width = width_base + chapter_index * 24 + layout.randint(0, 4) * 8
     # Taller than the legacy strip by design: every chapter can stage several
     # full-screen climbs instead of keeping all action near one floor.
-    height_base = int(generation.get("heightBase") or 46)
+    height_base = int(generation.get("heightBase") or 60)
     height = height_base + chapter_index * 2 + layout.randint(0, 2) * 2
     floor = height - 4
     canvas = [["." for _ in range(width)] for _ in range(height)]
@@ -612,8 +666,28 @@ def _paint_macro_level(
     placements: list[dict[str, Any]] = []
     protected: set[int] = set(range(0, 18)) | set(range(width - 20, width))
     pit_ranges: list[tuple[int, int]] = []
+    route_plan = (
+        plan_chapter_one(width, sector_w, recipes, sector_types, layout, include_optional=include_optional)
+        if chapter_index == 0 else []
+    )
+    if route_plan:
+        sector_count = len(route_plan)
 
     for sector in range(sector_count):
+        if route_plan:
+            section = route_plan[sector]
+            painted = paint_chapter_one_section(
+                canvas, section, floor, difficulty, include_optional=include_optional,
+            )
+            pit_ranges.extend(painted["pits"])
+            placement = {
+                **section,
+                "id": f"{chapter_id}/{sector:02d}-{section['route']}",
+                "algorithm": ALGORITHM,
+            }
+            placement["digest"] = sha256_json(placement)
+            placements.append(placement)
+            continue
         x0 = 8 + sector * sector_w
         x1 = min(width - 8, x0 + sector_w)
         if x1 - x0 < 18:
@@ -634,7 +708,7 @@ def _paint_macro_level(
         # Unique, optional vertical silhouettes vary the playable skyline.
         if cosmetics.chance(0.72):
             marker_x = x0 + cosmetics.randint(5, max(5, x1 - x0 - 6))
-            marker_y = floor - cosmetics.randint(5, 9)
+            marker_y = floor - cosmetics.randint(6, 14)
             _platform(canvas, marker_x - 2, marker_x + 3, marker_y + 1)
 
         # Traversable gaps remain below the validator's six-tile jump.
@@ -689,35 +763,75 @@ def _paint_macro_level(
     _put(canvas, width - 13, floor - 1, "E")
 
     if chapter_index == 0 and force_logo and "O" not in "".join(_render(canvas)):
-        upper = floor - 7
+        upper = floor - 12
         _platform(canvas, 18, 42, upper + 1)
         _ladder(canvas, 19, upper, floor - 1)
         _ladder(canvas, 40, upper, floor - 1)
         _put(canvas, 30, upper, "O")
 
     if include_optional:
-        _seal_secret(canvas, width // 2 + 5 + rare.randint(0, 7), floor)
+        breather = next((section for section in route_plan if section["beat"] == "breather"), None)
+        secret_x = (
+            int(breather["x"]) + int(breather["width"]) // 2
+            if breather else width // 2 + 5 + rare.randint(0, 7)
+        )
+        _seal_secret(canvas, secret_x, floor)
+        if breather:
+            # The crate keeps a solid base after its shell is broken, so its
+            # penguin can be reached without relocating it out of the vault.
+            _put(canvas, secret_x, floor - 1, "#")
 
     network_links: list[dict[str, Any]] = []
     if chapter_id == "distro-front":
         network_links = _install_hardware_network_links(canvas, floor, streams["narrative"])
 
     floating_blocks = _scatter_floating_blocks(canvas, floor, loot)
-    ground_relief = _install_ground_relief(canvas, floor, layout)
+    seams = {
+        x for section in route_plan
+        for edge in (int(section["x"]), int(section["x"]) + int(section["width"]))
+        for x in range(edge - 2, edge + 3)
+    }
+    ground_relief = _install_ground_relief(canvas, floor, layout, reserved_columns=seams)
 
     normalized = normalize_ladder_tiles(_render(canvas))
     normalized = _normalize_block_clearance(normalized)
     normalized = _normalize_penguin_support(normalized)
-    normalized = _ensure_edit_pickup_count(_separate_edit_pickups(normalized), edit_pickup_target)
+    normalized = _ensure_edit_pickup_count(
+        _separate_edit_pickups(normalized), edit_pickup_target,
+        min_rise=1 if route_plan else 4,
+    )
     normalized = _ensure_penguin_routes(normalized)
-    features = _traversal_features(normalized, floor, streams["layout"])
+    normalized = _ensure_workshop_routes(normalized)
+    features = _traversal_features(normalized, floor, streams["layout"], sections=route_plan)
     runtime_maps = _split_runtime_maps(normalized, network_links, features)
+    normalized, upper = add_skyway(normalized, streams.seed, chapter_id)
+    if chapter_id == "walled-garden":
+        normalized = garden_invisible_platforms(normalized)
+    for specs in features.values():
+        for feature in specs:
+            feature["y"] += SKYWAY_HEIGHT
+    for link in network_links:
+        link["y"] += SKYWAY_HEIGHT
+    for map_index, spec in enumerate(runtime_maps):
+        local_tiles = list(spec["tiles"])
+        # Every independently mounted island needs a workshop of its own.
+        if not any("O" in row for row in local_tiles):
+            y = len(local_tiles) - 5
+            x = next((x for x in range(4, len(local_tiles[0]) - 4) if local_tiles[y][x] == "." and local_tiles[y + 1][x] == "#"), None)
+            if x is not None:
+                local_tiles[y] = local_tiles[y][:x] + "O" + local_tiles[y][x + 1:]
+        spec["tiles"], spec["upperTraversal"] = add_skyway(local_tiles, f"{streams.seed}:map-{map_index}", chapter_id)
+        for key in (*features, "portals"):
+            for feature in spec.get(key, []):
+                feature["y"] += SKYWAY_HEIGHT
+    height += SKYWAY_HEIGHT
     edit_pickups = sum(row.count("O") for row in normalized)
     return {
         "chapterId": chapter_id,
         "tiles": normalized,
         "width": width,
         "height": height,
+        "upperTraversal": upper,
         "placements": placements,
         "algorithm": ALGORITHM,
         "macroSectors": len(placements),
@@ -745,12 +859,27 @@ def assemble_chapter(
     force_logo: bool,
     difficulty: str = "standard",
 ) -> dict[str, Any]:
+    work = assemble_chapter_steps(index, chapter_id, streams, include_optional=include_optional,
+                                  force_logo=force_logo, difficulty=difficulty)
+    return _finish_work(work)
+
+
+def _finish_work(work):
+    while True:
+        try:
+            next(work)
+        except StopIteration as done:
+            return done.value
+
+
+def assemble_chapter_steps(index, chapter_id, streams, *, include_optional, force_logo, difficulty="standard"):
     """Generate and validate a chapter from its sealed content profile."""
 
     profile = index.chapter_profile(chapter_id)
     chapter_index = next(i for i, spec in enumerate(CAMPAIGN_ROSTER) if spec.id == chapter_id)
     last_error = "unassembled"
     for attempt in range(MAX_LAYOUT_RETRIES):
+        yield "Building terrain"
         chapter = _paint_macro_level(
             chapter_id,
             chapter_index,
@@ -761,9 +890,16 @@ def assemble_chapter(
             attempt=attempt,
             profile=profile,
         )
-        report = validate_level(chapter["tiles"], require_logo=False)
+        yield "Checking traversal"
+        report = validate_level(chapter["tiles"], require_logo=False, require_all_logos=True)
+        yield "Checking upper routes"
+        upper_report = upper_route_report(chapter["tiles"], chapter["upperTraversal"])
+        chapter["upperTraversal"]["reachability"] = upper_report
+        for spec in chapter["maps"]:
+            yield "Checking island routes"
+            spec["upperTraversal"]["reachability"] = upper_route_report(spec["tiles"], spec["upperTraversal"])
         chapter["reachability"] = report
-        if report["ok"] and report["bossReachableWithoutRare"]:
+        if report["ok"] and report["bossReachableWithoutRare"] and upper_report["ok"] and all(spec["upperTraversal"]["reachability"]["ok"] for spec in chapter["maps"]):
             return chapter
         last_error = ",".join(report["errors"]) or "unknown"
     raise RuntimeError(f"chapter {chapter_id} failed procedural generation: {last_error}")
@@ -801,6 +937,14 @@ def generate_world(
     force_logo: bool = False,
     content: ContentIndex | None = None,
 ) -> SealedWorld:
+    return _finish_work(generate_world_steps(seed, difficulty=difficulty,
+        accessibility_profile=accessibility_profile, character=character, settings=settings,
+        force_logo=force_logo, content=content))
+
+
+def generate_world_steps(seed: str, *, difficulty="standard", accessibility_profile="default",
+                         character=None, settings=None, force_logo=False, content=None):
+    """Same sealed world as the blocking API, with progress before each work unit."""
     if difficulty not in {"casual", "standard", "precise"}:
         raise ValueError("unknown difficulty")
     content = content or load_content()
@@ -808,9 +952,10 @@ def generate_world(
     settings = dict(settings or {})
     include_optional = settings.get("includeOptionalChunks", True)
     chapters = []
-    for spec in CAMPAIGN_ROSTER:
+    yield 0.02, "Preparing world content"
+    for chapter_index, spec in enumerate(CAMPAIGN_ROSTER):
         profile = content.chapter_profile(spec.id) or {}
-        chapter = assemble_chapter(
+        work = assemble_chapter_steps(
             content,
             spec.id,
             streams,
@@ -818,6 +963,18 @@ def generate_world(
             force_logo=force_logo and spec.id == "corrupted-install",
             difficulty=difficulty,
         )
+        island_checks = 0
+        while True:
+            try:
+                label = next(work)
+                within_chapter = {"Building terrain": 0, "Checking traversal": .4,
+                                  "Checking upper routes": .7}.get(label, .8 + min(.15, island_checks * .03))
+                if label == "Checking island routes":
+                    island_checks += 1
+                yield 0.04 + 0.90 * (chapter_index + within_chapter) / len(CAMPAIGN_ROSTER), f"{spec.name}: {label.lower()}"
+            except StopIteration as done:
+                chapter = done.value
+                break
         boss = profile.get("boss") or {}
         chapter["name"] = str(profile.get("name") or spec.name)
         chapter["blurb"] = str(profile.get("blurb") or spec.blurb)
@@ -830,6 +987,7 @@ def generate_world(
         chapter["contentAddons"] = list(profile.get("addons") or [])
         chapter["events"] = list(spec.events)
         chapters.append(chapter)
+    yield 0.96, "Sealing world identity"
     identity = WorldIdentity(
         seed=seed,
         generator_version=GENERATOR_VERSION,

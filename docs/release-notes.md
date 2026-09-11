@@ -5,12 +5,54 @@ submitted, not published as a public service.
 
 What this pass actually demonstrates:
 
+- Generator `3.12.0` reserves a full descent before the boss gate. Invisible
+  platforms use Omarchy green. Slower foreground robots, gentler corruption
+  shake and a larger cannon label refine the presentation. Character art
+  preloads from the greeter; real generation now appears inside the installer
+  progress and elapsed time, with clearer video/audio choices and setup copy.
+
+- Generator `3.11.0` ends skyways before boss gates and opens the space below
+  their decks. Contact-triggered ring portals replace the lift helper overlays.
+  Traversal validation checks body clearance and physics-based jump arcs.
+  Royal framing/slide registration, animated boss states, longer boss cards,
+  articulated prologue robots and a pre-rendered Cow EXIT sign receive an art
+  pass. See [the refinement review](refinement-review.md). Revised layouts need
+  a new world; built-in royal appearance fixes also apply to existing saves.
+
+- Character selection adds The Omarch King and The Omarch Queen, with every
+  player view following the selected appearance. A portable agent kit specifies
+  all 26 poses, and a compiler derives the three fidelities. Validated character
+  packs can be installed natively or imported locally in the browser; saves
+  retain their exact art digest. See [character creation](character-creation.md).
+
+- Generator `3.10.0` adds workshop-only skyways to every chapter and hardware
+  island, plus the Cow secret map. Sealing a connected new landing builds a
+  persistent two-way lift. Walled Garden gains invisible platforms with
+  proximity reveal and rare shimmer. See [skyways and invisible platforms](skyways.md).
+
+- A local browser level workshop adds stepped zoom, map locking, tile painting,
+  100-level undo/redo, portable drafts, and the generator's live traversal
+  checker. Over-the-shoulder editing now shows an objective and new reachable
+  landings and preserves terrain on cancellation. Generated maps use the new
+  skyway objective; older maps retain the cache objective.
+  See [the workshop notes](level-workshop.md) for the prototype's limits and
+  proposed encounter families. Start with `./scripts/omega editor`.
+
+- Chapter 1 now plans a paced sequence of varied ground routes, encounters,
+  discovery loops, and a quiet cache garden. Variable section widths and
+  limits on repeated route families replace uniform, independently rolled
+  tower sectors. Edit rewards must be reachable, section joins stay protected,
+  and moving platforms require clear travel space. This route grammar was
+  introduced in generator `3.9.0`; see [the level-design notes](chapter-one-level-design.md).
+
 - *Make It Come Alive* is now the preserved Ultra credits master for a complete
   first audio-system pass: a deterministic Ultra/High/sixteen-bit credits cue
   and SFX, semantic cue manifest, scene switching, streamed music, bounded voices,
   independent Pause/installer sound quality, mixer buses, captions, save
-  migration, no-device fallback, and browser gesture unlock. Public music
-  redistribution rights and human listening approval remain explicit gates.
+  migration, no-device fallback, and browser gesture unlock. The maintainer
+  reports direct creator permission to use this recording with or without
+  attribution; archived evidence, distribution-scope confirmation, and human
+  listening approval remain explicit gates.
   Installation, level, and boss music intentionally await their own masters.
 
 - The browser output now runs the authoritative Pygame simulation and renderer
@@ -32,7 +74,7 @@ What this pass actually demonstrates:
   placement for Goliath.
 - The Goliath scaffold is now a four-stage field/RPG encounter: an enormous
   remote cyborg penguin controlled from an elevated booth, the existing direct
-  Goliath exchange, a placeholder X block notice with two proxy minions, and
+  Goliath exchange, an @goliathfyi X block notice with two proxy minions, and
   surrender only after both proxies are defeated. Phase state is saved.
 - Goliath's first two phases fire at one-quarter their previous rate. Float-safe
   minion patrol eliminates the phase-three indexing crash seen in playtesting.

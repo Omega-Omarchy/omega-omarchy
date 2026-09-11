@@ -1233,6 +1233,42 @@ def emit_app_icons(root: Path) -> None:
             canvas.save(root / "ui" / "omega-omarchy-icon.png")
 
 
+def draw_exit_sign(size: tuple[int, int]) -> Image.Image:
+    """North-American building-code EXIT: dark housing, red face, white copy."""
+
+    width, height = size
+    canvas = _new(width, height)
+    draw = ImageDraw.Draw(canvas)
+    inset = max(1, height // 7)
+    draw.rounded_rectangle(
+        [0, 0, width - 1, height - 1],
+        radius=max(1, height // 8),
+        fill=(36, 28, 24, 255),
+        outline=(196, 158, 92, 255),
+        width=max(1, height // 10),
+    )
+    draw.rounded_rectangle(
+        [inset, inset, width - 1 - inset, height - 1 - inset],
+        radius=max(1, height // 10),
+        fill=(168, 22, 24, 255),
+    )
+    lamp = max(1, height // 7)
+    for cx in (inset + lamp, width - inset - lamp - 1):
+        draw.ellipse(
+            [cx, inset + 1, cx + lamp, inset + 1 + lamp],
+            fill=(255, 236, 170, 255),
+        )
+    font = _sign_font(max(8, height - inset * 2 - lamp))
+    draw.text(
+        (width // 2, height // 2 + max(0, lamp // 3)),
+        "EXIT",
+        font=font,
+        fill=(255, 244, 232, 255),
+        anchor="mm",
+    )
+    return canvas
+
+
 def _sign_font(size: int) -> ImageFont.ImageFont:
     try:
         return ImageFont.truetype("DejaVuSansCondensed-Bold.ttf", size)
@@ -2015,7 +2051,14 @@ def build_assets(root: Path | None = None) -> Path:
     if omarchy_font_license.is_file():
         shutil.copyfile(omarchy_font_license, ui / "OMARCHY-FONT-LICENSE.txt")
     emit_fidelity_art(root)
+    from .refinement_art import emit_refinement_art
+
+    emit_refinement_art(root)
     sync_legacy_art(root)
+    from .character_build import build_agent_kit, build_builtin_characters
+
+    build_builtin_characters(root)
+    build_agent_kit(root)
     build_audio(root)
     _BUILT_ROOTS.add(resolved)
     return root

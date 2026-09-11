@@ -237,6 +237,9 @@ def verify(archive: Path, checksum: Path, *, require_clean: bool = False) -> dic
             "docs/accessibility.md",
             "docs/content-packs.md",
             "_internal/assets/characters/david_ultra_side-idle.png",
+            "_internal/assets/character-packs/omarch-king/manifest.json",
+            "_internal/assets/character-packs/omarch-queen/manifest.json",
+            "_internal/assets/character-creation/agent-kit.zip",
             "_internal/assets/ui/omega-omarchy-icon.png",
             "_internal/omega_omarchy/data/content-packs/omega-core/pack.toml",
         )

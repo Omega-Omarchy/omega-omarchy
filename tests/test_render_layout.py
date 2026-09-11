@@ -5,13 +5,20 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from omega_omarchy.render import Renderer, parallax_offset
+from omega_omarchy.render import Renderer, background_parallax_y, parallax_offset
 
 
 def test_parallax_offset_is_finite_and_never_wraps():
     assert parallax_offset(1500, 320, 0, 4000, 1.0) == 0
     assert parallax_offset(1500, 320, 4000, 4000, 1.0) == -1180
     assert -1180 <= parallax_offset(1500, 320, 2000, 4000, 0.4) <= 0
+
+
+def test_background_parallax_y_scales_with_climb_height():
+    short = abs(background_parallax_y(0, 200, 0.58, 1))
+    tall = abs(background_parallax_y(0, 800, 0.58, 1))
+    assert tall > short
+    assert tall > 40
 
 
 def test_authored_parallax_travel_advances_at_walking_cadence():

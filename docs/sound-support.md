@@ -1,7 +1,9 @@
 # Sound support and fidelity design
 
 Status: first vertical-slice runtime and production pipeline implemented on
-2026-09-03; listening, multi-browser, and public-rights gates remain open.
+2026-09-03; tempo-aligned symbolic-arrangement replacement under local
+listening review as of 2026-09-04. Multi-browser and public-rights gates remain
+open.
 
 ## Outcome and invariants
 
@@ -35,6 +37,21 @@ not reused for installation, level, or boss scenes. Those scenes remain silent
 until they receive appropriate masters. The FLAC avoids another lossy source
 generation; it cannot restore information absent from the original AAC stream.
 
+The maintainer-supplied *Omarchy Oligarchy* MP4 has likewise been decoded once
+into a FLAC preservation master. Its intended home is Chapter 4, `walled-garden`
+(**The Walled Garden — Revenue Retreat**), whose boss victory triggers the
+OMARCHY-to-OLIGARCHY event. It remains deliberately absent from the runtime cue
+manifest until its High and sixteen-bit arrangements pass listening review.
+
+The maintainer reports direct creator permission to use *Make It Come Alive*
+and Suvikyi's local conversion candidate *Boot Up Your New Digital World*, in
+both cases with or without attribution. Before public cutover, the project must
+archive those exchanges and confirm their scope for binary and public
+source-master distribution. The staged level master was matched to Rich
+Kilmer's *Beware the Omarchy Oligarchy* in `omacom/radio.omarchy.org`; because
+that repository specifies no track license, its public presence is not treated
+as reuse permission and the cue remains private pending clearance.
+
 Seven short semantic effects—`jump`, `collect`, `convert`, `hit`, `bomb`,
 `logo`, and `ui`—have deterministic 48 kHz stereo PCM masters. Every music and
 effect runtime file is rendered directly from its master into Ultra, High, and
@@ -43,11 +60,17 @@ tier, bounds simultaneous voices, applies master/music/effects/UI levels,
 switches music by manifest-defined scene, and degrades silently when playback
 is unavailable.
 
-The sixteen-bit music output is a reproducible console-style interpretation
-using reduced bandwidth/stereo, tighter dynamics, deliberate quantization, and
-a short dark echo. It is the usable first art pass, not a claim of a hand-made
-SNES orchestral arrangement. A later contributor with stems or composition
-data can replace that recipe output without changing cue IDs or game logic.
+The committed sixteen-bit credits output is a reproducible experimental first
+pass, not a qualified remake. Direct mixed-audio resynthesis and stem-remix
+experiments did not produce a musically usable result. The replacement path
+uses separation only as input to an inspectable symbolic arrangement, then
+renders that identical score through neutral, SNES-oriented, and
+Genesis-oriented instrument paths. A 20-second A/B produced the same key and
+chord progression from Demucs `htdemucs` and BS-RoFormer, with only small note
+and drum-count differences. Demucs is therefore the fast draft separator;
+RoFormer is an optional problem-stem pass rather than a routine prerequisite.
+No new lower-tier music is promoted into the game until the neutral reference
+is recognizably the source composition.
 
 ## Fidelity targets
 
@@ -70,6 +93,7 @@ Implemented source layout:
 ```text
 assets/source/audio/
   music/make-it-come-alive/master-ultra.flac
+  music/omarchy-oligarchy/master-ultra.flac
   sfx/<cue>/master.wav
   audio-manifest.toml
   README.md
@@ -108,6 +132,73 @@ re-orchestration with fewer layers and period-appropriate processing.
 Sixteen-bit is resampled and sequenced against a small, rights-cleared sample
 bank with explicit voice limits and loop points. Offline renders then receive
 tier-specific sample rate, stereo, dynamics, and encoding settings.
+
+For finished-mix imports, the experimental authoring sequence is deliberately
+staged: specialist source separation; audio-to-MIDI transcription for
+vocals/bass; drum-event classification; chord/key analysis against the full
+mix; instrument discovery across otherwise-abandoned guitar, keys, and residual
+stems; quantization and voice leading into JSON/MIDI; a neutral SoundFont
+render; and only then console-oriented rendering. A failed neutral render is a
+transcription/arrangement failure and must not be hidden behind console effects.
+Flagship cues may require human correction of the emitted MIDI before tier
+rendering.
+
+The offline `omega_omarchy.music_diagnostic` tool detects tempo and the beat
+phase relative to an arbitrary source clip, records source hashes plus the
+separator label, and writes a versioned `arrangement.json`. That file is the
+handoff boundary between machine analysis and musical editing. It can be
+corrected in JSON (with the emitted MIDI available for inspection) and rendered
+again with `--arrangement` without rerunning separation or Basic Pitch.
+Identical arrangements produce byte-identical four-operator renders. SoundFont
+renders are for local listening only until the project adopts and audits a
+redistributable sample bank.
+
+Long cues also retain a locally spaced sixteenth-note timing grid derived from
+the detected beat sequence. This lets gradual tempo movement survive symbolic
+cleanup instead of forcing an entire song onto the average tempo inferred from
+a short excerpt. Sparse intros and outros are covered by conservative
+extrapolation from their nearest reliable beat intervals.
+
+The optional repeatable `--instrument-stem LABEL=PATH` input prevents useful
+parts from disappearing merely because they landed outside the lead, bass, or
+drum stems. One-second overlapping windows are grouped by recurring timbre and
+written to `instrument-inventory.json`; source-faithful region clips are written
+under `instrument-extracts/`. Coherent tonal candidates receive independent
+symbolic lanes and patch archetypes. Low-confidence, diffuse, and percussive
+residue remains inventoried but unpromoted. These labels and thresholds are an
+auditable first pass for a musician, not a substitute for one.
+
+Fingerprint pitch bounds must match the voice. An early bass pass began above
+the song's 39–62 Hz fundamentals, locked onto an upper harmonic, and made a
+filtered saw bass appear nearly pure. Bass analysis now uses a lower range while
+the wide synth is fitted separately. Source-informed bass and sustained-synth
+profiles are attached with repeatable `--voice-fingerprint ROLE=PATH` inputs so
+one generic oscillator estimate cannot flatten both defining voices.
+
+Its optional musical-cleanup stage consolidates selected melody fragments,
+corrects weak chromatic guesses against the inferred key, constrains uncertain
+bass events by the active chord, and regularizes transient detections into a
+deliberate groove. The enhanced-retro renderer then combines wavetable, FM,
+PCM-drum, stereo, and short-echo techniques. This is a creative era
+interpretation: recognizable early-console texture and phrasing matter more
+than exact historical sample rates, voice counts, chips, or DSP restrictions.
+The evolving native renderer and its invariants are specified in
+[`omega-chip.md`](omega-chip.md).
+
+For cues that already contain useful synthesis, the tool can derive a
+parameter-only Omega Chip fingerprint from an isolated candidate: harmonic
+distribution, harmonic/noise balance, envelope, modulation, and stereo
+character. A private diagnostic may additionally blend an averaged single-cycle
+wavetable. The parameter model is the preferred distributable result; the raw
+derived wavetable remains out of tree until separately cleared.
+
+For draft work, extract six stems with `htdemucs_6s`, then run the diagnostic
+with `--separator-label htdemucs_6s` and pass `other`, `guitar`, and `piano` as
+separate `--instrument-stem` inputs. A four-stem Demucs pass remains acceptable
+for fast lead/bass/drum iteration. Use a slower specialist separator only when
+the inventory or neutral reference exposes a specific contaminated stem. Keep
+15–30 second representative sections during iteration; process a full cue only
+after the arrangement and recovered-instrument palette pass listening review.
 
 Effects begin with a clean, high-resolution master. A recipe may shorten the
 tail, reduce layers, quantize pitch envelopes, narrow the stereo image, or

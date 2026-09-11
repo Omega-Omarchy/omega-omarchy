@@ -18,6 +18,17 @@ the start (hot-plug / keyboard fallback).
 | Installer: change option | Up / Down | D-pad |
 | Installer: confirm Yes/No | Left / Right | D-pad X |
 
+Pause → Credits opens the cinematic roll. Jump/confirm, Interact or Pause returns
+to the previous screen; after Goliath, the first skip advances the cast sequence
+to the roll. Reduced Motion presents static pages on the same soundtrack timer.
+In the over-the-shoulder editor, Up/Down pans through the full playfield height.
+
+Character setup: Up/Down or Left/Right chooses David, The Omarch King, The Omarch
+Queen, or an installed character. Type to replace the name, Backspace to edit,
+and Enter to select. **Create with your agent** opens the kit instructions;
+Up/Down returns to selection. The browser's character import controls are
+below the game. See [character creation](character-creation.md).
+
 Enemy contact opens the turn encounter directly: Z reason, X patch, Left fork,
 Right demonstrate, C use the equipped item, R reuse, E recruit. The opponent
 then takes a visible turn and raises or lowers the BS Meter.
@@ -80,7 +91,7 @@ or Delete clears it.
 When a captured key or button already belongs to another action, the two
 non-empty bindings swap so a single press never silently triggers both. An
 empty alternate slot cannot steal and erase a required primary binding; that
-capture is rejected with feedback. F1/F2/F3/F4/F5/F6/F7/F8/F9/F10 are reserved for private-alpha
+capture is rejected with feedback. F1–F12 are reserved for private-alpha
 QA. Keyboard remaps and physical gamepad action buttons apply immediately and
 persist in saves and world rerolls; compact gameplay prompts follow the most
 recently active device. Controller stick/D-pad directions remain conventional
@@ -89,7 +100,9 @@ and are not yet remappable.
 QA-only (never required for the golden path): F2 current boss minus 15 tiles,
 F4 Goliath minus 15 tiles, F5 force edit, F6 boss-gate
 approach, F7 edit pickup, F9 network portal, F10 Cow Level, F8 force turn-based, F1 skip
-installer, F3 hitbox overlay. The CLI equivalents are documented in
+installer, F3 hitbox overlay, **F11 credit roll**, **F12 cast cinematic then credit roll**.
+The credits shortcuts work from any screen, including setup, and return to the
+screen you left. Focus the game canvas first in the browser. The CLI warp equivalents are documented in
 `docs/playtest-warps.md`.
 
 In the Cow Level, jump or fall into the cannon's forgiving rear-hatch capture

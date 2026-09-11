@@ -85,9 +85,13 @@ Reviewed directory or ZIP packs can be installed disabled into game-owned user
 data, then enabled separately. The digested registry records exact identities;
 runtime launch revalidates enabled copies before passing them to the same loader.
 Layout/loot/cosmetics/encounters/narrative/rare streams are separate.
-Generator 3.3 uses 256–440-tile macro-route maps with 38–52-row vertical chambers,
-multi-screen ladder/bumper routes, independently varied pits, encounters, loot,
-secrets, edit-flight pickups, and chapter motifs. The computer-hardware chapter
+Generator 3.9 gives Chapter 1 a paced grammar with variable section widths,
+six ground-route shapes, bounded recipe repetition, quiet sections, and
+connected optional reward routes. Its edit pickups and moving-platform travel
+space are validated alongside the ordinary route. See
+[chapter-one-level-design.md](chapter-one-level-design.md) for the design and
+seed-inspection workflow. Later chapters retain the macro-sector scaffolding
+with ladder/bumper routes, pits, encounters, loot, and secrets. The computer-hardware chapter
 adds sealed paired network nodes as ordinary bidirectional reachability edges;
 its Ethernet/Wi-Fi operation labels come from the independent narrative stream.
 Every map

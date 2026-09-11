@@ -206,11 +206,58 @@ def test_sound_fidelity_is_a_separate_installer_choice():
     session = InstallerSession(step_index=PARODY_STEPS.index("sound"))
     page = session.gum_page()
     assert page is not None
-    assert page["prompt"] == "Select sound fidelity"
-    assert page["footnote"] == "Sound quality is independent from visual fidelity."
+    assert page["prompt"] == "Select audio quality"
+    assert page["footnote"] == "Music and sound effects. Change audio later in Pause."
     session.cycle(-1)
     assert session.choices.fidelity == "ultra"
     assert session.choices.audio_fidelity == "high"
     world = session.run_generation()
     assert world.settings["fidelity"] == "ultra"
     assert world.settings["audioFidelity"] == "high"
+
+
+def test_confirmation_draws_progress_before_any_generation_and_keeps_real_time(monkeypatch):
+    import omega_omarchy.installer as installer
+    clock = [100.0]
+    monkeypatch.setattr(installer.time, "perf_counter", lambda: clock[0])
+    started = []
+    prepared = object()
+
+    def work(self):
+        started.append(True)
+        yield .1, "Building terrain"
+        clock[0] += 12.0
+        yield .9, "Checking traversal"
+        return prepared
+
+    monkeypatch.setattr(InstallerSession, "_prepare_world", work)
+    session = InstallerSession(step_index=PARODY_STEPS.index("confirm"), realtime=True)
+    session.next_step()
+    assert session.step == "progress" and session.world is None and not started
+    session.tick_progress()
+    assert session.progress_label == "Building terrain" and session.world is None
+    session.tick_progress()
+    assert session.progress_fraction == .9 and session.total_elapsed_s >= 12
+    session.tick_progress()
+    assert session.world is prepared and session.step == "progress"
+    assert session._generation_work is None
+    for _ in range(PROGRESS_BASE_TICKS + INSTALL_BREATH_TICKS):
+        session.tick_progress()
+    elapsed = session.total_elapsed_s
+    clock[0] += 50
+    assert session.complete and session.total_elapsed_s == elapsed
+
+
+def test_character_preload_begins_at_greeter_and_selection_reuses_validation(monkeypatch):
+    sim = GameSim.new()
+    sim.step(InputState())
+    assert sim.installer.step == "greeter"
+    assert sim.installer._character_work is not None
+    for _ in range(60):
+        sim.step(InputState())
+    assert sim.installer.characters_ready
+    assert len(sim.installer.character_options) >= 3
+    monkeypatch.setattr(sim.installer, "refresh_characters", lambda: (_ for _ in ()).throw(AssertionError("selection revalidated packs")))
+    sim.installer.step_index = PARODY_STEPS.index("character")
+    sim.step(InputState(down_pressed=True))
+    assert sim.installer.choices.character.kind == "omarch-king"

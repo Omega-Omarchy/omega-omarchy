@@ -53,8 +53,9 @@ LADDER_SNAP = 0.35
 LADDER_ENTRY_RATIO = 0.80
 # Lowercase ``g`` is the invisible collision phase while a boss gate's art is
 # visibly descending; it becomes the ordinary rendered ``G`` when closed.
-SOLID = frozenset({"#", "=", "+", "B", "D", "G", "g"})
+SOLID = frozenset({"#", "=", "I", "+", "B", "D", "G", "g"})
 LADDER_GLYPHS = frozenset({"L", "+"})
+_PHASE_TRANSLATION = str.maketrans({glyph: "." for glyph in ".#=I+BDGgLSXCPHO!ENWM^"})
 
 
 @dataclass(frozen=True)
@@ -256,12 +257,23 @@ def _axis_move(
         target, other = x + delta, y
     else:
         target, other = y + delta, x
+    # K is an invisible one-way ceiling, never a floor. Workshop portals
+    # cross it; ordinary jumps, phase gusts and cannon launches cannot enter
+    # from below. A missed skyway jump falls freely back into the level.
+    ceiling_hit = False
+    if axis == "y" and delta < 0:
+        x0, x1 = _range(x, w)
+        for ty in range(max(0, int(target // TILE)), min(len(tiles), int(y // TILE) + 1)):
+            underside = (ty + 1) * TILE
+            if target < underside <= y + EPS and any(_tile_at(tiles, tx, ty) == "K" for tx in range(x0, x1 + 1)):
+                target = max(target, float(underside))
+                ceiling_hit = True
     if axis == "x":
         blocked = _collides(tiles, target, y, w, h, ignore_ladder_deck=ignore_ladder_deck)
     else:
         blocked = _collides(tiles, x, target, w, h, ignore_ladder_deck=ignore_ladder_deck)
     if not blocked:
-        return target, False
+        return target, ceiling_hit
     lo, hi = (x if axis == "x" else y), target
     for _ in range(24):
         mid = (lo + hi) / 2.0
@@ -356,6 +368,7 @@ def step_body(
     # as the body leaves the gust field, ordinary collision resumes.
     if not phase_solids:
         body = _nudge_out(tiles, body)
+    phase_tiles = [row.translate(_PHASE_TRANSLATION) for row in tiles] if phase_solids else None
     # Down by itself is intentionally inert. The low hitbox belongs only to a
     # moving Down+direction slide. Once its momentum expires, a held combo
     # locks locomotion but restores the normal standing body and idle art.
@@ -600,8 +613,7 @@ def step_body(
         dx = remaining_x / steps
         dy = remaining_y / steps
         if phase_solids:
-            x = max(0.0, min(len(tiles[0]) * TILE - body.width, x + dx))
-            hx = False
+            x, hx = _axis_move(phase_tiles, x, y, body.width, body.height, dx, "x", ignore_ladder_deck=True)
         else:
             x, hx = _axis_move(
                 tiles,
@@ -618,8 +630,7 @@ def step_body(
         hit_x = hit_x or hx
         old_y = y
         if phase_solids:
-            y = max(0.0, min(len(tiles) * TILE - body.height, y + dy))
-            hy = False
+            y, hy = _axis_move(phase_tiles, x, y, body.width, body.height, dy, "y", ignore_ladder_deck=True)
         else:
             y, hy = _axis_move(
                 tiles,

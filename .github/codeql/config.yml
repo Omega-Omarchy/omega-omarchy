@@ -1,0 +1,10 @@
+name: Omega Omarchy source analysis
+queries:
+  - uses: security-extended
+paths-ignore:
+  - dist
+  - build
+  - vendor
+  - .venv
+  - .local
+  - assets
