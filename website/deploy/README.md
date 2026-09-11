@@ -12,6 +12,10 @@ separately; deployment does not commit or push it.
 - Landing-page refresh: `/srv/omegaomarchy/releases/20260911T124622Z/`;
   centered opening section, larger single-emblem pulses, and grounded gameplay
   previews in all three fidelity tiers. The previous release remains available.
+- Game-fix release: `/srv/omegaomarchy/releases/20260911T195124Z/`; ships the
+  fix for the credit roll quitting itself via a hijacked shutdown counter, the
+  tightened chapter-complete panel, and the installer confirm-debounce fix.
+  Previous releases remain available.
 - Virtual host: `/etc/nginx/sites-available/omegaomarchy.org`, enabled by a
   matching symlink in `sites-enabled/`; source: `omegaomarchy.nginx` here.
 - ACME webroot: `/srv/omegaomarchy/acme`.
