@@ -30,7 +30,7 @@ def test_names_use_opt_in_override_then_pinned_profile_then_github_login():
     assert resolve_contributor("Git Name", "profile@users.noreply.github.com", config) == ("profile", "Public Name")
     assert resolve_contributor("Git Name", "offline@example.test", config, github_login="profile") == ("profile", "Public Name")
     assert resolve_contributor("Git Name", "999+newcomer@users.noreply.github.com", config) == ("newcomer", "newcomer")
-    assert resolve_contributor("author", "author@gmail.com", config) == ("author", "Screen Name")
+    assert resolve_contributor("author", "author@users.example.test", config) == ("author", "Screen Name")
     identity, name = resolve_contributor("Offline Author", "private@example.test", config)
     assert identity.startswith("git:") and "private" not in identity and name == "Offline Author"
 
@@ -67,7 +67,7 @@ def test_github_login_and_personal_email_collapse_to_one_screen_name(tmp_path):
     git("add", ".")
     git("commit", "-qm", "Play")
     git("config", "user.name", "author")
-    git("config", "user.email", "author@gmail.com")
+    git("config", "user.email", "author@users.example.test")
     (tmp_path / "docs.md").write_text("notes")
     git("add", ".")
     git("commit", "-qm", "Document")

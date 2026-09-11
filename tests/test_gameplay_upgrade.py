@@ -259,7 +259,7 @@ def test_prologue_capture_and_transfer_use_scene_specific_character_art():
     renderer.cache.clear()
     sim.story_beat = 6
     sim.story_ticks = 90
-    first_transit = renderer.frame(sim)
+    first_transit = renderer.frame(sim).copy()
     assert "fidelity/ultra/ui/prologue-rift.png" in renderer.cache
     assert not any("characters/" in key for key in renderer.cache)
     sim.story_ticks = 91
@@ -274,15 +274,15 @@ def test_prologue_capture_and_transfer_use_scene_specific_character_art():
     sim.step(InputState(jump_pressed=True))
     assert sim.scene == "prologue"
     assert sim.story_transition_ticks == 1
-    submitted = renderer.frame(sim)
+    submitted = renderer.frame(sim).copy()
     assert "fidelity/ultra/ui/stage-world-map.png" not in renderer.cache
     sim.story_transition_ticks = PROLOGUE_LOGIN_FLASH_IN_TICKS
     whiteout = renderer.frame(sim)
     assert tuple(whiteout.get_at((1, 1))[:3]) == (255, 255, 255)
+    assert pygame.image.tobytes(submitted, "RGBA") != pygame.image.tobytes(whiteout, "RGBA")
     sim.story_transition_ticks += PROLOGUE_LOGIN_FLASH_HOLD_TICKS + 1
     renderer.frame(sim)
     assert "fidelity/ultra/ui/stage-world-map.png" in renderer.cache
-    assert pygame.image.tobytes(submitted, "RGBA") != pygame.image.tobytes(whiteout, "RGBA")
     pygame.quit()
 
 
@@ -527,7 +527,7 @@ def test_level_intro_reuses_selected_logo_and_boss_in_finished_title_card():
     sim = GameSim.from_play_now()
     sim._open_stage_map(0, transition=False)
     renderer = Renderer()
-    map_frame = renderer.frame(sim)
+    map_frame = renderer.frame(sim).copy()
     sim._begin_level_intro(0)
     sim.level_intro_ticks = (
         LEVEL_INTRO_MAP_FADE_TICKS
