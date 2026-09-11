@@ -90,6 +90,10 @@ Recommended required checks:
 - `Audit pinned Python dependencies`
 
 The native release build needs full Git history for contributor attribution.
+CI creates `.venv` and installs with `.venv/bin/python`, matching `scripts/omega`.
+The test matrix also installs optional audio-authoring extras into that same
+environment and imports librosa, scipy, and soundfile before the release gate.
+Those extras are excluded from the native artifact job.
 Generated credits are written into the staged browser/native package; they do
 not dirty the source checkout. The web release audit uses an ignored output
 folder. CI checks regenerated art/audio against their tracked source outputs;
