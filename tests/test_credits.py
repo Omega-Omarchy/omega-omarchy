@@ -184,6 +184,41 @@ def test_credit_shortcuts_can_switch_sequences_and_restore_the_original_screen(o
     assert sim.world is None  # previewing setup must not generate a world
 
 
+def test_credits_preview_from_the_armed_complete_screen_requires_a_fresh_confirm():
+    sim = GameSim.new("omega-fixture-1")
+    guard = 0
+    while sim.installer.step not in {"progress", "complete"} and guard < 24:
+        sim.step(InputState(jump_pressed=True))
+        guard += 1
+    sim.step(InputState(jump_pressed=True))
+    assert sim.installer.step == "complete"
+    sim.step(InputState())
+    assert sim.installer.play_now_armed is True
+    assert _handle_credits_shortcut(sim, pygame.K_F12)
+    assert sim.scene == "ending"
+    assert sim.installer.awaiting_release is True
+    assert sim.installer.play_now_armed is False
+    # A held/repeating skip key drives both the cast-card skip and the
+    # roll skip, landing back on "installer" while still "held".
+    for _ in range(32):
+        sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "credits"
+    for _ in range(32):
+        sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "installer"
+    assert sim.installer.step == "complete"
+    # The debounce must have swallowed the still-held key instead of
+    # instantly (and synchronously) generating a world.
+    assert sim.world is None
+    assert sim.installer.play_now_armed is False
+    # Releasing then pressing again still works normally afterward.
+    sim.step(InputState())
+    assert sim.installer.play_now_armed is True
+    sim.step(InputState(jump_pressed=True))
+    assert sim.scene == "prologue"
+    assert sim.world is not None
+
+
 def test_browser_credit_roll_uses_the_lighter_stream():
     manager = AudioManager(browser=True, enabled=False)
     assert manager._desired_music("ending", in_combat=False) == "credits-theme"

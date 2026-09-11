@@ -85,6 +85,11 @@ def _handle_credits_shortcut(sim: GameSim, key: int, audio: AudioManager | None 
         return True
     sim.start_credits(cinematic=cinematic, return_scene=return_scene)
     sim.credits_shortcut_lock = 20
+    if return_scene == "installer":
+        # Re-arm the confirm debounce so a held/repeating skip key cannot
+        # instantly fire play_now() on the frame the installer reappears.
+        sim.installer.awaiting_release = True
+        sim.installer.play_now_armed = False
     if audio is not None:
         # Halt immediately. A fadeout here races mixer.load() on the next cue.
         audio._stop_music(fade_ms=0)
