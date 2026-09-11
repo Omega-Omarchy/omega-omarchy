@@ -108,6 +108,9 @@ class AudioManager:
         self.music_start_offset = 0.0
         self._music_fading = False
         self._deferred_music = ""
+        self._theme_channel: pygame.mixer.Channel | None = None
+        self._need_roll_preload = False
+        self._roll_preloaded = False
         self.error = ""
         try:
             self.manifest = json.loads((self.root / "audio-manifest.json").read_text(encoding="utf-8"))
@@ -180,12 +183,17 @@ class AudioManager:
         if not self.available:
             return
         cue = self._cue(self.music_cue) or {}
+        volume = max(0.0, min(1.0, self._bus_volume("music") * float(cue.get("gain", 1.0))))
         try:
-            pygame.mixer.music.set_volume(
-                max(0.0, min(1.0, self._bus_volume("music") * float(cue.get("gain", 1.0))))
-            )
+            pygame.mixer.music.set_volume(volume)
         except pygame.error:
             self.available = False
+            return
+        if self._theme_channel is not None:
+            try:
+                self._theme_channel.set_volume(volume)
+            except pygame.error:
+                pass
 
     def _sound(self, cue_id: str) -> pygame.mixer.Sound | None:
         if cue_id in self.sounds:
@@ -222,6 +230,80 @@ class AudioManager:
         active.append(channel)
         return True
 
+    def _stop_theme_channel(self, *, fade_ms: int = 0) -> None:
+        channel = self._theme_channel
+        self._theme_channel = None
+        if channel is None:
+            return
+        try:
+            if fade_ms > 0:
+                channel.fadeout(fade_ms)
+            else:
+                channel.stop()
+        except pygame.error:
+            pass
+
+    def _play_cast_theme(self, path: Path, cue: dict[str, Any]) -> bool:
+        """Play Make It Come Alive as a Sound so the roll can preload on music."""
+
+        sound = self._sound("credits-theme")
+        if sound is None:
+            return False
+        self._stop_theme_channel()
+        try:
+            pygame.mixer.music.stop()
+        except pygame.error:
+            pass
+        volume = max(0.0, min(1.0, self._bus_volume("music") * float(cue.get("gain", 1.0))))
+        try:
+            sound.set_volume(volume)
+            channel = sound.play()
+        except pygame.error:
+            return False
+        if channel is None:
+            return False
+        self._theme_channel = channel
+        self.music_cue = "credits-theme"
+        self.music_path = path
+        self._need_roll_preload = True
+        self._roll_preloaded = False
+        self._music_fading = False
+        self._deferred_music = ""
+        return True
+
+    def _preload_credit_roll(self) -> None:
+        path = self.cue_path("credits-roll")
+        if path is None:
+            self._need_roll_preload = False
+            return
+        try:
+            pygame.mixer.music.stop()
+            pygame.mixer.music.load(str(path))
+            self._roll_preloaded = True
+        except pygame.error as exc:
+            self.error = str(exc)
+            self._roll_preloaded = False
+        self._need_roll_preload = False
+
+    def _play_preloaded_roll(self) -> bool:
+        if not self._roll_preloaded:
+            return False
+        self._stop_theme_channel()
+        try:
+            pygame.mixer.music.play(loops=0, fade_ms=0)
+        except (TypeError, pygame.error):
+            try:
+                pygame.mixer.music.play(loops=0)
+            except pygame.error:
+                self._roll_preloaded = False
+                return False
+        self.music_cue = "credits-roll"
+        self.music_path = self.cue_path("credits-roll")
+        self._music_fading = False
+        self._deferred_music = ""
+        self._apply_music_volume()
+        return True
+
     def _play_music(self, cue_id: str, *, preserve_position: bool = False) -> bool:
         if not self.available or not self.unlocked:
             return False
@@ -239,13 +321,19 @@ class AudioManager:
             except pygame.error:
                 position = 0.0
         try:
+            if cue_id == "credits-theme" and self._play_cast_theme(path, cue):
+                return True
+            if cue_id == "credits-roll" and self._play_preloaded_roll():
+                return True
             # SDL_mixer can abort if load() runs while fadeout() is still
             # draining the previous stream (F11/F12 or skip-to-roll).
             try:
                 pygame.mixer.music.stop()
             except pygame.error:
                 pass
+            self._stop_theme_channel()
             self._music_fading = False
+            self._roll_preloaded = False
             pygame.mixer.music.load(str(path))
             kwargs: dict[str, Any] = {
                 "loops": -1 if bool(cue.get("loop", True)) else 0,
@@ -293,6 +381,7 @@ class AudioManager:
                     self._music_fading = False
             except pygame.error:
                 self._music_fading = False
+        self._stop_theme_channel(fade_ms=fade_ms if self.music_cue == "credits-theme" else 0)
         self.music_cue = ""
         self.music_path = None
         self.music_start_offset = 0.0
@@ -310,6 +399,8 @@ class AudioManager:
         music_fade_ms: int | None = None,
     ) -> None:
         self.apply_settings(settings)
+        if self._need_roll_preload and scene == "ending" and self.unlocked:
+            self._preload_credit_roll()
         desired = self._desired_music(scene, in_combat=in_combat)
         if desired != "credits-roll" and desired != self._deferred_music:
             self._deferred_music = ""
@@ -320,17 +411,18 @@ class AudioManager:
             and self.unlocked
             and not self._music_fading
         ):
-            try:
-                pygame.mixer.music.fadeout(max(1, int(music_fade_ms)))
-            except pygame.error:
-                pass
+            self._stop_theme_channel(fade_ms=max(1, int(music_fade_ms)))
             self._music_fading = True
         if desired is None and self.music_cue:
             self._stop_music()
         elif desired is not None and desired != self.music_cue and self.unlocked:
-            # Decode Super Key Love on the frame after the roll is on screen.
-            # Loading it in the same tick as skip + first layout stalls WASM.
-            if desired == "credits-roll" and self._deferred_music != desired:
+            if desired == "credits-roll" and self._roll_preloaded:
+                if not self._play_music(desired):
+                    self.music_cue = desired
+                    self._deferred_music = ""
+            elif desired == "credits-roll" and self._deferred_music != desired:
+                # Decode Super Key Love on the frame after the roll is on screen
+                # when it was not preloaded during the cast cards.
                 self._stop_music(fade_ms=0)
                 self._deferred_music = desired
             elif not self._play_music(desired):

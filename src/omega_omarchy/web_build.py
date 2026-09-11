@@ -357,13 +357,28 @@ def _repair_pygbag_launcher(built: Path) -> None:
         "background: green;\n            color: blue;",
         "background: #1a1b26;\n            color: #b9f27c;\n            border: 1px solid #9ece6a;",
     )
+    html = html.replace(
+        "</style>",
+        "#infobox-build{display:block;font-size:11px;font-weight:600;color:#7aa2f7;"
+        "letter-spacing:.04em;margin:0 0 10px}#infobox-msg{font-weight:bold}\n    </style>",
+        1,
+    )
     from .release import release_label
 
     html = _replace_required(
         html,
         '<div id="infobox">Loading, please wait ...</div>',
-        f'<div id="infobox">Loading Omega Omarchy {release_label()} …</div>',
+        (
+            '<div id="infobox">'
+            f'<div id="infobox-build">Omega Omarchy {release_label()}</div>'
+            '<div id="infobox-msg">Loading, please wait ...</div>'
+            "</div>"
+        ),
         label="loading banner",
+    )
+    html = html.replace(
+        "platform.window.infobox.innerText = ",
+        '(document.getElementById("infobox-msg") or platform.window.infobox).innerText = ',
     )
     index.write_text(html, encoding="utf-8")
     tarball = built / "omega-omarchy.tar.gz"

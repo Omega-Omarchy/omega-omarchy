@@ -192,6 +192,66 @@ def test_browser_credit_roll_uses_the_lighter_stream():
     assert path is not None and path.as_posix().endswith("sixteen-bit/music/credits-roll.ogg")
 
 
+def test_cast_cards_preload_the_roll_so_skip_only_plays(monkeypatch):
+    from omega_omarchy import audio as audio_mod
+
+    order = []
+
+    class FakeChannel:
+        def stop(self):
+            order.append("theme-stop")
+
+        def fadeout(self, ms):
+            order.append(("theme-fade", ms))
+
+        def set_volume(self, volume):
+            return None
+
+        def get_busy(self):
+            return True
+
+    class FakeSound:
+        def set_volume(self, volume):
+            return None
+
+        def play(self, *args, **kwargs):
+            order.append("theme-play")
+            return FakeChannel()
+
+    class FakeMusic:
+        def stop(self):
+            order.append("stop")
+
+        def fadeout(self, ms):
+            order.append(("fadeout", ms))
+
+        def load(self, path):
+            order.append("load")
+
+        def play(self, **kwargs):
+            order.append("play")
+
+        def set_volume(self, volume):
+            return None
+
+        def get_pos(self):
+            return 0
+
+    monkeypatch.setattr(audio_mod.pygame.mixer, "Sound", lambda path: FakeSound())
+    monkeypatch.setattr(audio_mod.pygame.mixer, "music", FakeMusic())
+    manager = AudioManager(enabled=False)
+    manager.available = True
+    manager.unlocked = True
+    manager.update(scene="ending", in_combat=False, settings={})
+    assert "theme-play" in order
+    manager.update(scene="ending", in_combat=False, settings={})
+    assert "load" in order
+    assert "play" not in order
+    manager.update(scene="credits", in_combat=False, settings={})
+    assert "play" in order
+    assert order.index("load") < order.index("play")
+
+
 def test_credit_roll_music_loads_on_the_following_update(monkeypatch):
     from omega_omarchy import audio as audio_mod
 
@@ -306,7 +366,7 @@ def test_cast_theme_fades_out_before_the_roll(monkeypatch):
 
     class FakeMusic:
         def fadeout(self, ms):
-            calls.append(ms)
+            calls.append(("music", ms))
 
         def set_volume(self, volume):
             return None
@@ -314,11 +374,31 @@ def test_cast_theme_fades_out_before_the_roll(monkeypatch):
         def stop(self):
             return None
 
+        def load(self, path):
+            return None
+
+        def play(self, **kwargs):
+            return None
+
+        def get_pos(self):
+            return 0
+
+    class FakeChannel:
+        def fadeout(self, ms):
+            calls.append(ms)
+
+        def stop(self):
+            return None
+
+        def set_volume(self, volume):
+            return None
+
     monkeypatch.setattr(audio_mod.pygame.mixer, "music", FakeMusic())
     manager = AudioManager(enabled=False)
     manager.available = True
     manager.unlocked = True
     manager.music_cue = "credits-theme"
+    manager._theme_channel = FakeChannel()
     manager.update(scene="ending", in_combat=False, settings={}, music_fade_ms=round(CAST_THEME_FADE_SECONDS * 1000))
     assert calls == [round(CAST_THEME_FADE_SECONDS * 1000)]
     manager.update(scene="ending", in_combat=False, settings={}, music_fade_ms=round(CAST_THEME_FADE_SECONDS * 1000))
