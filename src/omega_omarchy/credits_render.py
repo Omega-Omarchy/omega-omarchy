@@ -64,13 +64,26 @@ class CreditsRenderer:
             base = self.r._load("ui/omarchy-wordmark.png").copy()
             # Preserve the accepted title-screen silhouette and transparency.
             base.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
-            h = round(base.get_height() / base.get_width() * width * scale)
-            self.logos[key] = self.r._fit(base, (width * scale, h))
-        image = self.logos[key]
+            mark_h = round(base.get_height() / base.get_width() * width * scale)
+            mark = self.r._fit(base, (width * scale, mark_h))
+            omega = self.font(8, scale).render("OMEGA", True, WHITE)
+            gap = max(2, scale)
+            line_h = max(1, scale)
+            omega_top = 0
+            line_top = omega.get_height() + gap
+            mark_top = line_top + line_h + gap
+            plate = pygame.Surface((mark.get_width(), mark_top + mark.get_height()), pygame.SRCALPHA)
+            plate.blit(omega, (max(0, 4 * scale), omega_top))
+            pygame.draw.rect(
+                plate,
+                WHITE,
+                (max(0, 4 * scale), line_top, omega.get_width(), line_h),
+            )
+            plate.blit(mark, (0, mark_top))
+            self.logos[key] = (plate, mark_top)
+        image, mark_top = self.logos[key]
         left = (320 - width) / 2
-        self.text(surf, "OMEGA", left + 4, y - 10, 8, "left")
-        pygame.draw.line(surf, WHITE, self.r._lp(left + 4, y - 1), self.r._lp(left + 35, y - 1), max(1, scale))
-        surf.blit(image, (round(left * scale), round(y * scale)))
+        surf.blit(image, (round(left * scale), round(y * scale) - mark_top))
 
     def layout(self, character):
         if character in self.layouts:

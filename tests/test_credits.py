@@ -30,6 +30,7 @@ def test_names_use_opt_in_override_then_pinned_profile_then_github_login():
     assert resolve_contributor("Git Name", "profile@users.noreply.github.com", config) == ("profile", "Public Name")
     assert resolve_contributor("Git Name", "offline@example.test", config, github_login="profile") == ("profile", "Public Name")
     assert resolve_contributor("Git Name", "999+newcomer@users.noreply.github.com", config) == ("newcomer", "newcomer")
+    assert resolve_contributor("author", "author@gmail.com", config) == ("author", "Screen Name")
     identity, name = resolve_contributor("Offline Author", "private@example.test", config)
     assert identity.startswith("git:") and "private" not in identity and name == "Offline Author"
 
@@ -55,6 +56,28 @@ def test_git_attribution_preserves_authors_coauthors_renames_and_changed_paths(t
     assert history_attribution(tmp_path, {}) == (people, commits)
 
 
+def test_github_login_and_personal_email_collapse_to_one_screen_name(tmp_path):
+    def git(*args):
+        return subprocess.check_output(["git", "-C", str(tmp_path), *args], text=True).strip()
+
+    git("init", "-q")
+    git("config", "user.name", "Jeremy Dixon")
+    git("config", "user.email", "123+author@users.noreply.github.com")
+    (tmp_path / "sim.py").write_text("play")
+    git("add", ".")
+    git("commit", "-qm", "Play")
+    git("config", "user.name", "author")
+    git("config", "user.email", "author@gmail.com")
+    (tmp_path / "docs.md").write_text("notes")
+    git("add", ".")
+    git("commit", "-qm", "Document")
+    config = {"contributors": {"author": {"name": "Screen Name", "aliases": ["Jeremy Dixon"]}}}
+    people, _ = history_attribution(tmp_path, config)
+    assert [person["id"] for person in people] == ["author"]
+    assert people[0]["name"] == "Screen Name"
+    assert "sim.py" in people[0]["paths"] and "docs.md" in people[0]["paths"]
+
+
 def test_manifest_is_reproducible_and_contains_every_pinned_name_and_accepted_cast():
     first = compile_credits()
     assert compile_credits() == first
@@ -73,6 +96,13 @@ def test_manifest_is_reproducible_and_contains_every_pinned_name_and_accepted_ca
     assert not any("Suno" in row.get("text", "") for row in first["rows"])
     text = [row.get("text") for row in first["rows"]]
     assert {"Codex / Astra", "Codex / Sol", "Grok Build", "Grok Imagine"} <= set(text)
+    assert {person["name"] for person in first["contributors"]} == {"Jeremy Dixon"}
+    start = next(i for i, row in enumerate(first["rows"]) if row.get("text") == "The following departments follow the Git history.")
+    end = next(i for i, row in enumerate(first["rows"]) if row.get("text") == "Agent collaborators")
+    git_names = [row.get("text") for row in first["rows"][start:end] if row.get("kind") == "text"]
+    assert "jeremydixon22" not in git_names
+    headings = [row.get("text") for row in first["rows"][start:end] if row.get("kind") == "heading"]
+    assert git_names.count("Jeremy Dixon") == len(headings)
     extended = next(group["names"] for group in foundation["groups"] if group.get("compact"))
     assert [name for row in first["rows"] if row.get("compact") for name in row["names"]] == extended
 
@@ -164,6 +194,31 @@ def test_credit_shortcut_keys_cannot_be_captured_as_gameplay_bindings():
         assert sim.accessibility.to_record() == before
 
 
+def test_cast_theme_fades_out_before_the_roll(monkeypatch):
+    from omega_omarchy import audio as audio_mod
+    from omega_omarchy.credits import CAST_THEME_FADE_SECONDS, title_duration
+
+    calls = []
+
+    class FakeMusic:
+        def fadeout(self, ms):
+            calls.append(ms)
+
+        def set_volume(self, volume):
+            return None
+
+    monkeypatch.setattr(audio_mod.pygame.mixer, "music", FakeMusic())
+    manager = AudioManager(enabled=False)
+    manager.available = True
+    manager.unlocked = True
+    manager.music_cue = "credits-theme"
+    manager.update(scene="ending", in_combat=False, settings={}, music_fade_ms=round(CAST_THEME_FADE_SECONDS * 1000))
+    assert calls == [round(CAST_THEME_FADE_SECONDS * 1000)]
+    manager.update(scene="ending", in_combat=False, settings={}, music_fade_ms=round(CAST_THEME_FADE_SECONDS * 1000))
+    assert calls == [round(CAST_THEME_FADE_SECONDS * 1000)]
+    assert title_duration() > CAST_THEME_FADE_SECONDS
+
+
 def test_repeating_credit_shortcut_restarts_the_backing_track():
     sim = GameSim(installer=InstallerSession())
     audio = AudioManager(enabled=False)
@@ -232,6 +287,22 @@ def test_patron_compaction_absorbs_credit_growth_without_changing_other_type(stu
     assert [name for _, _, row in entries for name in row.get("names", [])] == [name for row in manifest["rows"] for name in row.get("names", [])]
     assert manifest == original  # runtime typography cannot mutate the roster
     assert r.layout("David") == (entries, height)
+
+
+def test_omega_wordmark_bakes_underline_below_the_lettering(studio):
+    from omega_omarchy.credits_render import CreditsRenderer
+
+    _, renderer = studio
+    credits = CreditsRenderer(renderer)
+    surf = pygame.Surface((960, 540), pygame.SRCALPHA)
+    credits.wordmark(surf, 80)
+    plate, mark_top = credits.logos[(renderer._vs, 196)]
+    scale = renderer._vs
+    omega_h = credits.font(8, scale).size("OMEGA")[1]
+    line_top = omega_h + max(2, scale)
+    assert mark_top > line_top
+    assert plate.get_height() > mark_top
+    assert plate.get_at((max(0, 4 * scale), line_top))[:3] == (255, 255, 255)
 
 
 def test_patron_compaction_has_a_legible_floor_and_wraps_long_names(studio, monkeypatch):

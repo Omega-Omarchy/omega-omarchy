@@ -8,6 +8,7 @@ from pathlib import Path
 
 FPS = 60
 SILENT_TAIL = 5.0
+CAST_THEME_FADE_SECONDS = 2.5
 # Logical pixels per second: about ten seconds for a full screen to pass.
 # A target rather than a hard cap: never omit names or shrink below the floor.
 ROLL_TARGET_SPEED = 18.0

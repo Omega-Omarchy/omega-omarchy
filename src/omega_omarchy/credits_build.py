@@ -85,9 +85,15 @@ def resolve_contributor(name: str, email: str, config: dict, *, github_login: st
     entries = config.get("contributors", {})
     match = re.fullmatch(r"(?:\d+\+)?([^@]+)@users\.noreply\.github\.com", email, re.I)
     login = match.group(1).lower() if match else github_login.lower()
+    folded_name = name.casefold()
+    folded_email = email.casefold()
     for key, item in entries.items():
         aliases = {str(alias).casefold() for alias in item.get("aliases", [])}
-        if login == key.lower() or email.casefold() in aliases or name.casefold() in aliases:
+        aliases.add(key.casefold())
+        display = str(item.get("name") or "").strip()
+        if display:
+            aliases.add(display.casefold())
+        if login == key.lower() or folded_email in aliases or folded_name in aliases:
             login = key
             break
     if login:
@@ -144,7 +150,17 @@ def compile_credits(root: Path = ROOT) -> dict:
     heading("Built in the open")
     line("The following departments follow the Git history.")
     for department, patterns in DEPARTMENTS.items():
-        names = [p["name"] for p in contributors if any(fnmatchcase(path, pattern) for path in p["paths"] for pattern in patterns)]
+        names = []
+        seen = set()
+        for person in contributors:
+            if not any(fnmatchcase(path, pattern) for path in person["paths"] for pattern in patterns):
+                continue
+            label = person["name"]
+            key = label.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            names.append(label)
         if names:
             heading(department)
             for name in names: line(name)

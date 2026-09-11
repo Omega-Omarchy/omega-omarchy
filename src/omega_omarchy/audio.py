@@ -106,6 +106,7 @@ class AudioManager:
         self.music_cue = ""
         self.music_path: Path | None = None
         self.music_start_offset = 0.0
+        self._music_fading = False
         self.error = ""
         try:
             self.manifest = json.loads((self.root / "audio-manifest.json").read_text(encoding="utf-8"))
@@ -245,6 +246,7 @@ class AudioManager:
             self.music_start_offset = float(kwargs.get("start", 0.0))
             self.music_cue = cue_id
             self.music_path = path
+            self._music_fading = False
             self._apply_music_volume()
             return True
         except pygame.error as exc:
@@ -272,6 +274,7 @@ class AudioManager:
         self.music_cue = ""
         self.music_path = None
         self.music_start_offset = 0.0
+        self._music_fading = False
 
     def update(
         self,
@@ -280,8 +283,21 @@ class AudioManager:
         in_combat: bool,
         settings: Mapping[str, Any],
         cues: list[str] | tuple[str, ...] = (),
+        music_fade_ms: int | None = None,
     ) -> None:
         self.apply_settings(settings)
+        if (
+            music_fade_ms
+            and self.available
+            and self.unlocked
+            and self.music_cue
+            and not self._music_fading
+        ):
+            try:
+                pygame.mixer.music.fadeout(max(1, int(music_fade_ms)))
+            except pygame.error:
+                pass
+            self._music_fading = True
         desired = self._desired_music(scene, in_combat=in_combat)
         if desired is None and self.music_cue:
             self._stop_music()

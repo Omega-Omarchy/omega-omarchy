@@ -312,10 +312,13 @@
     {
       "commits": [
         "11b0aab8c36e8c24e6183c23cb5c5198fc3ad998",
+        "324ae8f49668bf1f4b4c934f0eb80812de6d1a2f",
         "434fca8ab977650ed47ce3cb63f907ea2497ebc2",
         "4e1f41487619f9e50c7fc3e00ed2901f618f2e21",
         "63086e2c7eda2b20a14ce4b37f2fa959a4d0d059",
         "64a00b224d35077ac7f81941a5be43cc64940ac3",
+        "65af3bdae4cc29bd98e23902511547ac0ad33ff9",
+        "94ed7dd93af36009f2c5f620cffe3ddb8a3d8819",
         "a3a17180847a345cd8cd5c81bcbf44a178ebd99a",
         "b12bde595c2eeb5b20c10059342eb271998c21c4",
         "d3ec3554c8ef6411f43fa2dc93ae0b81a2aef4f2",
@@ -1998,6 +2001,20 @@
       ]
     },
     {
+      "commit": "324ae8f49668bf1f4b4c934f0eb80812de6d1a2f",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        ".github/workflows/ci.yml",
+        "docs/github-setup.md",
+        "pyproject.toml",
+        "requirements/audit-targets.txt",
+        "requirements/audit-tool.txt",
+        "requirements/ci.txt"
+      ]
+    },
+    {
       "commit": "434fca8ab977650ed47ce3cb63f907ea2497ebc2",
       "contributors": [
         "jeremydixon22"
@@ -3217,6 +3234,36 @@
       ]
     },
     {
+      "commit": "65af3bdae4cc29bd98e23902511547ac0ad33ff9",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
+      "commit": "94ed7dd93af36009f2c5f620cffe3ddb8a3d8819",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "ASSET-LICENSE.md",
+        "THIRD_PARTY_NOTICES.md",
+        "src/omega_omarchy/app.py",
+        "src/omega_omarchy/generation.py",
+        "src/omega_omarchy/installer.py",
+        "src/omega_omarchy/render.py",
+        "src/omega_omarchy/sim.py",
+        "src/omega_omarchy/web_build.py",
+        "tests/test_generation.py",
+        "tests/test_web.py",
+        "website/index.html",
+        "website/motion-model.mjs",
+        "website/motion.test.mjs"
+      ]
+    },
+    {
       "commit": "a3a17180847a345cd8cd5c81bcbf44a178ebd99a",
       "contributors": [
         "jeremydixon22"
@@ -3922,7 +3969,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "a3a17180847a345cd8cd5c81bcbf44a178ebd99a",
+  "revision": "94ed7dd93af36009f2c5f620cffe3ddb8a3d8819",
   "rows": [
     {
       "height": 90,
@@ -7254,7 +7301,7 @@
   ],
   "schemaVersion": 1,
   "sources": {
-    "credits/contributors.toml": "4939675a4b1bed590d18d00906646f9d92e278912688831bc781a3f3a900f962",
+    "credits/contributors.toml": "9351c21393846c57df1e5466d852f4bfb4b021a0b8f82150e1b401b9f8a54fcd",
     "credits/music.json": "1d0040e704374ad1a954dfbfcc290a9be380ef939c01c4a1f2b9bd6768fd2f3e",
     "credits/omacom-foundation.json": "65310512d6860d8e1674978141d07714da627dda8b219619bffff0da721fbeda"
   }
