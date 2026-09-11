@@ -10,6 +10,20 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [{name = "Omega Omarchy contributors"}]
+keywords = [
+  "game",
+  "pygame",
+  "platformer",
+  "action-game",
+  "retro-game",
+  "pixel-art",
+  "indie-game",
+  "linux",
+  "arch-linux",
+  "omarchy",
+  "webassembly",
+  "browser-game",
+]
 dependencies = [
   "pygame-ce==2.5.8",
   "pillow==12.3.0",
