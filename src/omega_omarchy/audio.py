@@ -107,6 +107,7 @@ class AudioManager:
         self.music_path: Path | None = None
         self.music_start_offset = 0.0
         self._music_fading = False
+        self._deferred_music = ""
         self.error = ""
         try:
             self.manifest = json.loads((self.root / "audio-manifest.json").read_text(encoding="utf-8"))
@@ -138,7 +139,16 @@ class AudioManager:
         if not isinstance(files, dict):
             return None
         tier = fidelity if fidelity in AUDIO_FIDELITIES else self.fidelity
-        candidates = (files.get(tier), files.get("ultra"), files.get("high"), files.get("sixteen-bit"))
+        if self.browser and cue_id == "credits-roll":
+            # The ultra roll is a 13MB decode that stalls WebAssembly on skip.
+            candidates = (
+                files.get("sixteen-bit"),
+                files.get("high"),
+                files.get(tier),
+                files.get("ultra"),
+            )
+        else:
+            candidates = (files.get(tier), files.get("ultra"), files.get("high"), files.get("sixteen-bit"))
         for relative in dict.fromkeys(candidates):
             if not isinstance(relative, str):
                 continue
@@ -239,7 +249,7 @@ class AudioManager:
             pygame.mixer.music.load(str(path))
             kwargs: dict[str, Any] = {
                 "loops": -1 if bool(cue.get("loop", True)) else 0,
-                "fade_ms": 260,
+                "fade_ms": 0 if cue_id == "credits-roll" else 260,
             }
             durations = cue.get("durations") or {}
             duration = float(durations.get(self.fidelity, 0.0)) if isinstance(durations, dict) else 0.0
@@ -269,10 +279,6 @@ class AudioManager:
         if isinstance(table, dict):
             value = table.get(scene)
             if isinstance(value, str):
-                # Super Key Love is a 13MB stream. Decoding it on skip in
-                # WebAssembly stalls or kills the tab, so the browser roll is silent.
-                if self.browser and value == "credits-roll":
-                    return None
                 return value
         return None
 
@@ -292,6 +298,7 @@ class AudioManager:
         self.music_start_offset = 0.0
         if fade_ms <= 0:
             self._music_fading = False
+            self._deferred_music = ""
 
     def update(
         self,
@@ -303,11 +310,14 @@ class AudioManager:
         music_fade_ms: int | None = None,
     ) -> None:
         self.apply_settings(settings)
+        desired = self._desired_music(scene, in_combat=in_combat)
+        if desired != "credits-roll" and desired != self._deferred_music:
+            self._deferred_music = ""
         if (
             music_fade_ms
+            and desired == self.music_cue == "credits-theme"
             and self.available
             and self.unlocked
-            and self.music_cue
             and not self._music_fading
         ):
             try:
@@ -315,14 +325,21 @@ class AudioManager:
             except pygame.error:
                 pass
             self._music_fading = True
-        desired = self._desired_music(scene, in_combat=in_combat)
         if desired is None and self.music_cue:
             self._stop_music()
         elif desired is not None and desired != self.music_cue and self.unlocked:
-            if not self._play_music(desired):
+            # Decode Super Key Love on the frame after the roll is on screen.
+            # Loading it in the same tick as skip + first layout stalls WASM.
+            if desired == "credits-roll" and self._deferred_music != desired:
+                self._stop_music(fade_ms=0)
+                self._deferred_music = desired
+            elif not self._play_music(desired):
                 # Record the silent choice so a bad/missing stream does not
                 # trigger an exception and filesystem probe every frame.
                 self.music_cue = desired
+                self._deferred_music = ""
+            else:
+                self._deferred_music = ""
         for cue_id in cues:
             self.play(str(cue_id))
 

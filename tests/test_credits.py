@@ -184,11 +184,50 @@ def test_credit_shortcuts_can_switch_sequences_and_restore_the_original_screen(o
     assert sim.world is None  # previewing setup must not generate a world
 
 
-def test_browser_skips_the_long_credit_roll_stream():
+def test_browser_credit_roll_uses_the_lighter_stream():
     manager = AudioManager(browser=True, enabled=False)
     assert manager._desired_music("ending", in_combat=False) == "credits-theme"
-    assert manager._desired_music("credits", in_combat=False) is None
-    assert manager._desired_music("chapter-credits", in_combat=False) is None
+    assert manager._desired_music("credits", in_combat=False) == "credits-roll"
+    path = manager.cue_path("credits-roll")
+    assert path is not None and path.as_posix().endswith("sixteen-bit/music/credits-roll.ogg")
+
+
+def test_credit_roll_music_loads_on_the_following_update(monkeypatch):
+    from omega_omarchy import audio as audio_mod
+
+    order = []
+
+    class FakeMusic:
+        def stop(self):
+            order.append("stop")
+
+        def fadeout(self, ms):
+            order.append(("fadeout", ms))
+
+        def load(self, path):
+            order.append("load")
+
+        def play(self, **kwargs):
+            order.append("play")
+
+        def set_volume(self, volume):
+            return None
+
+        def get_pos(self):
+            return 0
+
+    monkeypatch.setattr(audio_mod.pygame.mixer, "music", FakeMusic())
+    manager = AudioManager(enabled=False)
+    manager.available = True
+    manager.unlocked = True
+    manager.music_cue = "credits-theme"
+    manager.update(scene="credits", in_combat=False, settings={})
+    assert "load" not in order
+    assert "stop" in order
+    manager.update(scene="credits", in_combat=False, settings={})
+    assert order.count("load") == 1
+    assert order.index("stop") < order.index("load")
+    assert manager.music_cue == "credits-roll"
 
 
 def test_rapid_credit_shortcuts_do_not_restart_the_same_sequence():
@@ -293,10 +332,12 @@ def test_repeating_credit_shortcut_restarts_the_backing_track():
     audio.unlocked = True
     _handle_credits_shortcut(sim, pygame.K_F11, audio)
     audio.update(scene=sim.scene, in_combat=False, settings={})
+    audio.update(scene=sim.scene, in_combat=False, settings={})
     assert audio.music_cue == "credits-roll"
     sim.step(InputState(), frame_seconds=90)
     _handle_credits_shortcut(sim, pygame.K_F11, audio)
     assert audio.music_cue == "" and sim.credits_elapsed == 0
+    audio.update(scene=sim.scene, in_combat=False, settings={})
     audio.update(scene=sim.scene, in_combat=False, settings={})
     assert audio.music_cue == "credits-roll"
 

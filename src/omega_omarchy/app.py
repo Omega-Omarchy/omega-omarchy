@@ -358,6 +358,9 @@ async def run_game_async(
         active_audio_settings = (
             sim.installer.choices.to_record() if sim.scene == "installer" else sim.settings
         )
+        if sim.credits_cut_music:
+            audio._stop_music(fade_ms=0)
+            sim.credits_cut_music = False
         music_fade_ms = None
         if sim.scene == "ending":
             from .credits import CAST_THEME_FADE_SECONDS, title_duration

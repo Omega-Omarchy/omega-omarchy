@@ -349,6 +349,7 @@ class GameSim:
     credits: bool = False
     credits_ticks: int = 0
     credits_shortcut_lock: int = 0
+    credits_cut_music: bool = False
     credits_elapsed: float = 0.0
     credits_return_scene: str = "pause"
     tick: int = 0
@@ -4218,6 +4219,7 @@ class GameSim:
         duration = title_duration() if self.scene == "ending" else roll_duration()
         if skip or self.credits_ticks >= math.ceil(duration * FPS):
             if self.scene == "ending":
+                self.credits_cut_music = True
                 self.start_credits(return_scene=self.credits_return_scene)
             else:
                 self.credits = False
