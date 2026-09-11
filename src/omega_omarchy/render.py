@@ -3388,7 +3388,7 @@ class Renderer:
         self.fit_text(
             surf,
             f"CHAPTER {sim.chapter_index + 1} COMPLETE",
-            (46, 33, 228, 18),
+            (46, 29, 228, 18),
             PALETTE["bright_green"],
             align="center",
             max_size=13,
@@ -3398,7 +3398,7 @@ class Renderer:
         self.fit_text(
             surf,
             spec.name.upper(),
-            (46, 54, 228, 12),
+            (46, 50, 228, 12),
             PALETTE["cyan"],
             align="center",
             max_size=9,
@@ -3407,7 +3407,7 @@ class Renderer:
         self.wrapped_text(
             surf,
             spec.boss.converted_line,
-            (46, 75, 228, 34),
+            (46, 67, 228, 34),
             PALETTE["fg"],
             max_lines=4,
             logical_size=7,
@@ -3415,7 +3415,7 @@ class Renderer:
         self.fit_text(
             surf,
             f"SCORE {sim.chapter_tally_score():07d}   PENGUINS {sim.chapter_tally_penguins():02d}",
-            (46, 115, 228, 12),
+            (46, 105, 228, 12),
             PALETTE["yellow"],
             align="center",
             max_size=9,
@@ -3429,7 +3429,7 @@ class Renderer:
         self.fit_text(
             surf,
             f"{jump} credits   {action} save",
-            (46, 131, 228, 11),
+            (46, 121, 228, 11),
             PALETTE["fg"],
             align="center",
             max_size=8,
@@ -3442,7 +3442,7 @@ class Renderer:
                 if sim.web_chapter_one
                 else f"{turn} {'CONTINUE DEVELOPMENT CHAPTERS' if sim.chapter_index == 0 else 'RETURN TO ROUTE MAP'}"
             ),
-            (42, 145, 236, 11),
+            (42, 134, 236, 11),
             PALETTE["accent"],
             align="center",
             max_size=8,
