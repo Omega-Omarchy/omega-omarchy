@@ -49,6 +49,17 @@ separately; deployment does not commit or push it.
   the prior release replaced the ~9-14s random flourish burst with the new
   bounce-triggered one instead of keeping both. Both fire now, as intended.
   Previous releases remain available.
+- Render-loop optimization and version 0.1.2: `/srv/omegaomarchy/releases/20260912T200036Z/`;
+  frame() already resolved fidelity once per frame via _layout(), but
+  _fid() and several other call sites re-derived it independently every
+  call (~100 redundant lookups/frame across every scene); fit_text(),
+  blit_text(), and _panel() re-measured/re-rasterized on every call
+  regardless of whether their input changed; the enemy/boss draw path
+  re-ran its base fidelity scale every frame before its own wobble-cache
+  even got a chance to help. All now cache by their actual inputs.
+  Profiled locally: 10-34% less profiled frame cost depending on scene,
+  with the turn-based battle UI improving the most. Previous releases
+  remain available.
 - Mobile/touch redirect: `/srv/omegaomarchy/releases/20260912T191213Z/`; reported
   after someone hit Play on an iPhone and reached the loading screen and
   character picker for a game with no touch input, having also started the
