@@ -49,6 +49,17 @@ separately; deployment does not commit or push it.
   the prior release replaced the ~9-14s random flourish burst with the new
   bounce-triggered one instead of keeping both. Both fire now, as intended.
   Previous releases remain available.
+- Deferred off-screen robot-detail tiers: `/srv/omegaomarchy/releases/20260912T183008Z/`;
+  reported after a several-second freeze partway into the hero robots'
+  choreography on a cold-cache reload. `motion.js` previously fetched and
+  decoded all 18 robot part images (3 fidelity tiers) before the first
+  frame could draw, though only one tier is ever visible unless the
+  showcase's fidelity toggle is touched. Now only the on-screen tier (6
+  images) loads eagerly; the other two load on first request and are
+  cached. Verified via Chrome DevTools Protocol that initial load only
+  fetches the default tier, the toggle lazily fetches the others, and a
+  repeat selection issues no further requests. Previous releases remain
+  available.
 - Virtual host: `/etc/nginx/sites-available/omegaomarchy.org`, enabled by a
   matching symlink in `sites-enabled/`; source: `omegaomarchy.nginx` here.
 - ACME webroot: `/srv/omegaomarchy/acme`.
