@@ -36,7 +36,7 @@ async function start() {
   const tint = tinted.getContext('2d');
   let colors, l, stageScale = 1, fieldScale = 1, width = 0, height = 0;
   let paused = false, inView = true, frame = 0, previous = null, elapsed = 0, ambientTime = 0;
-  let particles = [], bursts = [], lastPointer = null;
+  let particles = [], bursts = [], lastPointer = null, nextBurst = 7;
   let lastLogoX = null, lastLogoY = null, lastLogoDirX = 0, lastLogoDirY = 0;
   try { paused = localStorage.getItem('omega-site-motion') === 'paused'; } catch { /* Optional preference. */ }
   if (paused || reduced.matches) elapsed = ASSEMBLY.complete;
@@ -194,6 +194,13 @@ async function start() {
         lastLogoDirX = dirX; lastLogoDirY = dirY;
       }
       lastLogoX = logo.x; lastLogoY = logo.y;
+      // Kept alongside bounce bursts on purpose: an occasional flourish
+      // mid-flight, independent of whether it's currently near an edge.
+      if (ambientTime >= nextBurst) {
+        bursts.push({x: logo.x + logo.size / 2, y: logo.y + logo.size / 2, age: 0});
+        bursts = bursts.slice(-4);
+        nextBurst = ambientTime + 9 + Math.random() * 5;
+      }
       for (let i = 4; i >= 0; i--) {
         const {x, y, size} = floatingLogoAt(ambientTime - i * .12, width, height);
         fx.globalAlpha = i ? .045 * (5 - i) : .44;
