@@ -313,8 +313,8 @@
       "commits": [
         "11b0aab8c36e8c24e6183c23cb5c5198fc3ad998",
         "212d3c253faa07f9784a33e33b8eacee6a379544",
+        "21c956d74e75bca6e1c8bd88c75c94d1e37598f2",
         "324ae8f49668bf1f4b4c934f0eb80812de6d1a2f",
-        "353ce09ff4b87534737d668b2ba6761ffbd32e17",
         "38b18bb628772364911267c25c79f8a6425669c5",
         "3b600fa2535ad09a56a170a7a2c1cce07524fd16",
         "434fca8ab977650ed47ce3cb63f907ea2497ebc2",
@@ -324,6 +324,7 @@
         "64a00b224d35077ac7f81941a5be43cc64940ac3",
         "65af3bdae4cc29bd98e23902511547ac0ad33ff9",
         "6cbc1208c343d46d9bfa09b781bdbe414343fec0",
+        "6ebb82d0f1d11e3d22b1b4266a7a722dbaa651ee",
         "72ef40ad68ce73bcaead107f9955f692104ca3b8",
         "782067d93801c259a43884e81b76dd40dfcd0931",
         "8a5414d8007465af8b620fd1608c5bae35dc73f4",
@@ -2028,21 +2029,7 @@
       ]
     },
     {
-      "commit": "324ae8f49668bf1f4b4c934f0eb80812de6d1a2f",
-      "contributors": [
-        "jeremydixon22"
-      ],
-      "paths": [
-        ".github/workflows/ci.yml",
-        "docs/github-setup.md",
-        "pyproject.toml",
-        "requirements/audit-targets.txt",
-        "requirements/audit-tool.txt",
-        "requirements/ci.txt"
-      ]
-    },
-    {
-      "commit": "353ce09ff4b87534737d668b2ba6761ffbd32e17",
+      "commit": "21c956d74e75bca6e1c8bd88c75c94d1e37598f2",
       "contributors": [
         "jeremydixon22"
       ],
@@ -2057,6 +2044,20 @@
         "src/omega_omarchy/installer.py",
         "tests/test_credits.py",
         "tests/test_installer.py"
+      ]
+    },
+    {
+      "commit": "324ae8f49668bf1f4b4c934f0eb80812de6d1a2f",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        ".github/workflows/ci.yml",
+        "docs/github-setup.md",
+        "pyproject.toml",
+        "requirements/audit-targets.txt",
+        "requirements/audit-tool.txt",
+        "requirements/ci.txt"
       ]
     },
     {
@@ -3326,6 +3327,15 @@
       ]
     },
     {
+      "commit": "6ebb82d0f1d11e3d22b1b4266a7a722dbaa651ee",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/app.py"
+      ]
+    },
+    {
       "commit": "72ef40ad68ce73bcaead107f9955f692104ca3b8",
       "contributors": [
         "jeremydixon22"
@@ -4157,7 +4167,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "353ce09ff4b87534737d668b2ba6761ffbd32e17",
+  "revision": "6ebb82d0f1d11e3d22b1b4266a7a722dbaa651ee",
   "rows": [
     {
       "height": 90,
