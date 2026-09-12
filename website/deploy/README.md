@@ -16,6 +16,13 @@ separately; deployment does not commit or push it.
   fix for the credit roll quitting itself via a hijacked shutdown counter, the
   tightened chapter-complete panel, and the installer confirm-debounce fix.
   Previous releases remain available.
+- Credits & responsiveness release: `/srv/omegaomarchy/releases/20260912T053230Z/`;
+  ships the film-credit styling pass (caps convention, baked guild seals,
+  multi-column patrons, Y-axis scroll-bobbling fix, per-character font
+  fallback for accented names), the render caching fixes, the shortened
+  installer post-generation hold, and the fix for the window taking multiple
+  seconds to close mid-installation while a procedural-generation step was
+  in flight. Previous releases remain available.
 - Virtual host: `/etc/nginx/sites-available/omegaomarchy.org`, enabled by a
   matching symlink in `sites-enabled/`; source: `omegaomarchy.nginx` here.
 - ACME webroot: `/srv/omegaomarchy/acme`.
