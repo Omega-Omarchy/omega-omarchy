@@ -43,9 +43,12 @@ separately; deployment does not commit or push it.
   to whatever pin_to_top currently promotes on the News page (matching the
   omarchy.org convention of that badge always hooking the latest post), with
   its date wrapping onto its own line at narrow widths instead of the whole
-  phrase. The wandering Omega logo drift doubled in speed and now bursts on
-  every edge bounce instead of at a random interval. Previous releases
-  remain available.
+  phrase. The wandering Omega logo drift doubled in speed and now also
+  bursts on every edge bounce. Previous releases remain available.
+- Restored the random-interval logo burst: `/srv/omegaomarchy/releases/20260912T062358Z/`;
+  the prior release replaced the ~9-14s random flourish burst with the new
+  bounce-triggered one instead of keeping both. Both fire now, as intended.
+  Previous releases remain available.
 - Virtual host: `/etc/nginx/sites-available/omegaomarchy.org`, enabled by a
   matching symlink in `sites-enabled/`; source: `omegaomarchy.nginx` here.
 - ACME webroot: `/srv/omegaomarchy/acme`.
