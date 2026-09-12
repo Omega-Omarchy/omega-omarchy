@@ -97,9 +97,9 @@ PROGRESS_PHASES = (
     ("Creating factory snapshot", "Writing generation receipt"),
 )
 PROGRESS_BASE_TICKS = 48
-# The authored progress phases are deliberately followed by a three-second
+# The authored progress phases are deliberately followed by a one-second
 # hold so the completion beat lands after the measured generation work.
-INSTALL_BREATH_TICKS = 180
+INSTALL_BREATH_TICKS = 60
 INSTALL_TICK_HZ = 60
 
 QUALITY_PRESETS = ("eight-bit", "sixteen-bit", "clean-pixel", "crt", "high", "ultra")

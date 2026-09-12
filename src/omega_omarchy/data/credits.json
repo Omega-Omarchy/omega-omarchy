@@ -314,15 +314,19 @@
         "11b0aab8c36e8c24e6183c23cb5c5198fc3ad998",
         "212d3c253faa07f9784a33e33b8eacee6a379544",
         "324ae8f49668bf1f4b4c934f0eb80812de6d1a2f",
+        "353ce09ff4b87534737d668b2ba6761ffbd32e17",
+        "38b18bb628772364911267c25c79f8a6425669c5",
         "3b600fa2535ad09a56a170a7a2c1cce07524fd16",
         "434fca8ab977650ed47ce3cb63f907ea2497ebc2",
         "4e1f41487619f9e50c7fc3e00ed2901f618f2e21",
+        "5e90c6139987c876d5be4ddeb6d173f5e16494f4",
         "63086e2c7eda2b20a14ce4b37f2fa959a4d0d059",
         "64a00b224d35077ac7f81941a5be43cc64940ac3",
         "65af3bdae4cc29bd98e23902511547ac0ad33ff9",
         "6cbc1208c343d46d9bfa09b781bdbe414343fec0",
         "72ef40ad68ce73bcaead107f9955f692104ca3b8",
         "782067d93801c259a43884e81b76dd40dfcd0931",
+        "8a5414d8007465af8b620fd1608c5bae35dc73f4",
         "8e4df4f9aef85e827718165b8ae6c9213f9b44f3",
         "94ed7dd93af36009f2c5f620cffe3ddb8a3d8819",
         "9e8268f23820cab2a16fe9fabb40a5e775c9d166",
@@ -1676,6 +1680,8 @@
         "assets/tiles/wilderness_^.png",
         "assets/ui/OMARCHY-FONT-LICENSE.txt",
         "assets/ui/credits/FONT-LICENSE.txt",
+        "assets/ui/credits/NOTO-SANS-FALLBACK-LICENSE.txt",
+        "assets/ui/credits/credits-sans-fallback.ttf",
         "assets/ui/credits/credits-sans.otf",
         "assets/ui/oligarchy-logo-hud.png",
         "assets/ui/oligarchy.png",
@@ -2033,6 +2039,33 @@
         "requirements/audit-targets.txt",
         "requirements/audit-tool.txt",
         "requirements/ci.txt"
+      ]
+    },
+    {
+      "commit": "353ce09ff4b87534737d668b2ba6761ffbd32e17",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "THIRD_PARTY_NOTICES.md",
+        "assets/ui/credits/NOTO-SANS-FALLBACK-LICENSE.txt",
+        "assets/ui/credits/credits-sans-fallback.ttf",
+        "credits/music.json",
+        "src/omega_omarchy/credits_build.py",
+        "src/omega_omarchy/credits_render.py",
+        "src/omega_omarchy/data/credits.json",
+        "src/omega_omarchy/installer.py",
+        "tests/test_credits.py",
+        "tests/test_installer.py"
+      ]
+    },
+    {
+      "commit": "38b18bb628772364911267c25c79f8a6425669c5",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
       ]
     },
     {
@@ -3246,6 +3279,15 @@
       ]
     },
     {
+      "commit": "5e90c6139987c876d5be4ddeb6d173f5e16494f4",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/render.py"
+      ]
+    },
+    {
       "commit": "63086e2c7eda2b20a14ce4b37f2fa959a4d0d059",
       "contributors": [
         "jeremydixon22"
@@ -3303,6 +3345,15 @@
       "paths": [
         "tests/test_credits.py",
         "tests/test_gameplay_upgrade.py"
+      ]
+    },
+    {
+      "commit": "8a5414d8007465af8b620fd1608c5bae35dc73f4",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
       ]
     },
     {
@@ -4078,7 +4129,7 @@
     "duration": 429.863991,
     "source": "assets/source/audio/music/super-key-love/source.mp3",
     "sourceSha256": "72849287d39ad016540bf118411873c1da79b5c4fa280bb27d1dd48df242f88c",
-    "title": "Super Key Love (Oh Omarchy — theme from Omega Omarchy)"
+    "title": "Super Key Love (Oh Omarchy - theme from Omega Omarchy)"
   },
   "musicCredits": [
     {
@@ -4089,7 +4140,7 @@
       "title": "Super Key Love"
     },
     {
-      "artist": "Coded Jason ft. The Gen X Ancients",
+      "artist": "Coded Jason ft. GenX Ancients",
       "creditSource": "external:credits/music.json",
       "source": "assets/source/audio/music/make-it-come-alive/master-ultra.flac",
       "sourceSha256": "3763901165fe93bf3660d450faa8940fbd19df6a6236196f19578a03aa198e32",
@@ -4106,7 +4157,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "e691dc5432e296a9960a315080d88ab1c51a961e",
+  "revision": "353ce09ff4b87534737d668b2ba6761ffbd32e17",
   "rows": [
     {
       "height": 90,
@@ -4115,749 +4166,778 @@
     {
       "height": 14,
       "kind": "text",
-      "text": "A slightly corrupted motion picture"
+      "text": "A slightly corrupted installation."
+    },
+    {
+      "height": 14,
+      "kind": "text",
+      "text": "A video game."
+    },
+    {
+      "height": 14,
+      "kind": "text",
+      "text": "A motion picture."
+    },
+    {
+      "height": 14,
+      "kind": "text",
+      "text": "Somehow, all three."
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Starring"
+      "subtitle": null,
+      "text": "STARRING"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "{character}",
+      "name": "{CHARACTER}",
       "role": "The player"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "You",
+      "name": "YOU",
       "role": "Decisions, mostly reversible"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "A Jeremy Dixon production"
+      "subtitle": null,
+      "text": "a JEREMY DIXON production"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Written and directed by"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Produced by"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Executive producer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Associate producer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Co-producer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Producer's producer"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Production office"
+      "subtitle": null,
+      "text": "PRODUCTION OFFICE"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Production manager"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Production coordinator"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "First assistant director"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Second assistant director"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Second second assistant director"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Director of approved detours"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Office production assistant"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Keeper of the remaining budget"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Camera department"
+      "subtitle": null,
+      "text": "CAMERA DEPARTMENT"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Director of photography"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Camera operator"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "First assistant camera"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Second assistant camera"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Steadicam operator"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Over-the-shoulder camera"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Over-the-other-shoulder camera"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Skyway aerial unit"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Lens cap continuity"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Art department"
+      "subtitle": null,
+      "text": "ART DEPARTMENT"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Production designer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Art director"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Set decorator"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Lead scenic artist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Construction coordinator"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Invisible platform painter"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Walled Garden horticulturist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Gate distressing"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Emergency ladder carpenter"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Costume & creature shop"
+      "subtitle": null,
+      "text": "COSTUME & CREATURE SHOP"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Costume designer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Royal wardrobe supervisor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Crown wrangler"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Hair and makeup"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Beard continuity"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Creature fabrication"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Hydra head count"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Penguin fitting room"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Claw articulation supervisor"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Stunts & special effects"
+      "subtitle": null,
+      "text": "STUNTS & SPECIAL EFFECTS"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Stunt coordinator"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Double-jump double"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Slide safety supervisor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Cannon launch double"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Fall-through floor specialist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Portal ring technician"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Practical corruption effects"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Robot panic coordinator"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Apple-core demolition"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Grip & electric"
+      "subtitle": null,
+      "text": "GRIP & ELECTRIC"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Gaffer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Best boy electric"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Key grip"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Best boy grip"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Dolly grip"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Rigging gaffer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Cable wrangler"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Ethernet cable wrangler"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Wi-Fi cable wrangler"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Super key grip"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Visual effects"
+      "subtitle": null,
+      "text": "VISUAL EFFECTS"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "VFX supervisor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "VFX producer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Pipeline technical director"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Compositing supervisor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Lead compositor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Rotoscope artist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Matte painter"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Matchmove artist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Lighting artist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Creature effects artist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Simulation technical director"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Orb tether solver"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Shimmer density technician"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Final pixel inspector"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Editorial"
+      "subtitle": null,
+      "text": "EDITORIAL"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Editor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Assistant editor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Assembly editor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Online editor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Offline editor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Colorist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Digital intermediate producer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Title designer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Credit roll length negotiator"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Sound department"
+      "subtitle": null,
+      "text": "SOUND DEPARTMENT"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Supervising sound editor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Sound designer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Re-recording mixer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Foley artist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Foley recordist"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Dialogue editor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Music supervisor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Music editor"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Saw-wave restraint officer"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Seven-minute love-song liaison"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Locations & transport"
+      "subtitle": null,
+      "text": "LOCATIONS & TRANSPORT"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Location manager"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Corrupted Install location scout"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Dependency Mines unit manager"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Walled Garden gate liaison"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Cow Level livestock transport"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Robot parking marshal"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Portal traffic control"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Travel coordinator"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Unit services"
+      "subtitle": null,
+      "text": "UNIT SERVICES"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Craft services"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Second breakfast"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Coffee continuity"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Production accountant"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Payroll accountant"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "One-person crowd coordinator"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Additional Jeremy Dixon"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Stand-in for Jeremy Dixon"
     },
     {
       "height": 12,
       "kind": "pair",
-      "name": "Jeremy Dixon",
+      "name": "JEREMY DIXON",
       "role": "Person who stayed for the credits"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Built in the open"
+      "subtitle": null,
+      "text": "BUILT IN THE OPEN"
     },
     {
       "height": 14,
@@ -4867,359 +4947,388 @@
     {
       "height": 34,
       "kind": "heading",
-      "text": "Gameplay engineering"
+      "subtitle": null,
+      "text": "GAMEPLAY ENGINEERING"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "World building & traversal"
+      "subtitle": null,
+      "text": "WORLD BUILDING & TRAVERSAL"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Visual effects & animation"
+      "subtitle": null,
+      "text": "VISUAL EFFECTS & ANIMATION"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Character department"
+      "subtitle": null,
+      "text": "CHARACTER DEPARTMENT"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Story & installation"
+      "subtitle": null,
+      "text": "STORY & INSTALLATION"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Music & sound engineering"
+      "subtitle": null,
+      "text": "MUSIC & SOUND ENGINEERING"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Accessibility & player experience"
+      "subtitle": null,
+      "text": "ACCESSIBILITY & PLAYER EXPERIENCE"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Quality assurance"
+      "subtitle": null,
+      "text": "QUALITY ASSURANCE"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Release engineering"
+      "subtitle": null,
+      "text": "RELEASE ENGINEERING"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Publicity & documentation"
+      "subtitle": null,
+      "text": "PUBLICITY & DOCUMENTATION"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Project contributors"
+      "subtitle": null,
+      "text": "PROJECT CONTRIBUTORS"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Agent collaborators"
+      "subtitle": null,
+      "text": "AGENT COLLABORATORS"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Codex / Astra"
+      "text": "CODEX / ASTRA"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Codex / Sol"
+      "text": "CODEX / SOL"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Grok Build"
+      "text": "GROK BUILD"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Grok Imagine"
+      "text": "GROK IMAGINE"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Code, artwork workflows and patient pixel arguments"
+      "text": "CLAUDE / SONNET"
+    },
+    {
+      "height": 14,
+      "kind": "text",
+      "text": "CLAUDE / HAIKU"
+    },
+    {
+      "height": 14,
+      "kind": "text",
+      "text": "Code, artwork workflows, and patient pixel arguments"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Screen cast"
+      "subtitle": null,
+      "text": "SCREEN CAST"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "As themselves, eventually cooperative",
-      "role": "The Package Bureaucrat"
+      "role": "THE PACKAGE BUREAUCRAT"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "As themselves, eventually cooperative",
-      "role": "The Dependency Hydra"
+      "role": "THE DEPENDENCY HYDRA"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "As themselves, eventually cooperative",
-      "role": "The Distro Commissar"
+      "role": "THE DISTRO COMMISSAR"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "As themselves, eventually cooperative",
-      "role": "The Garden Gatekeeper"
+      "role": "THE GARDEN GATEKEEPER"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "As themselves, eventually cooperative",
-      "role": "The Singularity"
+      "role": "THE SINGULARITY"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "As themselves, eventually cooperative",
-      "role": "Goliath"
+      "role": "GOLIATH"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Banner Scout"
+      "role": "BANNER SCOUT"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Form Drone"
+      "role": "FORM DRONE"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Cache Gremlin"
+      "role": "CACHE GREMLIN"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Consensus Crier"
+      "role": "CONSENSUS CRIER"
+    },
+    {
+      "height": 12,
+      "kind": "pair",
+      "name": "Rather tipsy, but harmless",
+      "role": "COW"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Cow"
+      "role": "DETRACTABOT"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Detractabot"
+      "role": "DOGMA SPRITE"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Dogma Sprite"
+      "role": "GARDEN GLITCH"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Garden Glitch"
+      "role": "GARDEN SENTRY"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Garden Sentry"
+      "role": "GOLIATH FRAGMENT"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Goliath Fragment"
+      "role": "DEPENDENCY NODE"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Dependency Node"
+      "role": "JUSTICE SIGNALER"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Justice Signaler"
+      "role": "LINT LAUNCHER"
+    },
+    {
+      "height": 12,
+      "kind": "pair",
+      "name": "Frequently mistaken for a large language model",
+      "role": "LLAMA"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Lint Launcher"
+      "role": "PACKET WASP"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Llama"
+      "role": "SINGULARITY SHARD"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Packet Wasp"
+      "role": "VOID ORBITER"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Additional institutional resistance",
-      "role": "Singularity Shard"
-    },
-    {
-      "height": 12,
-      "kind": "pair",
-      "name": "Additional institutional resistance",
-      "role": "Void Orbiter"
-    },
-    {
-      "height": 12,
-      "kind": "pair",
-      "name": "Additional institutional resistance",
-      "role": "Checksum Warden"
+      "role": "CHECKSUM WARDEN"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Unscheduled mind maintenance",
-      "role": "The three orbs"
+      "role": "THE THREE ORBS"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Left unit / Right unit",
-      "role": "The apple-core custodians"
+      "role": "THE APPLE-CORE CUSTODIANS"
     },
     {
       "height": 12,
       "kind": "pair",
       "name": "Royal alternatives",
-      "role": "The Omarch King & Queen"
+      "role": "THE OMARCH KING & QUEEN"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Music"
+      "subtitle": null,
+      "text": "MUSIC"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Super Key Love"
+      "subtitle": "Oh Omarchy - theme from Omega Omarchy",
+      "text": "SUPER KEY LOVE"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Jeremy Dixon"
+      "text": "JEREMY DIXON"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Make It Come Alive"
+      "subtitle": null,
+      "text": "MAKE IT COME ALIVE"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Coded Jason ft. The Gen X Ancients"
+      "text": "CODED JASON FT. GENX ANCIENTS"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Beware the Omarchy Oligarchy"
+      "subtitle": null,
+      "text": "BEWARE THE OMARCHY OLIGARCHY"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Rich Kilmer"
+      "text": "RICH KILMER"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Boot Up Your New Digital World"
+      "subtitle": null,
+      "text": "BOOT UP YOUR NEW DIGITAL WORLD"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Suvikyi"
+      "text": "SUVIKYI"
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Special Thanks"
+      "subtitle": null,
+      "text": "SPECIAL THANKS"
     },
     {
       "height": 14,
@@ -5234,29 +5343,24 @@
     {
       "height": 34,
       "kind": "heading",
-      "text": "Omacom Foundation staff"
+      "subtitle": null,
+      "text": "OMACOM FOUNDATION STAFF"
     },
     {
       "compact": false,
       "height": 13,
       "kind": "names",
       "names": [
-        "Krzysztof Wilczyński",
-        "outfoxxed"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Emir Beganović"
+        "KRZYSZTOF WILCZYŃSKI",
+        "OUTFOXXED",
+        "EMIR BEGANOVIĆ"
       ]
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Omacom Artists in Residence"
+      "subtitle": null,
+      "text": "OMACOM ARTISTS IN RESIDENCE"
     },
     {
       "compact": false,
@@ -5264,1997 +5368,512 @@
       "kind": "names",
       "names": [
         "HANCORE",
-        "OldJobobo"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Taha"
+        "OLDJOBOBO",
+        "TAHA"
       ]
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Founding Patrons"
+      "subtitle": null,
+      "text": "FOUNDING PATRONS"
     },
     {
       "compact": false,
       "height": 13,
       "kind": "names",
       "names": [
-        "Tobi Lütke",
-        "Patrick Collison"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Michael Dell",
-        "Jack Dorsey"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Matthew Prince",
-        "Brendan Iribe"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jason Fried",
-        "Drew Houston"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Peter Steinberger",
-        "Brian Armstrong"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Yunjie Dai",
+        "TOBI LÜTKE",
+        "PATRICK COLLISON",
+        "MICHAEL DELL",
+        "JACK DORSEY",
+        "MATTHEW PRINCE",
+        "BRENDAN IRIBE",
+        "JASON FRIED",
+        "DREW HOUSTON",
+        "PETER STEINBERGER",
+        "BRIAN ARMSTRONG",
+        "YUNJIE DAI",
         "DHH"
       ]
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Founding Corporate Patrons"
+      "subtitle": null,
+      "text": "FOUNDING CORPORATE PATRONS"
     },
     {
       "compact": false,
       "height": 13,
       "kind": "names",
       "names": [
-        "Meta Superintelligence Labs",
-        "DigitalOcean"
+        "META SUPERINTELLIGENCE LABS",
+        "DIGITALOCEAN"
       ]
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Distinguished Patrons"
+      "subtitle": null,
+      "text": "DISTINGUISHED PATRONS"
     },
     {
       "compact": false,
       "height": 13,
       "kind": "names",
       "names": [
-        "Ryan R. Hughes",
-        "Ed Huang"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Adrien Treccani",
-        "Max Schoening"
+        "RYAN R. HUGHES",
+        "ED HUANG",
+        "ADRIEN TRECCANI",
+        "MAX SCHOENING"
       ]
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Distinguished Corporate Patrons"
+      "subtitle": null,
+      "text": "DISTINGUISHED CORPORATE PATRONS"
     },
     {
       "compact": false,
       "height": 13,
       "kind": "names",
       "names": [
-        "1Password",
-        "37signals"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Anthropic",
-        "Fireworks"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Four Technologies",
-        "OpenAI"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "OpenRouter"
+        "1PASSWORD",
+        "37SIGNALS",
+        "ANTHROPIC",
+        "FIREWORKS",
+        "FOUR TECHNOLOGIES",
+        "OPENAI",
+        "OPENROUTER"
       ]
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "All Patrons"
+      "subtitle": null,
+      "text": "ALL PATRONS"
     },
     {
       "compact": true,
       "height": 13,
       "kind": "names",
       "names": [
-        "Joe Watkins",
-        "Terry Tai"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Bubba AI, Inc",
-        "Christopher Rueber"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Daniel Corkill",
-        "Harris Kenny"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Bertrand Janin",
-        "Tuan Dam"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Catapult HQ, Inc.",
-        "stacc robinhood"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Aaron Steinke",
-        "Adam Cecchetti"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Adam Gamble",
-        "Adam Jennings"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Ali Shabdar",
-        "Arash Afshar"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Aris Gysel",
-        "Axel Fontaine"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Brandon Schoenberger",
-        "Brian Sondergaard"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Bryan Cromlish",
-        "Chris Miller"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Daniel Boyer",
-        "Daniel Segan"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Daniel Simons",
-        "Danny Cecil"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Danny Welch",
-        "Erik Johansson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Feñoim Wime",
-        "Gandalf Saxe"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Gordon Mickel",
-        "Greg Tassone"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "JOE WATKINS",
+        "TERRY TAI",
+        "BUBBA AI, INC",
+        "CHRISTOPHER RUEBER",
+        "DANIEL CORKILL",
+        "HARRIS KENNY",
+        "BERTRAND JANIN",
+        "TUAN DAM",
+        "CATAPULT HQ, INC.",
+        "STACC ROBINHOOD",
+        "AARON STEINKE",
+        "ADAM CECCHETTI",
+        "ADAM GAMBLE",
+        "ADAM JENNINGS",
+        "ALI SHABDAR",
+        "ARASH AFSHAR",
+        "ARIS GYSEL",
+        "AXEL FONTAINE",
+        "BRANDON SCHOENBERGER",
+        "BRIAN SONDERGAARD",
+        "BRYAN CROMLISH",
+        "CHRIS MILLER",
+        "DANIEL BOYER",
+        "DANIEL SEGAN",
+        "DANIEL SIMONS",
+        "DANNY CECIL",
+        "DANNY WELCH",
+        "ERIK JOHANSSON",
+        "FEÑOIM WIME",
+        "GANDALF SAXE",
+        "GORDON MICKEL",
+        "GREG TASSONE",
         "HANDONG ZHANG",
-        "hatchstudio.ai"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "High Octane sprl",
-        "Igor Rodzik"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jake Brownson",
-        "James Martin"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Joe Grace",
-        "john Holroyd"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "John Johnson",
-        "Jonathan Czerwonka"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jonny Heggheim",
-        "Justin King"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Kevin Herron",
-        "Khori Whittaker"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "KMX Consulting LLC",
-        "Kris Roadruck"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Lane Ambrose",
-        "Leonid Dubinsky"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "LGSE Ltd.",
-        "LinuxBTW"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Loïc Simond",
-        "M Matthieu Colombe"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "HATCHSTUDIO.AI",
+        "HIGH OCTANE SPRL",
+        "IGOR RODZIK",
+        "JAKE BROWNSON",
+        "JAMES MARTIN",
+        "JOE GRACE",
+        "JOHN HOLROYD",
+        "JOHN JOHNSON",
+        "JONATHAN CZERWONKA",
+        "JONNY HEGGHEIM",
+        "JUSTIN KING",
+        "KEVIN HERRON",
+        "KHORI WHITTAKER",
+        "KMX CONSULTING LLC",
+        "KRIS ROADRUCK",
+        "LANE AMBROSE",
+        "LEONID DUBINSKY",
+        "LGSE LTD.",
+        "LINUXBTW",
+        "LOÏC SIMOND",
+        "M MATTHIEU COLOMBE",
         "M. JELINEK",
-        "Madhavan Malolan"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Matthew Campbell",
-        "Matthew Wolfgang"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Michael Gardner",
-        "Mikko Nyman"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Nate D",
-        "Nick Xidis"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Patrick Aschwanden",
-        "Pepijn Blom"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Peter Berkenbosch",
-        "Peter Jackson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Prateek Raman",
-        "Raphael PRASQUIER"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Ray Lord",
-        "Rene Schallner"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Ryan Gunderson",
-        "Sagaie"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Sebastian Szturo",
-        "Steve Godlewski"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "MADHAVAN MALOLAN",
+        "MATTHEW CAMPBELL",
+        "MATTHEW WOLFGANG",
+        "MICHAEL GARDNER",
+        "MIKKO NYMAN",
+        "NATE D",
+        "NICK XIDIS",
+        "PATRICK ASCHWANDEN",
+        "PEPIJN BLOM",
+        "PETER BERKENBOSCH",
+        "PETER JACKSON",
+        "PRATEEK RAMAN",
+        "RAPHAEL PRASQUIER",
+        "RAY LORD",
+        "RENE SCHALLNER",
+        "RYAN GUNDERSON",
+        "SAGAIE",
+        "SEBASTIAN SZTURO",
+        "STEVE GODLEWSKI",
         "T C BALLARD",
-        "Yang Zhang"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "zhongyuan zhang",
-        "櫻井 達生"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Mariusz Pianka",
-        "Arturo Ojeda"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Eric Van Riet Paap",
-        "Faidon Tsikliropoulos"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Robert Zolkos",
-        "ServiceStack"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Stefan Anomys.com",
-        "Steve Derico"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Amit Patel",
-        "Marc Köhlbrugge"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Aaron Shaneyfelt",
-        "Adam Schröder"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Alexander Zeitler",
-        "Clas Törnquist"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Colin Regan",
-        "Daegwon Kim"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Dennis Thomsen",
-        "Eric Forbell"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jan Cervinka",
-        "Joshua Bryson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Simon Stebbing",
-        "Tom Lange"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Konrad Kruk",
-        "AppMate Consulting"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Donovan du Plessis",
-        "Grady Reynolds"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Ilya Saunkin",
-        "John Gordon"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "M Mustimov",
-        "Tim Tilberg"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Paul Witcombe",
-        "Claus Kallesøe"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "David A. Yocom",
-        "Steven Swerling"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Vincent Ritter",
-        "Benjamin Calvert"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Gregory Helding",
-        "Jeff Aaron"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jesse Wilks",
-        "Martin Jørgensen"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Nicholas Mashburn",
-        "Reinier Butot"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Vincent van Proosdij",
-        "JAMES REED"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Tiago Andrade",
-        "Goh Li Han"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Michael Horacek",
-        "Eric Rasmussen"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Gungnir Strike Systems",
-        "Kevin O'Donnell"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Aust Mac",
-        "Ethan Thompson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "James Armbruster",
-        "Michael M Maslowski"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "YANG ZHANG",
+        "ZHONGYUAN ZHANG",
+        "櫻井 達生",
+        "MARIUSZ PIANKA",
+        "ARTURO OJEDA",
+        "ERIC VAN RIET PAAP",
+        "FAIDON TSIKLIROPOULOS",
+        "ROBERT ZOLKOS",
+        "SERVICESTACK",
+        "STEFAN ANOMYS.COM",
+        "STEVE DERICO",
+        "AMIT PATEL",
+        "MARC KÖHLBRUGGE",
+        "AARON SHANEYFELT",
+        "ADAM SCHRÖDER",
+        "ALEXANDER ZEITLER",
+        "CLAS TÖRNQUIST",
+        "COLIN REGAN",
+        "DAEGWON KIM",
+        "DENNIS THOMSEN",
+        "ERIC FORBELL",
+        "JAN CERVINKA",
+        "JOSHUA BRYSON",
+        "SIMON STEBBING",
+        "TOM LANGE",
+        "KONRAD KRUK",
+        "APPMATE CONSULTING",
+        "DONOVAN DU PLESSIS",
+        "GRADY REYNOLDS",
+        "ILYA SAUNKIN",
+        "JOHN GORDON",
+        "M MUSTIMOV",
+        "TIM TILBERG",
+        "PAUL WITCOMBE",
+        "CLAUS KALLESØE",
+        "DAVID A. YOCOM",
+        "STEVEN SWERLING",
+        "VINCENT RITTER",
+        "BENJAMIN CALVERT",
+        "GREGORY HELDING",
+        "JEFF AARON",
+        "JESSE WILKS",
+        "MARTIN JØRGENSEN",
+        "NICHOLAS MASHBURN",
+        "REINIER BUTOT",
+        "VINCENT VAN PROOSDIJ",
+        "JAMES REED",
+        "TIAGO ANDRADE",
+        "GOH LI HAN",
+        "MICHAEL HORACEK",
+        "ERIC RASMUSSEN",
+        "GUNGNIR STRIKE SYSTEMS",
+        "KEVIN O'DONNELL",
+        "AUST MAC",
+        "ETHAN THOMPSON",
+        "JAMES ARMBRUSTER",
+        "MICHAEL M MASLOWSKI",
         "RAYMOND TRAUTMAN",
-        "Ricardo Sazima"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Stanimir Valchev",
-        "Zmago Devetak"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Mumtaz Ali Shah",
-        "9538-7874 Quebec inc."
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Aaron Kemp",
-        "Abdiel Casanas"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Abdullah Altaweel",
-        "Ajinkya K Mulay"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Alex Miller",
-        "Alexander Rybyakov"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Alexander Webber",
-        "Allan Kristensen"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Andre Braga Reis",
-        "Andre Hugo"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Andres Riveros",
-        "Andrew Proudlove"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Arthur Talley",
-        "Arun Kannan"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "August Lilleaas",
-        "Azzen Abidi"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Benjamin Babeshkin",
-        "Benjamin Brown"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Benjamin J Willems",
-        "Brad Browne"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Brandon Miller",
-        "Brandon Proulx"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Campbell Yule",
-        "Carlos Alfaro Salas"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "RICARDO SAZIMA",
+        "STANIMIR VALCHEV",
+        "ZMAGO DEVETAK",
+        "MUMTAZ ALI SHAH",
+        "9538-7874 QUEBEC INC.",
+        "AARON KEMP",
+        "ABDIEL CASANAS",
+        "ABDULLAH ALTAWEEL",
+        "AJINKYA K MULAY",
+        "ALEX MILLER",
+        "ALEXANDER RYBYAKOV",
+        "ALEXANDER WEBBER",
+        "ALLAN KRISTENSEN",
+        "ANDRE BRAGA REIS",
+        "ANDRE HUGO",
+        "ANDRES RIVEROS",
+        "ANDREW PROUDLOVE",
+        "ARTHUR TALLEY",
+        "ARUN KANNAN",
+        "AUGUST LILLEAAS",
+        "AZZEN ABIDI",
+        "BENJAMIN BABESHKIN",
+        "BENJAMIN BROWN",
+        "BENJAMIN J WILLEMS",
+        "BRAD BROWNE",
+        "BRANDON MILLER",
+        "BRANDON PROULX",
+        "CAMPBELL YULE",
+        "CARLOS ALFARO SALAS",
         "CARLOS EDUARDO MOREIRA DOS SANTOS",
-        "Carlos Gonzalez"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Carter Boyle",
-        "Chris Ayers"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Christoffer Hallas",
-        "Christopher Biagini"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Christopher Eller",
-        "Christopher Lee"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Cole Morgan",
-        "Conor Mahaney"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Conrad Beach",
-        "Corey Stewart"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Craig Derington",
-        "D Vandic"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Dale Goodwin",
-        "Dan The Mad Norweign Johnson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Daniel Jones",
-        "Daniel Tams"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Dave Franco",
-        "Dave Sherman"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Daven Niemann",
-        "David Bak Posada"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "David Bergstrom",
-        "David Spencer"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "David Zhang",
-        "Dawid Van der Merwe"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Dengfeng Zhao",
-        "Dino Vitale"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Diogo Chaves",
-        "Doppio JP"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Edgar Oswaldo Silva Cobian",
-        "Edgard El Cham"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Eduardo Campelo",
-        "Eduardo Rodriguez"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Elliot Moreau",
-        "Eric Chreiman"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Eric Lee",
-        "Eric Westphal"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Ezekiel Rochat",
-        "Federico Leuze"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Felipe Mesquita",
-        "Finding Focus"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Fitz Blaku",
-        "Florian Wachs"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "florian.ie",
-        "Fred Nix"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Frederic Brunel",
-        "Fredrik Eilertsen"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Galang AI",
-        "Gary Gillham"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Gary Meyer",
-        "Gheorghe Iuga"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Gualberto A Sanchez C",
-        "Guanjia Zhu"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "CARLOS GONZALEZ",
+        "CARTER BOYLE",
+        "CHRIS AYERS",
+        "CHRISTOFFER HALLAS",
+        "CHRISTOPHER BIAGINI",
+        "CHRISTOPHER ELLER",
+        "CHRISTOPHER LEE",
+        "COLE MORGAN",
+        "CONOR MAHANEY",
+        "CONRAD BEACH",
+        "COREY STEWART",
+        "CRAIG DERINGTON",
+        "D VANDIC",
+        "DALE GOODWIN",
+        "DAN THE MAD NORWEIGN JOHNSON",
+        "DANIEL JONES",
+        "DANIEL TAMS",
+        "DAVE FRANCO",
+        "DAVE SHERMAN",
+        "DAVEN NIEMANN",
+        "DAVID BAK POSADA",
+        "DAVID BERGSTROM",
+        "DAVID SPENCER",
+        "DAVID ZHANG",
+        "DAWID VAN DER MERWE",
+        "DENGFENG ZHAO",
+        "DINO VITALE",
+        "DIOGO CHAVES",
+        "DOPPIO JP",
+        "EDGAR OSWALDO SILVA COBIAN",
+        "EDGARD EL CHAM",
+        "EDUARDO CAMPELO",
+        "EDUARDO RODRIGUEZ",
+        "ELLIOT MOREAU",
+        "ERIC CHREIMAN",
+        "ERIC LEE",
+        "ERIC WESTPHAL",
+        "EZEKIEL ROCHAT",
+        "FEDERICO LEUZE",
+        "FELIPE MESQUITA",
+        "FINDING FOCUS",
+        "FITZ BLAKU",
+        "FLORIAN WACHS",
+        "FLORIAN.IE",
+        "FRED NIX",
+        "FREDERIC BRUNEL",
+        "FREDRIK EILERTSEN",
+        "GALANG AI",
+        "GARY GILLHAM",
+        "GARY MEYER",
+        "GHEORGHE IUGA",
+        "GUALBERTO A SANCHEZ C",
+        "GUANJIA ZHU",
         "GUILHERME NANDI TISCOSKI",
-        "Guy Scott-South"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Harley Frank",
-        "Henrique Rocha"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Holly Annand",
-        "Howard Coldham"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Iain Holder",
-        "Iain Lennox"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Igor Gorohovsky",
-        "Istvan Kovacs"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Ivan Juras",
-        "Jacob Jones"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jacob Rosenthal",
-        "Jakob Lo"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "James Rinehart",
-        "Jan Dvořák"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jan Thaysen",
-        "Jason St-Jean"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jason Turan",
-        "JAY O"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jeeradej Promkaew",
-        "Jenna Brinning"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jerome Duncan",
-        "Jesse Bounds"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "JiangJiang",
-        "Jimmie Phillips"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Joe Brig",
-        "Johan Thorén"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "John Lemp",
-        "Jonas Lomholdt"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Jonathan Lahijani",
-        "Jordan Lapp"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Joseph Woolls",
-        "Josh Algdal"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Joshua Garner",
-        "Justin Garcia"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Justin Thomas",
-        "Kamil Banc"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Keith Watt",
-        "Kevin Miller"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Kiuri Negrao",
-        "Krzysztof Kowalczykowski"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Latin American Lutheran Institute",
-        "Len Flack"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Loren Charnley",
-        "Luca Nerlich"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Lucas Hainsworth",
-        "Lucas Mendonça"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Luis Freitas",
-        "Luke Cloud"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Luke Davis",
-        "Luke Hsiao"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Luke Kimball",
-        "Luming Wang"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Marc Bauer",
-        "Marco Lerco"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Mario Kneidinger",
-        "Mark Bays"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Mark FInlay",
-        "Mark Ghens"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Marko Randelovic",
-        "Marlon Basten"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Martin Bjærge Jensen",
-        "Mathew rawlinson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Matt Cowin",
-        "Matt Hunt"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Matt Lay",
-        "Matt Wilson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Matthew Brazeau",
-        "Matthew John Hudson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Matthieu Gourvénec",
-        "Mattia Trapani"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Max Croy",
-        "Max Hung"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Maxim Böckelmann",
-        "Maximilian Kaiser"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Maximilien Pressensé",
-        "Md Mazedul Islam Khan"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Meon Valley Web",
-        "Micah Alpern"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Michael Blake",
-        "Michael Bravo"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Michael Larsen",
-        "Michael Litsey"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Michal Kulesza",
-        "Miguel Araújo Vasques"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Miguel Zazo",
-        "Mike Benchimol"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Mike Roulston",
-        "Milan Novakovic"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "GUY SCOTT-SOUTH",
+        "HARLEY FRANK",
+        "HENRIQUE ROCHA",
+        "HOLLY ANNAND",
+        "HOWARD COLDHAM",
+        "IAIN HOLDER",
+        "IAIN LENNOX",
+        "IGOR GOROHOVSKY",
+        "ISTVAN KOVACS",
+        "IVAN JURAS",
+        "JACOB JONES",
+        "JACOB ROSENTHAL",
+        "JAKOB LO",
+        "JAMES RINEHART",
+        "JAN DVOŘÁK",
+        "JAN THAYSEN",
+        "JASON ST-JEAN",
+        "JASON TURAN",
+        "JAY O",
+        "JEERADEJ PROMKAEW",
+        "JENNA BRINNING",
+        "JEROME DUNCAN",
+        "JESSE BOUNDS",
+        "JIANGJIANG",
+        "JIMMIE PHILLIPS",
+        "JOE BRIG",
+        "JOHAN THORÉN",
+        "JOHN LEMP",
+        "JONAS LOMHOLDT",
+        "JONATHAN LAHIJANI",
+        "JORDAN LAPP",
+        "JOSEPH WOOLLS",
+        "JOSH ALGDAL",
+        "JOSHUA GARNER",
+        "JUSTIN GARCIA",
+        "JUSTIN THOMAS",
+        "KAMIL BANC",
+        "KEITH WATT",
+        "KEVIN MILLER",
+        "KIURI NEGRAO",
+        "KRZYSZTOF KOWALCZYKOWSKI",
+        "LATIN AMERICAN LUTHERAN INSTITUTE",
+        "LEN FLACK",
+        "LOREN CHARNLEY",
+        "LUCA NERLICH",
+        "LUCAS HAINSWORTH",
+        "LUCAS MENDONÇA",
+        "LUIS FREITAS",
+        "LUKE CLOUD",
+        "LUKE DAVIS",
+        "LUKE HSIAO",
+        "LUKE KIMBALL",
+        "LUMING WANG",
+        "MARC BAUER",
+        "MARCO LERCO",
+        "MARIO KNEIDINGER",
+        "MARK BAYS",
+        "MARK FINLAY",
+        "MARK GHENS",
+        "MARKO RANDELOVIC",
+        "MARLON BASTEN",
+        "MARTIN BJÆRGE JENSEN",
+        "MATHEW RAWLINSON",
+        "MATT COWIN",
+        "MATT HUNT",
+        "MATT LAY",
+        "MATT WILSON",
+        "MATTHEW BRAZEAU",
+        "MATTHEW JOHN HUDSON",
+        "MATTHIEU GOURVÉNEC",
+        "MATTIA TRAPANI",
+        "MAX CROY",
+        "MAX HUNG",
+        "MAXIM BÖCKELMANN",
+        "MAXIMILIAN KAISER",
+        "MAXIMILIEN PRESSENSÉ",
+        "MD MAZEDUL ISLAM KHAN",
+        "MEON VALLEY WEB",
+        "MICAH ALPERN",
+        "MICHAEL BLAKE",
+        "MICHAEL BRAVO",
+        "MICHAEL LARSEN",
+        "MICHAEL LITSEY",
+        "MICHAL KULESZA",
+        "MIGUEL ARAÚJO VASQUES",
+        "MIGUEL ZAZO",
+        "MIKE BENCHIMOL",
+        "MIKE ROULSTON",
+        "MILAN NOVAKOVIC",
         "MILOS CUKOVIC",
-        "minghui Li"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Mitchell Long",
-        "Mr C Prosser"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Mr Jeffrey R Thom",
-        "MR JORDAN R RIBEIRO"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Mr S Vans-Colina",
-        "Narcis Dedu"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Nathaniel King",
-        "Nero Song"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Nick Warters",
-        "Nico Botha"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Nico Geiss",
-        "Nicolas Sieber"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Nina Dubinsky",
-        "Oleh Yatskiv"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Oleksiy Kovyrin",
-        "Oliver Lukschander"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Owen McCrink",
-        "Pagecord"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Pascal N. Bergmann",
-        "Patricio Quezada"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Patrick Daether",
-        "Patrick Roza"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Paul Pitchford",
-        "Paul Watts"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Pavel Simo",
-        "Per Henrik Lausten"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Peter Arnold",
-        "Peter Petrov"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Petru Madar",
-        "Pol Valletbó Montfort"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Progevita SL",
-        "Péter Szarvas"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Quinn van Heerden",
-        "Radek Zítek"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Richard Boisvert",
-        "Rick McMichael"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Rober Chattin",
-        "Robert Russell"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "MINGHUI LI",
+        "MITCHELL LONG",
+        "MR C PROSSER",
+        "MR JEFFREY R THOM",
+        "MR JORDAN R RIBEIRO",
+        "MR S VANS-COLINA",
+        "NARCIS DEDU",
+        "NATHANIEL KING",
+        "NERO SONG",
+        "NICK WARTERS",
+        "NICO BOTHA",
+        "NICO GEISS",
+        "NICOLAS SIEBER",
+        "NINA DUBINSKY",
+        "OLEH YATSKIV",
+        "OLEKSIY KOVYRIN",
+        "OLIVER LUKSCHANDER",
+        "OWEN MCCRINK",
+        "PAGECORD",
+        "PASCAL N. BERGMANN",
+        "PATRICIO QUEZADA",
+        "PATRICK DAETHER",
+        "PATRICK ROZA",
+        "PAUL PITCHFORD",
+        "PAUL WATTS",
+        "PAVEL SIMO",
+        "PER HENRIK LAUSTEN",
+        "PETER ARNOLD",
+        "PETER PETROV",
+        "PETRU MADAR",
+        "POL VALLETBÓ MONTFORT",
+        "PROGEVITA SL",
+        "PÉTER SZARVAS",
+        "QUINN VAN HEERDEN",
+        "RADEK ZÍTEK",
+        "RICHARD BOISVERT",
+        "RICK MCMICHAEL",
+        "ROBER CHATTIN",
+        "ROBERT RUSSELL",
         "ROMAN FROŁOW",
-        "Roman Weisman"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "ROMAN WEISMAN",
         "RONNY COMMANDEUR",
-        "Russell Campbell"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Ryan McCabe",
-        "Sage Schlebach"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Salomon Mole",
-        "Sanders Ranchette"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Santiago Barros",
-        "Scott Moreau"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Sean Freiburg",
-        "Sean Huber"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Sebastian Menendez",
-        "Sergio Ovalle"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Sergio Raya",
-        "Seth Wood"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Simon Williams",
-        "Slavko Fodor"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Stephen Austin",
-        "Stephen Ulicny"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "studio twin",
-        "Sumanth Kashyap"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Szabolcs Gergely",
-        "Szymon Drejewicz"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Tamas Erdos",
-        "Telecomsxchange Canada inc"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Thomas Decrick",
-        "Timothy Apple"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Tomas Braxatoris",
-        "Tomas Macek"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Tommy Back",
-        "Tommy Martin"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "RUSSELL CAMPBELL",
+        "RYAN MCCABE",
+        "SAGE SCHLEBACH",
+        "SALOMON MOLE",
+        "SANDERS RANCHETTE",
+        "SANTIAGO BARROS",
+        "SCOTT MOREAU",
+        "SEAN FREIBURG",
+        "SEAN HUBER",
+        "SEBASTIAN MENENDEZ",
+        "SERGIO OVALLE",
+        "SERGIO RAYA",
+        "SETH WOOD",
+        "SIMON WILLIAMS",
+        "SLAVKO FODOR",
+        "STEPHEN AUSTIN",
+        "STEPHEN ULICNY",
+        "STUDIO TWIN",
+        "SUMANTH KASHYAP",
+        "SZABOLCS GERGELY",
+        "SZYMON DREJEWICZ",
+        "TAMAS ERDOS",
+        "TELECOMSXCHANGE CANADA INC",
+        "THOMAS DECRICK",
+        "TIMOTHY APPLE",
+        "TOMAS BRAXATORIS",
+        "TOMAS MACEK",
+        "TOMMY BACK",
+        "TOMMY MARTIN",
         "TONGQING WANG",
-        "Tyler A Martin"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "U W Mind",
-        "Varun Pramanik"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Vishal Vennu",
-        "Vladislav Radonjic"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Walter Monschein",
-        "WEI ZHU"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "wellington avelino dos santos",
-        "Will Hampson"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Yam Catzenelson",
-        "yong wan"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Yoshikazu Aoyama",
-        "Your Lifestyle As Medicine Foundation"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Zachary Wilke",
-        "ZENG YUHAO"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "zhijia yuan",
-        "Zhiwei Liang"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Zosel Digital Consulting SARL-S",
-        "斯理 卫"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Abhijit Mohanty",
-        "Jason Alloway"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Kamil Skrzypinski",
-        "MIGUEL CORDERO"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Daniel Seijo",
-        "czh"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Konica Digital",
-        "Hadrian de Oliveira"
-      ]
-    },
-    {
-      "compact": true,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Passion E. Iluobe"
+        "TYLER A MARTIN",
+        "U W MIND",
+        "VARUN PRAMANIK",
+        "VISHAL VENNU",
+        "VLADISLAV RADONJIC",
+        "WALTER MONSCHEIN",
+        "WEI ZHU",
+        "WELLINGTON AVELINO DOS SANTOS",
+        "WILL HAMPSON",
+        "YAM CATZENELSON",
+        "YONG WAN",
+        "YOSHIKAZU AOYAMA",
+        "YOUR LIFESTYLE AS MEDICINE FOUNDATION",
+        "ZACHARY WILKE",
+        "ZENG YUHAO",
+        "ZHIJIA YUAN",
+        "ZHIWEI LIANG",
+        "ZOSEL DIGITAL CONSULTING SARL-S",
+        "斯理 卫",
+        "ABHIJIT MOHANTY",
+        "JASON ALLOWAY",
+        "KAMIL SKRZYPINSKI",
+        "MIGUEL CORDERO",
+        "DANIEL SEIJO",
+        "CZH",
+        "KONICA DIGITAL",
+        "HADRIAN DE OLIVEIRA",
+        "PASSION E. ILUOBE"
       ]
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "Omarchy Core, Security and Design"
+      "subtitle": null,
+      "text": "OMARCHY CORE, SECURITY AND DESIGN"
     },
     {
       "compact": false,
@@ -7262,100 +5881,45 @@
       "kind": "names",
       "names": [
         "DHH",
-        "Ryan R. Hughes"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Tobi Lütke",
-        "Bjarne Øverli"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
+        "RYAN R. HUGHES",
+        "TOBI LÜTKE",
+        "BJARNE ØVERLI",
         "HANCORE",
-        "Spencer Bull"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Krzysztof Wilczyński",
-        "outfoxxed"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Adrian Rangel",
-        "Mehmet İnce"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Erik Melton",
-        "Sayem Chowdhury"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Sebastian Stange",
-        "Barış Girişmen"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Christoffer Hallas",
-        "Daniel Schmier"
-      ]
-    },
-    {
-      "compact": false,
-      "height": 13,
-      "kind": "names",
-      "names": [
-        "Andrés Villagrán",
-        "Niklas Jul"
+        "SPENCER BULL",
+        "KRZYSZTOF WILCZYŃSKI",
+        "OUTFOXXED",
+        "ADRIAN RANGEL",
+        "MEHMET İNCE",
+        "ERIK MELTON",
+        "SAYEM CHOWDHURY",
+        "SEBASTIAN STANGE",
+        "BARIŞ GIRIŞMEN",
+        "CHRISTOFFER HALLAS",
+        "DANIEL SCHMIER",
+        "ANDRÉS VILLAGRÁN",
+        "NIKLAS JUL"
       ]
     },
     {
       "height": 34,
       "kind": "heading",
-      "text": "And to"
+      "subtitle": null,
+      "text": "AND TO"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "The Linux, Arch and open-source communities"
+      "text": "The Linux, Arch, and open-source communities"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "pygame-ce, SDL and the pygbag contributors"
+      "text": "pygame-ce, SDL, and the pygbag contributors"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "Python, NumPy, Pillow and FFmpeg contributors"
+      "text": "Python, NumPy, Pillow, and FFmpeg contributors"
     },
     {
       "height": 14,
@@ -7370,7 +5934,7 @@
     {
       "height": 14,
       "kind": "text",
-      "text": "Everyone who reported a bug instead of a prophecy"
+      "text": "Everyone who reported a bug instead of laughing at it"
     },
     {
       "height": 14,
@@ -7380,12 +5944,13 @@
     {
       "height": 34,
       "kind": "heading",
-      "text": "Production notes"
+      "subtitle": null,
+      "text": "PRODUCTION NOTES"
     },
     {
       "height": 14,
       "kind": "text",
-      "text": "No penguins were harmed in the making of this game."
+      "text": "No penguins, cows, llamas, or feelings were harmed in the making of this game."
     },
     {
       "height": 14,
@@ -7415,7 +5980,21 @@
     {
       "height": 14,
       "kind": "text",
-      "text": "Made with open source, stubbornness and the Super key."
+      "text": "Made with open source, stubbornness, and the Super key."
+    },
+    {
+      "height": 14,
+      "kind": "text",
+      "text": "© MMXXVI Jeremy Dixon and the Omega Omarchy contributors. All rights reserved, to the extent the MIT License reserves any."
+    },
+    {
+      "height": 14,
+      "kind": "text",
+      "text": "Unauthorized duplication, distribution, or exhibition is actually fine. Please see LICENSE."
+    },
+    {
+      "height": 20,
+      "kind": "space"
     },
     {
       "height": 14,
@@ -7426,6 +6005,10 @@
       "height": 14,
       "kind": "text",
       "text": "The revolution will be customized."
+    },
+    {
+      "height": 20,
+      "kind": "space"
     },
     {
       "height": 24,
@@ -7439,7 +6022,7 @@
   "schemaVersion": 1,
   "sources": {
     "credits/contributors.toml": "4939675a4b1bed590d18d00906646f9d92e278912688831bc781a3f3a900f962",
-    "credits/music.json": "1d0040e704374ad1a954dfbfcc290a9be380ef939c01c4a1f2b9bd6768fd2f3e",
+    "credits/music.json": "c8fd80b5f52e0b55f67a2f589486ab4296788bda982b7b6577c42c5d71fbcce0",
     "credits/omacom-foundation.json": "65310512d6860d8e1674978141d07714da627dda8b219619bffff0da721fbeda"
   }
 }

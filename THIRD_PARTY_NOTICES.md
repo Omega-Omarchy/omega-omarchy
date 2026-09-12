@@ -43,7 +43,7 @@ Dixon. The game preserves the supplied MP3 and full-length prepared Ogg
 encodes. The song follows the project's asset-license scope, not the
 source-code MIT license.
 
-The maintainer confirmed **Coded Jason ft. The Gen X Ancients** as the artist
+The maintainer confirmed **Coded Jason ft. GenX Ancients** as the artist
 credit for **Make It Come Alive** on 2026-09-11.
 
 The project includes the maintainer-supplied recording *Make It Come Alive*.
@@ -56,6 +56,11 @@ The cinematic credits use a subset of **Noto Sans CJK**, under the SIL Open Font
 License 1.1. Its complete distributed notice is retained at
 `assets/ui/credits/FONT-LICENSE.txt`. The supplied credit-roll sample was used
 as a layout reference; its image and watermark are not shipped.
+
+The credit roll also bundles **Noto Sans Regular** (`credits-sans-fallback.ttf`),
+under the SIL Open Font License 1.1 (`assets/ui/credits/NOTO-SANS-FALLBACK-LICENSE.txt`),
+used only as a per-character fallback for the small set of accented Latin
+letters the primary credits font has no glyph for.
 
 The staged level cue is Rich Kilmer's *Beware the Omarchy Oligarchy*, sourced
 from a maintainer-supplied video and independently matched to the copy in

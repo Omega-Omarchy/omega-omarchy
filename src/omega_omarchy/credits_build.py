@@ -62,7 +62,7 @@ DEPARTMENTS = {
 # These deliberately excessive film jobs are authored comedy, not inferred
 # claims about individual commits. Real path-based departments follow them.
 FILM_CREW = {
-    "A Jeremy Dixon production": ["Written and directed by", "Produced by", "Executive producer", "Associate producer", "Co-producer", "Producer's producer"],
+    "a JEREMY DIXON production": ["Written and directed by", "Produced by", "Executive producer", "Associate producer", "Co-producer", "Producer's producer"],
     "Production office": ["Production manager", "Production coordinator", "First assistant director", "Second assistant director", "Second second assistant director", "Director of approved detours", "Office production assistant", "Keeper of the remaining budget"],
     "Camera department": ["Director of photography", "Camera operator", "First assistant camera", "Second assistant camera", "Steadicam operator", "Over-the-shoulder camera", "Over-the-other-shoulder camera", "Skyway aerial unit", "Lens cap continuity"],
     "Art department": ["Production designer", "Art director", "Set decorator", "Lead scenic artist", "Construction coordinator", "Invisible platform painter", "Walled Garden horticulturist", "Gate distressing", "Emergency ladder carpenter"],
@@ -137,16 +137,22 @@ def compile_credits(root: Path = ROOT) -> dict:
     lead = config["production"]["lead"]
     lead_name = config["contributors"][lead]["name"]
     rows = [{"kind": "logo", "height": 90}]
-    def heading(title): rows.append({"kind": "heading", "text": title, "height": 34})
+    # Film-credit convention: section headers and credited names read in caps;
+    # role descriptions stay in sentence case. `upper=False` opts a specific
+    # heading out, for the one that stylizes only the embedded name.
+    def heading(title, *, upper=True, subtitle=None): rows.append({"kind": "heading", "text": title.upper() if upper else title, "height": 34, "subtitle": subtitle})
     def pair(role, name): rows.append({"kind": "pair", "role": role, "name": name, "height": 12})
     def line(text): rows.append({"kind": "text", "text": text, "height": 14})
-    line("A slightly corrupted motion picture")
+    line("A slightly corrupted installation.")
+    line("A video game.")
+    line("A motion picture.")
+    line("Somehow, all three.")
     heading("Starring")
-    pair("The player", "{character}")
-    pair("Decisions, mostly reversible", "You")
+    pair("The player", "{CHARACTER}")
+    pair("Decisions, mostly reversible", "YOU")
     for title, roles in FILM_CREW.items():
-        heading(title)
-        for role in roles: pair(role, lead_name)
+        heading(title, upper=(title != "a JEREMY DIXON production"))
+        for role in roles: pair(role, lead_name.upper())
     heading("Built in the open")
     line("The following departments follow the Git history.")
     for department, patterns in DEPARTMENTS.items():
@@ -163,21 +169,28 @@ def compile_credits(root: Path = ROOT) -> dict:
             names.append(label)
         if names:
             heading(department)
-            for name in names: line(name)
+            for name in names: line(name.upper())
     heading("Agent collaborators")
-    line("Codex / Astra")
-    line("Codex / Sol")
-    line("Grok Build")
-    line("Grok Imagine")
-    line("Code, artwork workflows and patient pixel arguments")
+    line("CODEX / ASTRA")
+    line("CODEX / SOL")
+    line("GROK BUILD")
+    line("GROK IMAGINE")
+    line("CLAUDE / SONNET")
+    line("CLAUDE / HAIKU")
+    line("Code, artwork workflows, and patient pixel arguments")
     heading("Screen cast")
-    for spec in CAMPAIGN_ROSTER: pair(spec.boss.name, "As themselves, eventually cooperative")
+    for spec in CAMPAIGN_ROSTER: pair(spec.boss.name.upper(), "As themselves, eventually cooperative")
     enemies = sorted((root / "assets/fidelity/ultra/enemies").glob("*.png"))
     mobs = [{"id": p.stem, "name": ENEMY_ARCHETYPES.get(p.stem, (p.stem.replace("-", " ").title(),))[0]} for p in enemies if not p.stem.endswith("-converted")]
-    for mob in mobs: pair(mob["name"], "Additional institutional resistance")
-    pair("The three orbs", "Unscheduled mind maintenance")
-    pair("The apple-core custodians", "Left unit / Right unit")
-    pair("The Omarch King & Queen", "Royal alternatives")
+    mob_captions = {
+        "cow": "Rather tipsy, but harmless",
+        "llama": "Frequently mistaken for a large language model",
+    }
+    for mob in mobs:
+        pair(mob["name"].upper(), mob_captions.get(mob["id"], "Additional institutional resistance"))
+    pair("THE THREE ORBS", "Unscheduled mind maintenance")
+    pair("THE APPLE-CORE CUSTODIANS", "Left unit / Right unit")
+    pair("THE OMARCH KING & QUEEN", "Royal alternatives")
     heading("Music")
     music = json.loads((root / "credits/music.json").read_text(encoding="utf-8"))
     audio = json.loads((root / "assets/audio/audio-manifest.json").read_text(encoding="utf-8"))
@@ -187,8 +200,8 @@ def compile_credits(root: Path = ROOT) -> dict:
         raise RuntimeError("The credit roll needs non-looping audio with matching tier durations.")
     music_credits = [song_credit(song, root) for song in music["songs"]]
     for song, credit in zip(music["songs"], music_credits):
-        heading(credit["title"])
-        line(credit["artist"])
+        heading(credit["title"], subtitle=song.get("subtitle"))
+        line(credit["artist"].upper())
         if song.get("cue") == music["roll"]["cue"]:
             music["roll"]["artist"] = credit["artist"]
     heading("Special Thanks")
@@ -196,15 +209,30 @@ def compile_credits(root: Path = ROOT) -> dict:
     line("For the operating system. We supplied the corruption.")
     for group in foundation["groups"]:
         heading(group["title"])
-        for i in range(0, len(group["names"]), 2):
-            rows.append({"kind": "names", "names": group["names"][i:i+2], "height": 13, "compact": bool(group.get("compact", False))})
+        capped_names = [str(person_name).upper() for person_name in group["names"]]
+        # One row per group; credits_render chunks these into 2-4 columns
+        # (more columns as the compacted font shrinks, real estate
+        # permitting) rather than a build-time-fixed pair-per-row grid.
+        rows.append({"kind": "names", "names": capped_names, "height": 13, "compact": bool(group.get("compact", False))})
     heading("And to")
-    for name in ["The Linux, Arch and open-source communities", "pygame-ce, SDL and the pygbag contributors", "Python, NumPy, Pillow and FFmpeg contributors", "The Noto font project", "CatchyTune and the people who listen twice", "Everyone who reported a bug instead of a prophecy", "You, for taking the long way home"]: line(name)
+    for name in ["The Linux, Arch, and open-source communities", "pygame-ce, SDL, and the pygbag contributors", "Python, NumPy, Pillow, and FFmpeg contributors", "The Noto font project", "CatchyTune and the people who listen twice", "Everyone who reported a bug instead of laughing at it", "You, for taking the long way home"]: line(name)
     heading("Production notes")
-    for text in ["No penguins were harmed in the making of this game.", "Several institutions were inconvenienced.", "All invisible sets were returned in invisible condition.", "Any resemblance to a working installer is intentional.", "Special thanks does not imply endorsement.", "Fictional guilds. Actual gratitude.", "Made with open source, stubbornness and the Super key."]:
+    for text in [
+        "No penguins, cows, llamas, or feelings were harmed in the making of this game.",
+        "Several institutions were inconvenienced.",
+        "All invisible sets were returned in invisible condition.",
+        "Any resemblance to a working installer is intentional.",
+        "Special thanks does not imply endorsement.",
+        "Fictional guilds. Actual gratitude.",
+        "Made with open source, stubbornness, and the Super key.",
+        "© MMXXVI Jeremy Dixon and the Omega Omarchy contributors. All rights reserved, to the extent the MIT License reserves any.",
+        "Unauthorized duplication, distribution, or exhibition is actually fine. Please see LICENSE.",
+    ]:
         line(text)
+    rows.append({"kind": "space", "height": 20})
     line("OMEGA OMARCHY")
     line("The revolution will be customized.")
+    rows.append({"kind": "space", "height": 20})
     rows.append({"kind": "space", "height": 24})
     rows.append({"kind": "seals", "height": 132})
     cards = [{"kind": "title", "seconds": 6}, {"kind": "player", "seconds": 8}, {"kind": "royalty", "seconds": 6}]

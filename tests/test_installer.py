@@ -169,7 +169,7 @@ def test_complete_screen_keeps_rotating_tip_below_play_now(monkeypatch):
     assert tips == [(f"Tip: {PROGRESS_TIPS[0]}", 138), (f"Tip: {PROGRESS_TIPS[1]}", 138)]
 
 
-def test_progress_reserves_three_seconds_after_the_original_install_timing():
+def test_progress_reserves_one_second_after_the_original_install_timing():
     session = InstallerSession(step_index=PARODY_STEPS.index("progress"))
     session.run_generation()
     for _ in range(PROGRESS_BASE_TICKS + INSTALL_BREATH_TICKS - 1):
@@ -178,7 +178,7 @@ def test_progress_reserves_three_seconds_after_the_original_install_timing():
     session.tick_progress()
     assert session.step == "complete"
     authored_seconds = (PROGRESS_BASE_TICKS + INSTALL_BREATH_TICKS) / INSTALL_TICK_HZ
-    assert INSTALL_BREATH_TICKS / INSTALL_TICK_HZ == 3
+    assert INSTALL_BREATH_TICKS / INSTALL_TICK_HZ == 1
     assert session.total_elapsed_s >= authored_seconds
     assert f"{session.total_elapsed_s:.2f}s" in session.installed_line
 

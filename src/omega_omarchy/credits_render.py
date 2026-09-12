@@ -17,6 +17,7 @@ class CreditsRenderer:
         self.layouts = {}
         self.glyphs = {}
         self.logos = {}
+        self.seal_bakes = {}
 
     def font(self, size, scale):
         key = (size, scale)
@@ -24,17 +25,63 @@ class CreditsRenderer:
             self.fonts[key] = pygame.font.Font(str(self.r.root / "ui/credits/credits-sans.otf"), round(size * scale))
         return self.fonts[key]
 
+    def fallback_font(self, size, scale):
+        """A handful of real contributor names use Latin letters the primary
+        credits font has no glyph for (e.g. c-with-acute, dotted/dotless I).
+        This covers them per-character without changing the look of any
+        text the primary font already renders."""
+        key = ("fallback", size, scale)
+        if key not in self.fonts:
+            self.fonts[key] = pygame.font.Font(str(self.r.root / "ui/credits/credits-sans-fallback.ttf"), round(size * scale))
+        return self.fonts[key]
+
+    @staticmethod
+    def _has_glyph(font_obj, ch):
+        if ch.isspace():
+            return True
+        info = font_obj.metrics(ch)
+        if not info or info[0] is None:
+            return False
+        minx, maxx, miny, maxy, advance = info[0]
+        return bool(minx or maxx or miny or maxy)
+
+    def _char_font(self, ch, size, scale):
+        primary = self.font(size, scale)
+        return primary if self._has_glyph(primary, ch) else self.fallback_font(size, scale)
+
+    def _fully_covered(self, text, size, scale):
+        primary = self.font(size, scale)
+        return all(self._has_glyph(primary, ch) for ch in text)
+
+    def _measure_text(self, text, size, scale):
+        if self._fully_covered(text, size, scale):
+            return self.font(size, scale).size(text)[0]
+        return sum(self._char_font(ch, size, scale).size(ch)[0] for ch in text)
+
+    def _render_text(self, text, size, scale, color):
+        if self._fully_covered(text, size, scale):
+            return self.font(size, scale).render(text, True, color)
+        glyphs = [self._char_font(ch, size, scale).render(ch, True, color) for ch in text]
+        width = max(1, sum(g.get_width() for g in glyphs))
+        height = max((g.get_height() for g in glyphs), default=1)
+        combined = pygame.Surface((width, height), pygame.SRCALPHA)
+        cursor = 0
+        for glyph in glyphs:
+            combined.blit(glyph, (cursor, 0))
+            cursor += glyph.get_width()
+        return combined
+
     def wrap(self, text, width, size=8):
-        font = self.font(size, 4)
+        scale = 4
         lines, line = [], ""
         for word in text.split():
             candidate = (line + " " + word).strip()
-            if line and font.size(candidate)[0] > width * 4:
+            if line and self._measure_text(candidate, size, scale) > width * scale:
                 lines.append(line)
                 line = ""
             # Preserve every character, even in a very long username.
             for char in word:
-                if font.size(line + char)[0] > width * 4:
+                if self._measure_text(line + char, size, scale) > width * scale:
                     lines.append(line)
                     line = ""
                 line += char
@@ -46,7 +93,7 @@ class CreditsRenderer:
         scale = self.r._vs
         key = (text, size, scale, color)
         if key not in self.glyphs:
-            self.glyphs[key] = self.font(size, scale).render(text, True, color)
+            self.glyphs[key] = self._render_text(text, size, scale, color)
         image = self.glyphs[key]
         rect = image.get_rect()
         rect.top = round(y * scale)
@@ -98,29 +145,58 @@ class CreditsRenderer:
             measured = [cached if cached is not None else self.measure_row(row, character, name_size=size) for row, cached in zip(rows, fixed)]
             if sum(height for _, height in measured) <= budget:
                 break
+        # Round each row's stored position once, here, rather than at scroll
+        # time. Patron rows get fractional heights once font compaction
+        # kicks in, so unrounded cumulative Y values carry different
+        # fractional parts row to row; rounding independently every frame
+        # (as the continuous scroll offset shifts) then made adjacent rows'
+        # on-screen gap wobble by +/-1px instead of staying fixed. Rounding
+        # once here makes every row's spacing a fixed integer for the whole
+        # scroll, immune to whatever the offset's fractional phase is.
         entries, y = [], 0.0
         for row, height in measured:
-            entries.append((y, height, row))
+            entries.append((round(y), height, row))
             y += height
         self.layouts[character] = (entries, y)
         return entries, y
+
+    @staticmethod
+    def _patron_columns(name_size):
+        """More columns as the compacted font shrinks, real estate permitting."""
+        if name_size <= 6.75:
+            return 4
+        if name_size <= 7.25:
+            return 3
+        return 2
 
     def measure_row(self, source, character, *, name_size=8):
         row = dict(source)
         kind = row["kind"]
         if kind == "pair":
             left = self.wrap(row["role"], 139, 7)
-            right = self.wrap(row["name"].replace("{character}", character), 139, 8)
+            right = self.wrap(row["name"].replace("{CHARACTER}", character.upper()), 139, 8)
             row["columns"] = (left, right)
             height = max(row["height"], max(len(left), len(right)) * 11 + 2)
         elif kind == "names":
             ratio = name_size / 8
             row["fontSize"], row["lineHeight"] = name_size, 11 * ratio
-            row["columns"] = [self.wrap(name, 135, name_size) for name in row["names"]]
-            height = max(row["height"] * ratio, max(map(len, row["columns"])) * row["lineHeight"] + 2 * ratio)
+            cols = self._patron_columns(name_size)
+            col_width = 284 / cols
+            names = row["names"]
+            grid_rows = [names[i:i + cols] for i in range(0, len(names), cols)]
+            wrapped = [[self.wrap(name, col_width - 4, name_size) for name in grid_row] for grid_row in grid_rows]
+            row["columnCount"] = cols
+            row["grid"] = wrapped
+            row["gridLineCounts"] = [max((len(w) for w in grid_row), default=1) for grid_row in wrapped]
+            total_lines = sum(row["gridLineCounts"]) or 1
+            height = max(row["height"] * ratio, total_lines * row["lineHeight"] + 2 * ratio)
         elif kind in {"heading", "text"}:
-            row["lines"] = self.wrap(row["text"], 284, 12 if kind == "heading" else 8)
-            height = max(row["height"], len(row["lines"]) * (16 if kind == "heading" else 11) + 12)
+            row["lines"] = self.wrap(row["text"], 284, 11 if kind == "heading" else 8)
+            if kind == "heading" and row.get("subtitle"):
+                row["subtitleLines"] = self.wrap(str(row["subtitle"]), 284, 7)
+                height = max(row["height"], 12 + len(row["lines"]) * 16 + len(row["subtitleLines"]) * 10 + 12)
+            else:
+                height = max(row["height"], len(row["lines"]) * (16 if kind == "heading" else 11) + 12)
         else:
             height = row["height"]
         return row, height
@@ -133,34 +209,80 @@ class CreditsRenderer:
             for i, line in enumerate(row["columns"][0]): self.text(surf, line, 152, y + i * 11, 7, "right")
             for i, line in enumerate(row["columns"][1]): self.text(surf, line, 168, y + i * 11, 8, "left")
         elif kind == "names":
-            for col, lines in enumerate(row["columns"]):
-                for i, line in enumerate(lines): self.text(surf, line, 86 + col * 148, y + i * row["lineHeight"], row["fontSize"])
+            cols = row["columnCount"]
+            col_width = 284 / cols
+            cursor_y = y
+            for grid_row, line_count in zip(row["grid"], row["gridLineCounts"]):
+                for col, lines in enumerate(grid_row):
+                    x = 18 + col_width * (col + 0.5)
+                    for i, line in enumerate(lines):
+                        self.text(surf, line, x, cursor_y + i * row["lineHeight"], row["fontSize"])
+                cursor_y += line_count * row["lineHeight"]
         elif kind in {"heading", "text"}:
-            size, gap, inset = (12, 16, 12) if kind == "heading" else (8, 11, 0)
+            size, gap, inset = (11, 16, 12) if kind == "heading" else (8, 11, 0)
             for i, line in enumerate(row["lines"]): self.text(surf, line, 160, y + inset + i * gap, size)
+            if kind == "heading" and row.get("subtitleLines"):
+                sub_y = y + inset + len(row["lines"]) * gap
+                for i, sub_line in enumerate(row["subtitleLines"]): self.text(surf, sub_line, 160, sub_y + i * 10, 7)
         elif kind == "seals":
             self.seals(surf, y)
 
+    # Original badges, deliberately fictional film-industry parodies.
+    _SEAL_BADGES = (
+        ("I.A.T.S.E.T.", "Terminal Set Employees"),
+        ("SAG / APT-RA", "Screen Agents Guild"),
+        ("DOLLY STEREO", "Two channels. One chair."),
+        ("M.P.A.A.A.", "Autonomous Agents Association"),
+    )
+
     def seals(self, surf, y):
-        r, scale = self.r, self.r._vs
-        # Original badges, deliberately fictional film-industry parodies.
-        for i, (acronym, caption) in enumerate([
-            ("I.A.T.S.E.T.", "Terminal Set Employees"),
-            ("SAG / APT-RA", "Screen Agents Guild"),
-            ("DOLLY STEREO", "Two channels. One chair."),
-            ("M.P.A.A.A.", "Autonomous Agents Association"),
-        ]):
-            x, top = 85 + (i % 2) * 150, y + (i // 2) * 62
+        scale = self.r._vs
+        baked = self.seal_bakes.get(scale)
+        if baked is None:
+            baked = self._bake_seals(scale)
+            self.seal_bakes[scale] = baked
+        surf.blit(baked, (0, round(y * scale)))
+
+    def _bake_seals(self, scale):
+        """Render the seal badges once, supersampled, and cache the result.
+
+        This row scrolls past every playthrough, so redrawing hand-vectored
+        shapes every frame was both wasted work and visibly jagged. Baking
+        at 3x and downscaling gives anti-aliased edges for free and leaves
+        nothing but a plain blit while the row is on screen.
+        """
+        super_scale = max(1, scale) * 3
+        width, height = 320 * scale, 132 * scale
+        shapes = pygame.Surface((320 * super_scale, 132 * super_scale), pygame.SRCALPHA)
+
+        def lp(x, y_):
+            return (round(x * super_scale), round(y_ * super_scale))
+
+        def lr(x, y_, w, h):
+            return pygame.Rect(round(x * super_scale), round(y_ * super_scale), round(w * super_scale), round(h * super_scale))
+
+        line_w = max(1, super_scale)
+        for i, (acronym, caption) in enumerate(self._SEAL_BADGES):
+            x, top = 85 + (i % 2) * 150, (i // 2) * 62
             if i in {0, 3}:
                 points = [(x + math.cos(a * math.pi / 12) * (23 if a % 2 else 27), top + 21 + math.sin(a * math.pi / 12) * (18 if a % 2 else 22)) for a in range(24)]
-                pygame.draw.polygon(surf, WHITE, [r._lp(*p) for p in points], max(1, scale))
+                poly = [lp(*p) for p in points]
+                pygame.draw.polygon(shapes, (255, 255, 255, 55), poly)
+                pygame.draw.polygon(shapes, WHITE, poly, line_w)
             else:
-                pygame.draw.rect(surf, WHITE, r._lr(x - 56, top + 4, 112, 34), max(1, scale))
+                rect = lr(x - 56, top + 4, 112, 34)
+                pygame.draw.rect(shapes, (255, 255, 255, 45), rect)
+                pygame.draw.rect(shapes, WHITE, rect, line_w)
                 if i == 2:
                     for n in range(6):
-                        pygame.draw.line(surf, WHITE, r._lp(x - 48 + n * 3, top + 12), r._lp(x - 48 + n * 3, top + 29), max(1, scale))
-            self.text(surf, acronym, x + (8 if i == 2 else 0), top + 16, 7)
-            self.text(surf, caption, x, top + 44, 6)
+                        pygame.draw.line(shapes, WHITE, lp(x - 48 + n * 3, top + 12), lp(x - 48 + n * 3, top + 29), line_w)
+
+        baked = pygame.transform.smoothscale(shapes, (max(1, width), max(1, height)))
+        for i, (acronym, caption) in enumerate(self._SEAL_BADGES):
+            x, top = 85 + (i % 2) * 150, (i // 2) * 62
+            self.text(baked, acronym, x + (8 if i == 2 else 0), top + 16, 7)
+            self.text(baked, caption, x, top + 44, 6)
+        return baked
 
     def sprite(self, surf, image, x, feet_y, height, *, width=280, alpha=255):
         bounds = image.get_bounding_rect(min_alpha=8)
