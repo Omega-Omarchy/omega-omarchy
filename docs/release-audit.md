@@ -33,7 +33,7 @@ dist/audit-local/audit-venv/bin/python -m pip_audit \
   --require-clean \
   --build-distributions \
   --vulnerability-report dist/audit-local/pip-audit.json \
-  --artifact native=dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz \
+  --artifact native=dist/native-local/omega-omarchy-0.1.2-linux-x86_64.tar.gz \
   --artifact web=dist/web
 ```
 

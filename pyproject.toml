@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "omega-omarchy"
-version = "0.1.0"
+version = "0.1.2"
 description = "Omega Omarchy — a fast, customizable, retro-inspired game about user-owned computing."
 readme = "README.md"
 requires-python = ">=3.11"

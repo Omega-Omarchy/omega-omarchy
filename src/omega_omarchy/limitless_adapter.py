@@ -66,6 +66,10 @@ def build_request(
         "taskKind": task_kind,
         "receiver": {
             "constraints": [f"language:{language}", "runtime:omega-omarchy", "runtime:any"],
+            # A toolchain compatibility contract, matched against catalog
+            # entries' declared supported versions (e.g. capsule.json's
+            # toolchain.omega list) — not the app's release version. Bump it
+            # only alongside the catalog entries it's checked against.
             "toolchain": {"python": "3.12", "omega": "0.1.0"},
         },
         "requestedUse": requested_use,

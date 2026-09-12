@@ -73,8 +73,8 @@ The native package flow requires the pinned release tooling:
 .venv/bin/python -m pip install --no-build-isolation --requirement requirements/ci.txt
 ./scripts/omega package --output dist/native-local
 ./scripts/omega verify-package \
-  dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz \
-  dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz.sha256
+  dist/native-local/omega-omarchy-0.1.2-linux-x86_64.tar.gz \
+  dist/native-local/omega-omarchy-0.1.2-linux-x86_64.tar.gz.sha256
 ```
 
 See [release-artifact.md](release-artifact.md) for contents, verification, and

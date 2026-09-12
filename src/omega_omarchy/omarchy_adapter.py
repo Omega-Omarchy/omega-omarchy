@@ -50,7 +50,7 @@ def plugin_manifest() -> dict[str, Any]:
         "schemaVersion": PLUGIN_SCHEMA_VERSION,
         "id": PLUGIN_ID,
         "name": "Omega Omarchy",
-        "version": "0.1.0",
+        "version": "0.1.2",
         "author": "Omega Omarchy",
         "description": "Launch Omega Omarchy and sync the active Omarchy theme",
         "license": "MIT",

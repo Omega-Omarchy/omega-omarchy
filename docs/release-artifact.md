@@ -13,8 +13,8 @@ Production-source masters and private design/reference material are excluded.
 .venv/bin/python -m pip install --no-build-isolation --requirement requirements/ci.txt
 ./scripts/omega package --output dist/native-local
 ./scripts/omega verify-package \
-  dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz \
-  dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz.sha256
+  dist/native-local/omega-omarchy-0.1.2-linux-x86_64.tar.gz \
+  dist/native-local/omega-omarchy-0.1.2-linux-x86_64.tar.gz.sha256
 ```
 
 CI adds `--require-clean`, performs the verification from a fresh extracted
