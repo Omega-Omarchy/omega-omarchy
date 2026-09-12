@@ -49,6 +49,19 @@ separately; deployment does not commit or push it.
   the prior release replaced the ~9-14s random flourish burst with the new
   bounce-triggered one instead of keeping both. Both fire now, as intended.
   Previous releases remain available.
+- Loading-window centering and audio-settings caching: `/srv/omegaomarchy/releases/20260912T205036Z/`;
+  the pygbag loading box appeared at its unstyled top-left flow position
+  before its own JS measured and centered it; now centered via CSS from
+  first paint, with the JS's own positioning patched to clear the CSS
+  transform it would otherwise compound with. AudioManager.update() also
+  re-normalized and re-validated every audio setting key every frame
+  even when the exact same settings object was passed in; now skipped
+  when unchanged (~8x faster for that path in isolation). Live in-browser
+  profiling to chase further gameplay sluggishness was attempted but
+  blocked by this environment's software-rendered headless Chromium
+  never completing the WASM boot in reasonable time; native cProfile
+  remains the verification method available here. Previous releases
+  remain available.
 - Render-loop optimization and version 0.1.2: `/srv/omegaomarchy/releases/20260912T200036Z/`;
   frame() already resolved fidelity once per frame via _layout(), but
   _fid() and several other call sites re-derived it independently every
