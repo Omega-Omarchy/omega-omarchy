@@ -112,6 +112,8 @@ class AudioManager:
         self._need_roll_preload = False
         self._roll_preloaded = False
         self.error = ""
+        self._last_settings_ref: Mapping[str, Any] | None = None
+        self._last_normalized_settings: dict[str, Any] | None = None
         try:
             self.manifest = json.loads((self.root / "audio-manifest.json").read_text(encoding="utf-8"))
             if enabled:
@@ -161,7 +163,17 @@ class AudioManager:
         return None
 
     def apply_settings(self, settings: Mapping[str, Any]) -> None:
-        normalized = normalize_audio_settings(settings)
+        # update() calls this every frame with the same settings object far
+        # more often than a player actually changes a slider; skip redoing
+        # the dict copies and per-key rounding when nothing has changed.
+        # Holding the reference (not just its id) keeps this safe even if a
+        # since-freed object's id were otherwise reused.
+        if settings is self._last_settings_ref:
+            normalized = self._last_normalized_settings
+        else:
+            normalized = normalize_audio_settings(settings)
+            self._last_settings_ref = settings
+            self._last_normalized_settings = normalized
         next_fidelity = str(normalized["audioFidelity"])
         changed = next_fidelity != self.fidelity
         self.settings = normalized
