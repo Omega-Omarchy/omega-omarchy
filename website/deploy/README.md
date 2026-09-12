@@ -49,6 +49,15 @@ separately; deployment does not commit or push it.
   the prior release replaced the ~9-14s random flourish burst with the new
   bounce-triggered one instead of keeping both. Both fire now, as intended.
   Previous releases remain available.
+- Mobile/touch redirect: `/srv/omegaomarchy/releases/20260912T191213Z/`; reported
+  after someone hit Play on an iPhone and reached the loading screen and
+  character picker for a game with no touch input, having also started the
+  ~60MB WebAssembly download. A touch-primary device now redirects away from
+  `/play/` before browserfs.min.js or pygbag's loader can start, back to the
+  homepage with an explanation and links to a desktop browser or the native
+  Linux build; the homepage itself also retargets its own Play links up
+  front. Verified via Chrome DevTools Protocol with an emulated iPhone.
+  Previous releases remain available.
 - Deferred off-screen robot-detail tiers: `/srv/omegaomarchy/releases/20260912T183008Z/`;
   reported after a several-second freeze partway into the hero robots'
   choreography on a cold-cache reload. `motion.js` previously fetched and
