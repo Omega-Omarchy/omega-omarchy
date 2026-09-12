@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 from typing import Any
@@ -146,7 +147,9 @@ class Renderer:
         self._crt_overlay_cache: dict[tuple[int, ...], Surface] = {}
         self._actor_transform_cache: dict[tuple[Any, ...], Surface] = {}
         self._tile_blit_cache: dict[tuple[Any, ...], Surface] = {}
-        self._parallax_scale_cache: dict[tuple[Any, ...], Surface] = {}
+        self._parallax_scale_cache: dict[tuple[Any, ...], tuple[Surface, pygame.Rect]] = {}
+        self._parallax_metadata: dict[str, dict] = {}
+        self._platform_cache: dict[tuple[Any, ...], Surface] = {}
         self._icon_fit_cache: dict[tuple[str, str, tuple[int, int]], Surface] = {}
         self._fit_text_cache: dict[tuple[Any, ...], Surface] = {}
         self._blit_text_cache: dict[tuple[Any, ...], Surface] = {}
@@ -299,6 +302,26 @@ class Renderer:
                 self._icon_fit_cache.clear()
             self._icon_fit_cache[cache_key] = fitted
         return fitted
+
+    def _parallax_bounds(self, layer: Surface, rel: str) -> pygame.Rect:
+        """Read offline alpha bounds; old/unlisted assets remain supported."""
+        key = self._fid_key_cache.get((self._fid_cur, rel), rel)
+        folder = str(Path(key).parent)
+        if folder not in self._parallax_metadata:
+            try:
+                metadata = json.loads((self.root / folder / "parallax-bounds.json").read_text())
+                self._parallax_metadata[folder] = metadata if isinstance(metadata, dict) else {}
+            except (OSError, ValueError):
+                self._parallax_metadata[folder] = {}
+        entry = self._parallax_metadata[folder].get(Path(key).name, {})
+        if isinstance(entry, dict) and entry.get("size") == list(layer.get_size()):
+            values = entry.get("bounds")
+            if (isinstance(values, list) and len(values) == 4
+                    and all(type(value) is int and value >= 0 for value in values)):
+                rect = pygame.Rect(values)
+                if rect.right <= layer.get_width() and rect.bottom <= layer.get_height():
+                    return rect
+        return layer.get_bounding_rect(min_alpha=1)
 
     @staticmethod
     def _binding_pair(sim: GameSim, action: str) -> str:
@@ -1880,16 +1903,18 @@ class Renderer:
         tw = TILE * vs
         layers = {"sixteen-bit": 2, "high": 3, "ultra": 4}.get(fid, 2)
         for i in range(layers):
+            rel = f"bg/{pal}/parallax-{i}.png"
             try:
-                layer = self._fid(sim, f"bg/{pal}/parallax-{i}.png")
+                layer = self._fid(sim, rel)
             except Exception:
                 try:
-                    layer = self._fid(sim, f"bg/parallax-{i}.png")
+                    rel = f"bg/parallax-{i}.png"
+                    layer = self._fid(sim, rel)
                 except Exception:
                     break
             scale_key = (fid, pal, i, self._iw, self._ih)
-            scaled = self._parallax_scale_cache.get(scale_key)
-            if scaled is None:
+            prepared = self._parallax_scale_cache.get(scale_key)
+            if prepared is None:
                 if layer.get_height() != self._ih:
                     scaled_w = max(self._iw, round(layer.get_width() * self._ih / max(1, layer.get_height())))
                     scaled = pygame.transform.smoothscale(layer, (scaled_w, self._ih))
@@ -1897,15 +1922,20 @@ class Renderer:
                     scaled = layer
                 if len(self._parallax_scale_cache) >= 32:
                     self._parallax_scale_cache.clear()
-                self._parallax_scale_cache[scale_key] = scaled
-            layer = scaled
+                # Keep the original canvas width for camera registration, but
+                # never blend its fully transparent padding. Some authored
+                # strips are >90% empty. Offline bounds avoid an expensive
+                # alpha scan on the first frame, with a fallback after scaling.
+                prepared = (scaled, self._parallax_bounds(scaled, rel))
+                self._parallax_scale_cache[scale_key] = prepared
+            layer, bounds = prepared
             # Keep the smoothed camera's fractional position for scenery. The
             # world grid remains integer-aligned, while wide authored planes
             # advance regularly instead of holding on a truncated camera value.
             depth = 0.40 + i * 0.18
             ox = parallax_offset(layer.get_width(), self._iw, sim.cam_x, max_x, depth)
             oy = 0 if i == 0 else background_parallax_y(sim.cam_y, max_y, depth, vs)
-            surf.blit(layer, (ox, oy))
+            surf.blit(layer, (ox + bounds.x, oy + bounds.y), bounds)
         if pal == "goliath":
             self._goliath_arena_story_layer(surf, sim, cam_x, cam_y)
         try:
@@ -2024,10 +2054,13 @@ class Renderer:
             if vis_bottom <= vis_top:
                 continue
             vis_h = vis_bottom - vis_top
+            draw_width = max(width + 8 * vs, round(width * 1.9))
+            # Include the ribbon sway and the base arc, not just its collider.
+            left = px - (draw_width - width) // 2 - vs
+            if left > self._iw or left + draw_width + 2 * vs < 0:
+                continue
             try:
-                wind = self._fid(sim, "effects/wind-column.png")
-                draw_width = max(width + 8 * vs, round(width * 1.9))
-                gust = self._fit(wind, (draw_width, max(1, vis_h)))
+                gust = self._fid_fit(sim, "effects/wind-column.png", (draw_width, max(1, vis_h)))
                 # A slow alternating mirror gives the modeled ribbons a
                 # second silhouette without inventing a duplicate asset.
                 if ((sim.tick + int(entity.x) * 7) // 9) % 2:
@@ -2046,21 +2079,32 @@ class Renderer:
             if not entity.alive or entity.kind not in {"tilt-platform", "moving-platform"}:
                 continue
             span = max(4, int(entity.extra.get("width") or 4))
-            plank = Surface((span * tw, 7 * vs), pygame.SRCALPHA)
-            try:
-                deck_tile = self._fit(self._fid(sim, f"tiles/{pal}_=.png"), (tw, 7 * vs))
-                for segment in range(span):
-                    plank.blit(deck_tile, (segment * tw, 0))
-                pygame.draw.rect(plank, BRONZE, plank.get_rect(), max(1, vs))
-            except Exception:
-                plank.fill((48, 40, 35, 255))
-                pygame.draw.rect(plank, BRONZE, plank.get_rect(), max(1, vs))
-            angle = -__import__("math").degrees(float(entity.extra.get("angle") or 0.0))
-            if entity.kind == "tilt-platform":
-                plank = pygame.transform.rotate(plank, angle)
             pivot = float(entity.extra.get("pivot", span / 2 - 0.5)) + 0.5
             center_x = int((entity.x * TILE + pivot * TILE - cam_x) * vs)
             center_y = int((entity.y * TILE - cam_y) * vs)
+            # A bounding circle covers every rotation and the pivot marker.
+            radius = math.ceil(math.hypot(span * tw, 7 * vs) / 2) + 3 * vs
+            if (center_x + radius < 0 or center_x - radius > self._iw
+                    or center_y + radius < 0 or center_y - radius > self._ih):
+                continue
+            plank_key = (fid, pal, span, vs)
+            plank = self._platform_cache.get(plank_key)
+            if plank is None:
+                plank = Surface((span * tw, 7 * vs), pygame.SRCALPHA)
+                try:
+                    deck_tile = self._fid_fit(sim, f"tiles/{pal}_=.png", (tw, 7 * vs))
+                    for segment in range(span):
+                        plank.blit(deck_tile, (segment * tw, 0))
+                    pygame.draw.rect(plank, BRONZE, plank.get_rect(), max(1, vs))
+                except Exception:
+                    plank.fill((48, 40, 35, 255))
+                    pygame.draw.rect(plank, BRONZE, plank.get_rect(), max(1, vs))
+                if len(self._platform_cache) >= 64:
+                    self._platform_cache.clear()
+                self._platform_cache[plank_key] = plank
+            angle = -math.degrees(float(entity.extra.get("angle") or 0.0))
+            if entity.kind == "tilt-platform":
+                plank = pygame.transform.rotate(plank, angle)
             surf.blit(plank, (center_x - plank.get_width() // 2, center_y - plank.get_height() // 2))
             if entity.kind == "tilt-platform":
                 pygame.draw.circle(surf, PALETTE["yellow"], (center_x, center_y), 3 * vs)
@@ -2078,7 +2122,14 @@ class Renderer:
                 except Exception:
                     pygame.draw.rect(surf, PALETTE["brown"], (px, py, tw, tw))
                     continue
-            surf.blit(self._fit(tile, (tw, tw)), (px, py))
+            ladder_key = (fid, pal, cell, tw, 0)
+            fitted = self._tile_blit_cache.get(ladder_key)
+            if fitted is None:
+                fitted = self._fit(tile, (tw, tw))
+                if len(self._tile_blit_cache) >= 256:
+                    self._tile_blit_cache.clear()
+                self._tile_blit_cache[ladder_key] = fitted
+            surf.blit(fitted, (px, py))
         for entity in sim.entities:
             if not entity.alive:
                 continue
@@ -3231,8 +3282,8 @@ class Renderer:
 
     def _ring_portal(self, surf: Surface, sim: GameSim, x: float, feet_y: float, *, scale: float = 1.0) -> None:
         size = (round(32 * scale * self._vs), round(12 * scale * self._vs))
-        pad = self._fit(self._fid(sim, "items/ring-pad.png"), size)
-        ring = self._fit(self._fid(sim, "items/ring-portal.png"), size)
+        pad = self._fid_fit(sim, "items/ring-pad.png", size)
+        ring = self._fid_fit(sim, "items/ring-portal.png", size)
         left = round(x * self._vs - size[0] / 2)
         surf.blit(pad, (left, round(feet_y * self._vs - size[1])))
         reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)

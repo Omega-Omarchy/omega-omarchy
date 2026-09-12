@@ -129,6 +129,7 @@ provenance where relevant. Contributors can set their screen-credit name in
 
 - [Architecture](docs/architecture.md) and [build instructions](docs/build.md)
 - [Testing scopes](docs/testing.md) and [browser runtime](docs/web.md)
+- [Rendering performance and repeatable browser benchmarks](docs/performance.md)
 - [Content packs](docs/content-packs.md) and [character creation](docs/character-creation.md)
 - [Audio and fidelity](docs/sound-support.md)
 - [Website development](website/README.md) and [deployment runbook](website/deploy/README.md)

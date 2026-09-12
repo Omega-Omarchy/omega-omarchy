@@ -92,12 +92,25 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Build clean native bundle
-        run: ./scripts/omega package --require-clean --output dist/native-local
+        id: native-bundle
+        run: |
+          ./scripts/omega package --require-clean --output dist/native-local
+          python - <<'PY'
+          from importlib.metadata import version
+          import os
+          from pathlib import Path
+          archive = Path("dist/native-local") / f"omega-omarchy-{version('omega-omarchy')}-linux-x86_64.tar.gz"
+          if not archive.is_file() or not Path(str(archive) + ".sha256").is_file():
+              raise SystemExit("Native bundle or checksum missing after build")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f"archive={archive}", file=output)
+          PY
       - name: Verify extracted artifact
+        env:
+          NATIVE_ARCHIVE: ${{ steps.native-bundle.outputs.archive }}
         run: |
           ./scripts/omega verify-package \
-            dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz \
-            dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz.sha256 \
+            "$NATIVE_ARCHIVE" "$NATIVE_ARCHIVE.sha256" \
             --require-clean
       - name: Audit pinned Python dependencies
         run: |
@@ -116,6 +129,7 @@ jobs:
       - name: Build and scan release surfaces
         env:
           SOURCE_DATE_EPOCH: "1704067200"
+          NATIVE_ARCHIVE: ${{ steps.native-bundle.outputs.archive }}
         run: |
           ./scripts/omega web --web-out .local/release-web
           ./scripts/omega audit-release \
@@ -123,7 +137,7 @@ jobs:
             --report-only \
             --build-distributions \
             --vulnerability-report dist/audit-local/pip-audit.json \
-            --artifact native=dist/native-local/omega-omarchy-0.1.0-linux-x86_64.tar.gz \
+            --artifact "native=$NATIVE_ARCHIVE" \
             --artifact web=.local/release-web
       - name: Retain bundle and checksum
         id: retain-artifact

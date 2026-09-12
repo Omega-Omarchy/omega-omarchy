@@ -1,0 +1,356 @@
+{
+  "python": "3.12.3",
+  "platform": "linux",
+  "pygame": "2.5.8",
+  "sdl": [
+    2,
+    32,
+    10
+  ],
+  "results": [
+    {
+      "scenario": "start",
+      "fidelity": "sixteen-bit",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.934,
+        "p95Ms": 1.555,
+        "coldMs": 14.471
+      },
+      "after": {
+        "medianMs": 0.866,
+        "p95Ms": 1.457,
+        "coldMs": 14.853
+      },
+      "improvementPercent": 7.3
+    },
+    {
+      "scenario": "start",
+      "fidelity": "high",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 2.013,
+        "p95Ms": 3.196,
+        "coldMs": 63.658
+      },
+      "after": {
+        "medianMs": 1.433,
+        "p95Ms": 2.124,
+        "coldMs": 54.499
+      },
+      "improvementPercent": 28.8
+    },
+    {
+      "scenario": "start",
+      "fidelity": "ultra",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 4.387,
+        "p95Ms": 6.276,
+        "coldMs": 166.491
+      },
+      "after": {
+        "medianMs": 2.501,
+        "p95Ms": 3.934,
+        "coldMs": 162.962
+      },
+      "improvementPercent": 43.0
+    },
+    {
+      "scenario": "boss",
+      "fidelity": "sixteen-bit",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.895,
+        "p95Ms": 1.439,
+        "coldMs": 14.405
+      },
+      "after": {
+        "medianMs": 0.788,
+        "p95Ms": 1.083,
+        "coldMs": 13.361
+      },
+      "improvementPercent": 11.9
+    },
+    {
+      "scenario": "boss",
+      "fidelity": "high",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 2.013,
+        "p95Ms": 3.25,
+        "coldMs": 58.853
+      },
+      "after": {
+        "medianMs": 1.364,
+        "p95Ms": 2.167,
+        "coldMs": 53.719
+      },
+      "improvementPercent": 32.2
+    },
+    {
+      "scenario": "boss",
+      "fidelity": "ultra",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 4.72,
+        "p95Ms": 6.553,
+        "coldMs": 165.088
+      },
+      "after": {
+        "medianMs": 3.079,
+        "p95Ms": 4.539,
+        "coldMs": 169.708
+      },
+      "improvementPercent": 34.8
+    },
+    {
+      "scenario": "pit",
+      "fidelity": "sixteen-bit",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.969,
+        "p95Ms": 1.612,
+        "coldMs": 13.962
+      },
+      "after": {
+        "medianMs": 0.886,
+        "p95Ms": 1.405,
+        "coldMs": 15.127
+      },
+      "improvementPercent": 8.6
+    },
+    {
+      "scenario": "pit",
+      "fidelity": "high",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 2.283,
+        "p95Ms": 3.235,
+        "coldMs": 55.582
+      },
+      "after": {
+        "medianMs": 1.597,
+        "p95Ms": 2.65,
+        "coldMs": 54.046
+      },
+      "improvementPercent": 30.1
+    },
+    {
+      "scenario": "pit",
+      "fidelity": "ultra",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 4.758,
+        "p95Ms": 7.74,
+        "coldMs": 172.344
+      },
+      "after": {
+        "medianMs": 2.946,
+        "p95Ms": 4.834,
+        "coldMs": 173.407
+      },
+      "improvementPercent": 38.1
+    },
+    {
+      "scenario": "platforms",
+      "fidelity": "sixteen-bit",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.907,
+        "p95Ms": 1.409,
+        "coldMs": 15.345
+      },
+      "after": {
+        "medianMs": 0.813,
+        "p95Ms": 1.163,
+        "coldMs": 14.528
+      },
+      "improvementPercent": 10.4
+    },
+    {
+      "scenario": "platforms",
+      "fidelity": "high",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.936,
+        "p95Ms": 3.549,
+        "coldMs": 68.402
+      },
+      "after": {
+        "medianMs": 1.469,
+        "p95Ms": 2.384,
+        "coldMs": 65.435
+      },
+      "improvementPercent": 24.2
+    },
+    {
+      "scenario": "platforms",
+      "fidelity": "ultra",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 4.491,
+        "p95Ms": 8.642,
+        "coldMs": 172.397
+      },
+      "after": {
+        "medianMs": 2.942,
+        "p95Ms": 4.799,
+        "coldMs": 170.584
+      },
+      "improvementPercent": 34.5
+    },
+    {
+      "scenario": "turn",
+      "fidelity": "sixteen-bit",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.344,
+        "p95Ms": 2.232,
+        "coldMs": 18.771
+      },
+      "after": {
+        "medianMs": 1.154,
+        "p95Ms": 1.847,
+        "coldMs": 18.617
+      },
+      "improvementPercent": 14.1
+    },
+    {
+      "scenario": "turn",
+      "fidelity": "high",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 3.245,
+        "p95Ms": 4.865,
+        "coldMs": 69.614
+      },
+      "after": {
+        "medianMs": 2.58,
+        "p95Ms": 3.974,
+        "coldMs": 68.713
+      },
+      "improvementPercent": 20.5
+    },
+    {
+      "scenario": "turn",
+      "fidelity": "ultra",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 5.973,
+        "p95Ms": 8.454,
+        "coldMs": 192.443
+      },
+      "after": {
+        "medianMs": 4.264,
+        "p95Ms": 6.515,
+        "coldMs": 175.322
+      },
+      "improvementPercent": 28.6
+    },
+    {
+      "scenario": "cow",
+      "fidelity": "sixteen-bit",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 2.724,
+        "p95Ms": 3.407,
+        "coldMs": 28.146
+      },
+      "after": {
+        "medianMs": 2.428,
+        "p95Ms": 3.024,
+        "coldMs": 26.007
+      },
+      "improvementPercent": 10.9
+    },
+    {
+      "scenario": "cow",
+      "fidelity": "high",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 5.876,
+        "p95Ms": 7.332,
+        "coldMs": 82.474
+      },
+      "after": {
+        "medianMs": 4.832,
+        "p95Ms": 6.356,
+        "coldMs": 81.425
+      },
+      "improvementPercent": 17.8
+    },
+    {
+      "scenario": "cow",
+      "fidelity": "ultra",
+      "frames": 90,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 11.407,
+        "p95Ms": 14.539,
+        "coldMs": 222.882
+      },
+      "after": {
+        "medianMs": 8.224,
+        "p95Ms": 10.347,
+        "coldMs": 183.875
+      },
+      "improvementPercent": 27.9
+    }
+  ],
+  "baseline": "6d312f8",
+  "date": "2026-09-12"
+}

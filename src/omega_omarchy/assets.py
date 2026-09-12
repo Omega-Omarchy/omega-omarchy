@@ -1993,6 +1993,22 @@ def sync_legacy_art(root: Path) -> None:
         Image.open(root / "fidelity" / "sixteen-bit" / "bosses" / f"{boss}.png").save(root / "bosses" / f"{boss}-8.png")
 
 
+def emit_parallax_bounds(root: Path) -> None:
+    """Keep transparent-padding scans out of the runtime's first frame."""
+    import json
+
+    for folder in sorted((root / "fidelity").glob("*/bg")):
+        for directory in [folder, *sorted(path for path in folder.iterdir() if path.is_dir())]:
+            metadata = {}
+            for path in sorted(directory.glob("parallax-*.png")):
+                with Image.open(path) as source:
+                    bbox = source.convert("RGBA").getchannel("A").getbbox()
+                    x, y, right, bottom = bbox or (0, 0, 0, 0)
+                    metadata[path.name] = {"size": list(source.size), "bounds": [x, y, right - x, bottom - y]}
+            if metadata:
+                (directory / "parallax-bounds.json").write_text(json.dumps(metadata, sort_keys=True) + "\n")
+
+
 def build_assets(root: Path | None = None) -> Path:
     root = Path(root) if root else asset_dir()
     resolved = root.resolve()
@@ -2051,6 +2067,7 @@ def build_assets(root: Path | None = None) -> Path:
     if omarchy_font_license.is_file():
         shutil.copyfile(omarchy_font_license, ui / "OMARCHY-FONT-LICENSE.txt")
     emit_fidelity_art(root)
+    emit_parallax_bounds(root)
     from .refinement_art import emit_refinement_art
 
     emit_refinement_art(root)
