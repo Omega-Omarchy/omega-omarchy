@@ -23,6 +23,14 @@ separately; deployment does not commit or push it.
   installer post-generation hold, and the fix for the window taking multiple
   seconds to close mid-installation while a procedural-generation step was
   in flight. Previous releases remain available.
+- Web glyph-fallback fix: `/srv/omegaomarchy/releases/20260912T055255Z/`; the
+  prior release's per-character font-fallback check relied on
+  `pygame.font.Font.metrics()` to detect missing glyphs, which matched the
+  primary credits font's real coverage exactly on native SDL_ttf but
+  disagreed under pygbag's WebAssembly build, rendering five accented
+  contributor-name characters (Ć, İ, Ł, Ř, Ş) blank in the browser credit
+  roll. Replaced with a fixed, fontTools-verified set of the primary font's
+  actual gaps. Previous releases remain available.
 - Virtual host: `/etc/nginx/sites-available/omegaomarchy.org`, enabled by a
   matching symlink in `sites-enabled/`; source: `omegaomarchy.nginx` here.
 - ACME webroot: `/srv/omegaomarchy/acme`.
