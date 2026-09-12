@@ -50,3 +50,20 @@ copyButton.addEventListener('click', async () => {
     status.textContent = 'Commands selected. Copy them using your browser’s copy command.';
   }
 });
+
+// A touch-primary device with no attached mouse/trackpad reports a coarse
+// pointer and no hover, regardless of what the user agent string claims
+// (including an iPad in desktop-site mode). Redirected here from /play/
+// too, via the ?nomobile flag, since that page can't rely on this script.
+const params = new URLSearchParams(location.search);
+const isMobile = matchMedia('(hover: none) and (pointer: coarse)').matches
+  || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+if (isMobile || params.has('nomobile')) {
+  const notice = document.querySelector('#mobile-notice');
+  notice.hidden = false;
+  document.querySelectorAll('.nav-play, #play-cta').forEach(link => { link.href = '#mobile-notice'; });
+  if (params.has('nomobile')) {
+    notice.scrollIntoView({block: 'center'});
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
+}

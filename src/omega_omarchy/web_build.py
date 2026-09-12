@@ -299,7 +299,17 @@ def _repair_pygbag_launcher(built: Path) -> None:
     shutil.copyfile(vendor / "LICENSE", built / "BROWSERFS-LICENSE.txt")
     index = built / "index.html"
     html = index.read_text(encoding="utf-8")
-    early_loader = '<script src="browserfs.min.js"></script>\n'
+    # A touch-primary device (no attached mouse/trackpad) can't play; sending
+    # it into the ~60MB WebAssembly download just to hit unplayable input is
+    # worse than not starting at all. This runs before anything else on the
+    # page, including BrowserFS, so the redirect wins the race with pygbag's
+    # loader script. The landing page shows the actual explanation.
+    mobile_gate = (
+        "<script>if (matchMedia('(hover: none) and (pointer: coarse)').matches"
+        " || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))"
+        " location.replace('/?nomobile=1');</script>\n"
+    )
+    early_loader = mobile_gate + '<script src="browserfs.min.js"></script>\n'
     if not html.startswith(early_loader):
         html = early_loader + html
     html, browserfs_replacements = re.subn(
