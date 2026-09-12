@@ -31,6 +31,13 @@ separately; deployment does not commit or push it.
   contributor-name characters (Ć, İ, Ł, Ř, Ş) blank in the browser credit
   roll. Replaced with a fixed, fontTools-verified set of the primary font's
   actual gaps. Previous releases remain available.
+- News pinning: `/srv/omegaomarchy/releases/20260912T060345Z/`; the freshest
+  News-type announcement is now pinned to the top of the News page's
+  unfiltered "All" feed by default (a newer announcement automatically
+  supplants it; an entry explicitly marked `pinned: true` overrides the
+  default), instead of announcements sorting purely by date alongside
+  commits and releases. Applied identically to the static build and the
+  client-side GitHub-merged feed. Previous releases remain available.
 - Virtual host: `/etc/nginx/sites-available/omegaomarchy.org`, enabled by a
   matching symlink in `sites-enabled/`; source: `omegaomarchy.nginx` here.
 - ACME webroot: `/srv/omegaomarchy/acme`.
