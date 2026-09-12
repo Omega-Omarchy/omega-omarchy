@@ -363,7 +363,7 @@ class CreditsRenderer:
             self.text(surf, "BY ROYAL APPOINTMENT", 160, 20, 10)
             for x, identity, name in [(85, "omarch-king", "The Omarch King"), (235, "omarch-queen", "The Omarch Queen")]:
                 pose = "side-idle" if reduced else f"side-walk-{tick // 16 % 4}"
-                image = r._load(f"character-packs/{identity}/{r._active_fid(sim)}/{pose}.png")
+                image = r._load(f"character-packs/{identity}/{r._fid_cur}/{pose}.png")
                 self.sprite(surf, image, x, 131, 84, width=94)
                 self.text(surf, name, x, 143, 10)
         elif kind == "mobs":

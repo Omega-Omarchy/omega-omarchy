@@ -148,6 +148,8 @@ class Renderer:
         self._tile_blit_cache: dict[tuple[Any, ...], Surface] = {}
         self._parallax_scale_cache: dict[tuple[Any, ...], Surface] = {}
         self._icon_fit_cache: dict[tuple[str, str, tuple[int, int]], Surface] = {}
+        self._fit_text_cache: dict[tuple[Any, ...], Surface] = {}
+        self._blit_text_cache: dict[tuple[Any, ...], Surface] = {}
         self._flash_overlay: Surface | None = None
         self._vs = 1
         self._fid_cur = "ultra"
@@ -167,7 +169,11 @@ class Renderer:
         return self.cache[rel]
 
     def _fid(self, sim: GameSim, rel: str) -> Surface:
-        fid = self._active_fid(sim)
+        # frame() resolves and stashes the fidelity once via _layout(); sim
+        # never mutates mid-frame, so every other call site in the same
+        # frame can reuse it instead of re-deriving it (a dict copy plus a
+        # handful of lookups) per tile/actor/icon.
+        fid = self._fid_cur
         cache_key = (fid, rel)
         key = self._fid_key_cache.get(cache_key)
         if key is None:
@@ -206,11 +212,14 @@ class Renderer:
             if warning not in sim.messages:
                 sim.messages.append(warning)
         if root:
-            path = root / self._active_fid(sim) / f"{pose}.png"
+            # Called directly (e.g. character-pack validation) without a
+            # preceding frame(), so _fid_cur can be stale here; re-derive.
+            fid = self._active_fid(sim)
+            path = root / fid / f"{pose}.png"
             key_path = str(path)
             if key_path not in self.cache:
                 pixels = decode_png(path.read_bytes())
-                self.cache[key_path] = pygame.image.frombytes(pixels, pose_size(pose, self._active_fid(sim)), "RGBA").convert_alpha()
+                self.cache[key_path] = pygame.image.frombytes(pixels, pose_size(pose, fid), "RGBA").convert_alpha()
             return self.cache[key_path]
         # Legacy custom records had no complete art pack. Resolve the entire
         # character to David consistently instead of mixing partial recolors.
@@ -282,7 +291,7 @@ class Renderer:
         position changes. Re-running _fit for each instance every frame was
         pure waste at higher fidelity, where scaling cost the most.
         """
-        cache_key = (self._active_fid(sim), rel, size)
+        cache_key = (self._fid_cur, rel, size)
         fitted = self._icon_fit_cache.get(cache_key)
         if fitted is None:
             fitted = self._fit(self._fid(sim, rel), size)
@@ -309,7 +318,13 @@ class Renderer:
 
     def blit_text(self, surf: Surface, text: str, xy: tuple[int, int], color: tuple[int, int, int] | None = None, *, fid: str | None = None) -> None:
         color = self._legible_text_color(color or PALETTE["bright_green"])
-        img = self._font().render(text, True, color)
+        cache_key = (text, color, self._vs)
+        img = self._blit_text_cache.get(cache_key)
+        if img is None:
+            img = self._font().render(text, True, color)
+            if len(self._blit_text_cache) >= 512:
+                self._blit_text_cache.clear()
+            self._blit_text_cache[cache_key] = img
         surf.blit(img, self._lp(*xy))
 
     def fit_text(
@@ -328,20 +343,29 @@ class Renderer:
 
         color = self._legible_text_color(color or PALETTE["bright_green"])
         x, y, w, h = rect
-        limit = max(1, w * self._vs)
-        chosen = self._font(logical_size=min_size, bold=bold)
-        for size in range(max_size, min_size - 1, -1):
-            candidate = self._font(logical_size=size, bold=bold)
-            if candidate.size(str(text))[0] <= limit:
-                chosen = candidate
-                break
-        shown = str(text)
-        if chosen.size(shown)[0] > limit:
-            ellipsis = "…"
-            while shown and chosen.size(shown + ellipsis)[0] > limit:
-                shown = shown[:-1]
-            shown = shown.rstrip() + ellipsis
-        image = chosen.render(shown, True, color)
+        # The image only depends on the text/width/style, not where it lands,
+        # so most HUD labels (unchanged frame to frame) hit this cache instead
+        # of re-running the size search and re-rasterizing every call.
+        cache_key = (str(text), w, color, max_size, min_size, bold, self._vs)
+        image = self._fit_text_cache.get(cache_key)
+        if image is None:
+            limit = max(1, w * self._vs)
+            chosen = self._font(logical_size=min_size, bold=bold)
+            for size in range(max_size, min_size - 1, -1):
+                candidate = self._font(logical_size=size, bold=bold)
+                if candidate.size(str(text))[0] <= limit:
+                    chosen = candidate
+                    break
+            shown = str(text)
+            if chosen.size(shown)[0] > limit:
+                ellipsis = "…"
+                while shown and chosen.size(shown + ellipsis)[0] > limit:
+                    shown = shown[:-1]
+                shown = shown.rstrip() + ellipsis
+            image = chosen.render(shown, True, color)
+            if len(self._fit_text_cache) >= 512:
+                self._fit_text_cache.clear()
+            self._fit_text_cache[cache_key] = image
         px = x * self._vs
         if align == "center":
             px += (w * self._vs - image.get_width()) // 2
@@ -379,8 +403,16 @@ class Renderer:
     def _panel(self, surf: Surface, rect: tuple[int, int, int, int], *, fill: tuple[int, int, int] = (8, 10, 18)) -> None:
         pygame.draw.rect(surf, fill, self._lr(*rect))
         try:
-            frame = self._load(f"fidelity/{self._fid_cur}/ui/panel.png")
-            surf.blit(self._fit(frame, (rect[2] * self._vs, rect[3] * self._vs)), self._lp(rect[0], rect[1]))
+            size = (rect[2] * self._vs, rect[3] * self._vs)
+            fit_key = (self._fid_cur, "ui/panel.png", size)
+            fitted = self._icon_fit_cache.get(fit_key)
+            if fitted is None:
+                frame = self._load(f"fidelity/{self._fid_cur}/ui/panel.png")
+                fitted = self._fit(frame, size)
+                if len(self._icon_fit_cache) >= 256:
+                    self._icon_fit_cache.clear()
+                self._icon_fit_cache[fit_key] = fitted
+            surf.blit(fitted, self._lp(rect[0], rect[1]))
         except Exception:
             pygame.draw.rect(surf, BRONZE if self._fid_cur == "ultra" else LIME_MARK, self._lr(*rect), max(1, self._vs))
 
@@ -463,8 +495,8 @@ class Renderer:
         if missing_key in self._character_errors:
             pygame.draw.rect(surf, (42, 27, 21), self._lr(8, 2, 304, 14))
             self.fit_text(surf, f"Missing {missing_key[0]} art · using David · reinstall saved pack", (12, 3, 296, 12), PALETTE["yellow"], max_size=7, min_size=5)
-        fid, disp = migrate_quality(sim.quality, sim.settings)
-        fid = self._active_fid(sim)
+        _, disp = migrate_quality(sim.quality, sim.settings)
+        fid = self._fid_cur
         disp = getattr(sim, "display", None) or disp
         crt = (sim.settings.get("crt") or {}) if sim.settings else {}
         reduced = bool(sim.settings.get("reducedMotion") or sim.accessibility.reduced_motion)
@@ -1632,7 +1664,7 @@ class Renderer:
         page = sim.installer.gum_page()
         if page is None:
             return
-        fid = self._active_fid(sim)
+        fid = self._fid_cur
         row_h = 13 if fid == "ultra" else 12 if fid == "high" else 11
         self.fit_text(surf, page["header"], (24, 54, 270, 12), PALETTE["fg"], max_size=10, min_size=7, bold=True)
         if page.get("ownerHint"):
@@ -1830,7 +1862,7 @@ class Renderer:
     def _world(self, surf: Surface, sim: GameSim) -> None:
         if not sim.tiles or sim.body is None:
             return
-        fid = self._active_fid(sim)
+        fid = self._fid_cur
         skies = {
             "sixteen-bit": (48, 64, 120),
             "high": (18, 16, 36),
@@ -2270,7 +2302,16 @@ class Renderer:
                 boss_height = 72 if entity.extra.get("goliath_stage") == "penguin" else BOSS_WORLD_HEIGHT
                 eh = int(animal_height * vs) if entity.kind == "enemy" else int(boss_height * vs)
                 ew = max(1, int(image.get_width() / max(1, image.get_height()) * eh))
-                image = self._fit(image, (ew, eh))
+                # Every on-screen enemy/boss re-ran this base fit every frame
+                # before the wobble transform below even got to its own cache.
+                fit_key = (self._fid_cur, rel, ew, eh)
+                fitted = self._icon_fit_cache.get(fit_key)
+                if fitted is None:
+                    fitted = self._fit(image, (ew, eh))
+                    if len(self._icon_fit_cache) >= 256:
+                        self._icon_fit_cache.clear()
+                    self._icon_fit_cache[fit_key] = fitted
+                image = fitted
                 phase = float(entity.extra.get("phase") or (sim.tick + int(entity.x) * 5) * 0.08)
                 angle = 0.0
                 scale_x = 1.0
@@ -3302,7 +3343,7 @@ class Renderer:
         self.blit_text(surf, label, (8, 164), PALETTE["bright_green"])
 
     def _ots(self, surf: Surface, sim: GameSim) -> None:
-        fid = self._active_fid(sim)
+        fid = self._fid_cur
         ots, ots_x, ots_y = self._ots_layout(sim)
         shade = Surface((self._iw, self._ih), pygame.SRCALPHA)
         shade.fill((0, 0, 0, 50 if fid == "sixteen-bit" else 80))
