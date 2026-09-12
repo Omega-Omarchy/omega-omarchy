@@ -38,6 +38,14 @@ separately; deployment does not commit or push it.
   default), instead of announcements sorting purely by date alongside
   commits and releases. Applied identically to the static build and the
   client-side GitHub-merged feed. Previous releases remain available.
+- Hero launch-note link and wandering-logo tweaks: `/srv/omegaomarchy/releases/20260912T062054Z/`;
+  the "Chapter 01 / Open-source launch" hero note is now an undecorated link
+  to whatever pin_to_top currently promotes on the News page (matching the
+  omarchy.org convention of that badge always hooking the latest post), with
+  its date wrapping onto its own line at narrow widths instead of the whole
+  phrase. The wandering Omega logo drift doubled in speed and now bursts on
+  every edge bounce instead of at a random interval. Previous releases
+  remain available.
 - Virtual host: `/etc/nginx/sites-available/omegaomarchy.org`, enabled by a
   matching symlink in `sites-enabled/`; source: `omegaomarchy.nginx` here.
 - ACME webroot: `/srv/omegaomarchy/acme`.
