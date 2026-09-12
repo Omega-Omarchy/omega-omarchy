@@ -1,4 +1,5 @@
 import copy
+from datetime import date
 import json
 import math
 import os
@@ -105,6 +106,25 @@ def test_manifest_is_reproducible_and_contains_every_pinned_name_and_accepted_ca
     assert git_names.count("JEREMY DIXON") == len(headings)
     extended = next(group["names"] for group in foundation["groups"] if group.get("compact"))
     assert [name for row in first["rows"] if row.get("compact") for name in row["names"]] == [name.upper() for name in extended]
+
+
+def test_omacom_foundation_snapshot_is_not_stale():
+    """Unlike Git-derived credits, the foundation/patrons roster is a hand-copied
+    snapshot of external pages (see omacom-foundation.json's `sources`). Nothing
+    re-fetches it, so this is the only tripwire that catches drift: it fails
+    ./scripts/omega release-check (run on every push) once the snapshot is old
+    enough that the source pages have plausibly changed, prompting a manual
+    re-check and a bumped `retrieved` date rather than letting it rot silently.
+    """
+    root = Path(__file__).resolve().parents[1]
+    foundation = json.loads((root / "credits/omacom-foundation.json").read_text())
+    retrieved = date.fromisoformat(foundation["retrieved"])
+    age_days = (date.today() - retrieved).days
+    assert age_days <= 90, (
+        f"credits/omacom-foundation.json was retrieved {age_days} days ago. "
+        f"Re-check {foundation['sources']}, update the groups if they changed, "
+        "and bump `retrieved` to today."
+    )
 
 
 @pytest.mark.parametrize("field", ["artist", "author", None])
