@@ -1,11 +1,12 @@
 from pathlib import Path
 import json
 import re
+import shutil
 import subprocess
 import tempfile
 import unittest
 
-from news_build import build_news
+from news_build import build_news, pin_to_top
 
 
 class NewsBuildTests(unittest.TestCase):
@@ -29,6 +30,46 @@ class NewsBuildTests(unittest.TestCase):
             self.assertNotIn('test@example.invalid', page)
             self.assertIn('href="/news/" aria-current="page"', page)
             self.assertIn('href="/#game">Game</a>', page)
+
+    def test_pin_to_top_defaults_to_freshest_news_and_a_newer_one_supplants_it(self):
+        older = {"id": "older", "type": "news", "date": "2026-09-01T00:00:00Z"}
+        commit = {"id": "commit-a", "type": "commit", "date": "2026-09-04T00:00:00Z"}
+        newer = {"id": "newer", "type": "news", "date": "2026-09-10T00:00:00Z"}
+        self.assertEqual([e["id"] for e in pin_to_top([commit, older])], ["older", "commit-a"])
+        self.assertEqual([e["id"] for e in pin_to_top([newer, commit, older])], ["newer", "commit-a", "older"])
+        self.assertEqual([e["id"] for e in pin_to_top([commit])], ["commit-a"])
+
+    def test_pin_to_top_prefers_an_explicit_pin_over_the_freshest_news_entry(self):
+        pinned_older = {"id": "older", "type": "news", "date": "2026-09-01T00:00:00Z", "pinned": True}
+        newer = {"id": "newer", "type": "news", "date": "2026-09-10T00:00:00Z"}
+        self.assertEqual([e["id"] for e in pin_to_top([newer, pinned_older])], ["older", "newer"])
+
+    def test_build_rejects_more_than_one_pinned_announcement(self):
+        source = Path(__file__).resolve().parent
+        with tempfile.TemporaryDirectory() as temp:
+            fake_source = Path(temp) / "source"
+            shutil.copytree(source, fake_source)
+            editorial = json.loads((fake_source / "news/editorial.json").read_text())
+            editorial.append({**editorial[0], "id": "second-pinned-entry", "pinned": True})
+            editorial[0]["pinned"] = True
+            (fake_source / "news/editorial.json").write_text(json.dumps(editorial))
+            root = Path(temp) / "root"
+            root.mkdir()
+            with self.assertRaises(ValueError):
+                build_news(fake_source, root, root)
+
+    def test_build_rejects_a_non_true_pinned_value(self):
+        source = Path(__file__).resolve().parent
+        with tempfile.TemporaryDirectory() as temp:
+            fake_source = Path(temp) / "source"
+            shutil.copytree(source, fake_source)
+            editorial = json.loads((fake_source / "news/editorial.json").read_text())
+            editorial[0]["pinned"] = "yes"
+            (fake_source / "news/editorial.json").write_text(json.dumps(editorial))
+            root = Path(temp) / "root"
+            root.mkdir()
+            with self.assertRaises(ValueError):
+                build_news(fake_source, root, root)
 
     def test_source_archive_still_has_editorial_news(self):
         source = Path(__file__).resolve().parent

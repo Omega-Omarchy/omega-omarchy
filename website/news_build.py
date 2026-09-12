@@ -30,6 +30,19 @@ def commits(root: Path) -> list[dict]:
     return entries
 
 
+def pin_to_top(entries: list[dict]) -> list[dict]:
+    """Keep the freshest News announcement at the top of the All feed by
+    default. A newer News entry automatically takes over that spot as it's
+    added; an entry explicitly marked pinned overrides the default choice
+    regardless of date."""
+    pin = next((e for e in entries if e.get("pinned")), None)
+    if pin is None:
+        pin = next((e for e in entries if e["type"] == "news"), None)
+    if pin is None:
+        return entries
+    return [pin, *(e for e in entries if e is not pin)]
+
+
 def render_entry(entry: dict) -> str:
     e = lambda value: escape(str(value), quote=True)
     date = datetime.fromisoformat(entry["date"]).astimezone(timezone.utc)
@@ -45,6 +58,7 @@ def render_entry(entry: dict) -> str:
 def build_news(source: Path, out: Path, root: Path) -> dict:
     editorial = json.loads((source / "news/editorial.json").read_text())
     ids = set()
+    pinned = 0
     for item in editorial:
         if item["type"] != "news" or not re.fullmatch(r"[a-z0-9-]+", item["id"]) or item["id"] in ids:
             raise ValueError("News announcements need unique lowercase slug IDs and type news.")
@@ -52,10 +66,16 @@ def build_news(source: Path, out: Path, root: Path) -> dict:
             raise ValueError("Announcement URLs must point to their News permalink.")
         if datetime.fromisoformat(item["date"]).tzinfo is None:
             raise ValueError("News dates must include a timezone offset.")
+        if "pinned" in item and item["pinned"] is not True:
+            raise ValueError("An announcement's pinned field, when present, must be true.")
+        pinned += item.get("pinned", False)
         ids.add(item["id"])
+    if pinned > 1:
+        raise ValueError("Only one announcement may set pinned: true.")
     snapshot = {"repository": REPOSITORY, "builtAt": datetime.now(timezone.utc).isoformat(),
                 "editorial": editorial, "commits": commits(root), "releases": []}
     entries = sorted(editorial + snapshot["commits"], key=lambda item: datetime.fromisoformat(item["date"]), reverse=True)
+    entries = pin_to_top(entries)
     home = (source / "index.html").read_text()
     header = re.search(r'<header class="site-header">.*?</header>', home, re.S).group(0)
     header = header.replace('href="/news/"', 'href="/news/" aria-current="page"')

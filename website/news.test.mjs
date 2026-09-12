@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {commitEntries, releaseEntries, mergeEntries, repositoryUpdate, fetchRepository, REPO_URL} from './news-model.mjs';
+import {commitEntries, releaseEntries, mergeEntries, pinToTop, repositoryUpdate, fetchRepository, REPO_URL} from './news-model.mjs';
 
 const sha = 'a'.repeat(40);
 const rawCommit = {sha, html_url: 'javascript:bad()', commit: {message: '<script>example</script>\nBody stays in GitHub', committer: {date: '2026-09-04T05:54:38Z'}}};
@@ -41,6 +41,21 @@ test('Unavailable endpoints preserve their snapshot while successful endpoints u
   assert.ok(partial.entries.some(e => e.id === `commit-${sha}`));
   assert.equal(repositoryUpdate(snapshot, [failure, failure]).entries.length, 2);
   assert.equal(repositoryUpdate(snapshot, [{status: 'fulfilled', value: []}, releaseSuccess]).entries.length, 2);
+});
+
+test('The freshest News entry is pinned to the top by default and a newer one supplants it', () => {
+  const older = {id: 'older-news', type: 'news', date: '2026-09-01T00:00:00Z'};
+  const commit = commitEntries([rawCommit])[0]; // dated 2026-09-04, newer than `older`
+  assert.deepEqual(pinToTop([commit, older]).map(e => e.id), ['older-news', `commit-${sha}`]);
+  const newer = {id: 'newer-news', type: 'news', date: '2026-09-10T00:00:00Z'};
+  assert.deepEqual(pinToTop([newer, commit, older]).map(e => e.id), ['newer-news', `commit-${sha}`, 'older-news']);
+  assert.deepEqual(pinToTop([commit]).map(e => e.id), [`commit-${sha}`]);
+});
+
+test('An explicit pinned entry takes precedence over the freshest News entry', () => {
+  const pinnedOlder = {id: 'pinned-older', type: 'news', date: '2026-09-01T00:00:00Z', pinned: true};
+  const newer = {id: 'newer-news', type: 'news', date: '2026-09-10T00:00:00Z'};
+  assert.deepEqual(pinToTop([newer, pinnedOlder]).map(e => e.id), ['pinned-older', 'newer-news']);
 });
 
 test('Public requests omit credentials, normalize results, and reject API failures', async () => {

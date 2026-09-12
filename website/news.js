@@ -1,4 +1,4 @@
-import {mergeEntries, fetchRepository, repositoryUpdate} from './news-model.mjs';
+import {mergeEntries, pinToTop, fetchRepository, repositoryUpdate} from './news-model.mjs';
 
 const snapshot = JSON.parse(document.querySelector('#news-snapshot').textContent);
 const feed = document.querySelector('#news-feed');
@@ -17,7 +17,8 @@ function element(tag, className, text) {
 }
 
 function render() {
-  const visible = entries.filter(entry => filter === 'all' || entry.type === filter);
+  let visible = entries.filter(entry => filter === 'all' || entry.type === filter);
+  if (filter === 'all') visible = pinToTop(visible);
   const fragment = document.createDocumentFragment();
   for (const entry of visible) {
     const article = element('article', 'news-entry');

@@ -37,6 +37,16 @@ export function mergeEntries(editorial, commits, releases) {
   return [...unique.values()].sort((a, b) => Date.parse(b.date) - Date.parse(a.date) || a.id.localeCompare(b.id));
 }
 
+// Keep the freshest News announcement at the top of the All feed by default.
+// A newer News entry automatically takes over that spot as it's added; an
+// entry explicitly marked pinned overrides the default choice regardless of
+// date. `entries` is assumed sorted newest-first, as mergeEntries returns.
+export function pinToTop(entries) {
+  const pin = entries.find(entry => entry.pinned) ?? entries.find(entry => entry.type === 'news');
+  if (!pin) return entries;
+  return [pin, ...entries.filter(entry => entry !== pin)];
+}
+
 export function repositoryUpdate(snapshot, results) {
   const [commits, releases] = results.map((result, index) => result.status === 'fulfilled'
     ? result.value : snapshot[index === 0 ? 'commits' : 'releases']);
