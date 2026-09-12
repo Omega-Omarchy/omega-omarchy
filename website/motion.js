@@ -1,4 +1,4 @@
-import {ASSEMBLY, layout, sceneAt, effectsEnabled, clamp, ROBOT_DETAILS, robotDetail, floatingLogoAt, logoBurstAt} from './motion-model.mjs';
+import {ASSEMBLY, layout, sceneAt, effectsEnabled, clamp, robotDetail, floatingLogoAt, logoBurstAt} from './motion-model.mjs';
 
 const stage = document.querySelector('.logo-stage');
 const canvas = document.querySelector('#robot-stage');
@@ -18,19 +18,25 @@ function loadImage(src) {
   });
 }
 
+async function loadPack(detail) {
+  const images = await Promise.all(parts.map(name => loadImage(`assets/robots/${detail}/custodian-${name}.png`)));
+  return Object.fromEntries(parts.map((name, index) => [name, images[index]]));
+}
+
 async function start() {
   const ctx = canvas.getContext('2d');
   const fx = field.getContext('2d');
   if (!ctx || !fx) return;
-  const loaded = await Promise.all([
-    ...ROBOT_DETAILS.flatMap(detail => parts.map(name => loadImage(`assets/robots/${detail}/custodian-${name}.png`))),
-    loadImage('assets/wordmark.png'), loadImage('assets/icon.png'),
-  ]);
-  const packs = Object.fromEntries(ROBOT_DETAILS.map((detail, tier) => [detail,
-    Object.fromEntries(parts.map((name, index) => [name, loaded[tier * parts.length + index]]))]));
+  // Only the tier actually on screen loads up front; the other two (used
+  // only if the showcase's fidelity toggle is touched) load on first
+  // request. Fetching and decoding all three eagerly competed with the
+  // choreography's first frames for a moment on a cold cache.
   let detail = robotDetail(document.documentElement.dataset.previewDetail);
-  let art = packs[detail];
-  const wordmark = loaded[parts.length * ROBOT_DETAILS.length], emblem = loaded[parts.length * ROBOT_DETAILS.length + 1];
+  const [initialPack, wordmark, emblem] = await Promise.all([
+    loadPack(detail), loadImage('assets/wordmark.png'), loadImage('assets/icon.png'),
+  ]);
+  const packs = {[detail]: Promise.resolve(initialPack)};
+  let art = initialPack;
   const tinted = document.createElement('canvas');
   tinted.width = wordmark.width; tinted.height = wordmark.height;
   const tint = tinted.getContext('2d');
@@ -296,9 +302,14 @@ async function start() {
   reduced.addEventListener('change', preferenceChanged);
   finePointer.addEventListener('change', () => { drawField(0); wake(); });
   document.addEventListener('omega-preview-detail', event => {
-    detail = robotDetail(event.detail);
-    art = packs[detail];
-    drawStage();
+    const next = robotDetail(event.detail);
+    detail = next;
+    // A failed fetch drops its cache entry so a later switch can retry it.
+    const pending = packs[next] ??= loadPack(next).catch(error => { delete packs[next]; throw error; });
+    pending.then(pack => {
+      // Ignore a stale resolution if the user switched again meanwhile.
+      if (detail === next) { art = pack; drawStage(); }
+    }).catch(() => { /* Keep showing the last successfully loaded tier. */ });
   });
   resize();
   palette();
