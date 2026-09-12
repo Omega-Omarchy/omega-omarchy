@@ -9,6 +9,14 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Opaque-background, panel, and cannon optimization: `/srv/omegaomarchy/releases/20260912T223706Z/`;
+  ships code `3cf5cae` and credits/build revision `5eb5838`. All 24 isolated
+  browser cases improved median render time by a further 21.7–44.9% relative
+  to `14f7590`, with sampled pixels, camera output, and gameplay state matching.
+  The 80 focused tests passed. Every uploaded file matched the local build
+  before promotion, and changed URLs were purged from Cloudflare. Bundle
+  SHA-256: `798da9beffc414af8dc581ef2847a2c52cd04a0ae473037231869a4e159a167b`.
+  Previous release `20260912T221939Z` remains available for rollback.
 - Transparent-padding and sprite-cache optimization: `/srv/omegaomarchy/releases/20260912T221939Z/`;
   ships code `e00340c` and credits/build revision `14f7590`. Browser comparisons
   improved all 18 measured medians while preserving sampled pixels and camera
