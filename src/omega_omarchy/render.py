@@ -147,6 +147,7 @@ class Renderer:
         self._actor_transform_cache: dict[tuple[Any, ...], Surface] = {}
         self._tile_blit_cache: dict[tuple[Any, ...], Surface] = {}
         self._parallax_scale_cache: dict[tuple[Any, ...], Surface] = {}
+        self._icon_fit_cache: dict[tuple[str, str, tuple[int, int]], Surface] = {}
         self._flash_overlay: Surface | None = None
         self._vs = 1
         self._fid_cur = "ultra"
@@ -156,6 +157,7 @@ class Renderer:
         self._stage_transition_active = False
         self._character_roots: dict[tuple[str, str], Path | None] = {}
         self._character_errors: dict[tuple[str, str], str] = {}
+        self._fid_key_cache: dict[tuple[str, str], str] = {}
         self._credits_renderer = None
 
     def _load(self, rel: str) -> Surface:
@@ -166,11 +168,13 @@ class Renderer:
 
     def _fid(self, sim: GameSim, rel: str) -> Surface:
         fid = self._active_fid(sim)
-        candidate = self.root / "fidelity" / fid / rel
-        if candidate.is_file():
-            key = f"fidelity/{fid}/{rel}"
-            return self._load(key)
-        return self._load(rel)
+        cache_key = (fid, rel)
+        key = self._fid_key_cache.get(cache_key)
+        if key is None:
+            candidate = self.root / "fidelity" / fid / rel
+            key = f"fidelity/{fid}/{rel}" if candidate.is_file() else rel
+            self._fid_key_cache[cache_key] = key
+        return self._load(key)
 
     def _active_fid(self, sim: GameSim) -> str:
         if sim.scene == "installer" or (sim.scene in {"credits", "chapter-credits", "ending"} and sim.credits_return_scene == "installer"):
@@ -269,6 +273,23 @@ class Renderer:
         if img.get_width() > size[0] or img.get_height() > size[1]:
             return pygame.transform.smoothscale(img, size)
         return pygame.transform.scale(img, size)
+
+    def _fid_fit(self, sim: GameSim, rel: str, size: tuple[int, int]) -> Surface:
+        """Fetch and scale a fidelity-tiered asset, cached by (fidelity, path, size).
+
+        Many world entities (items, the penguin pickup, the logo) reuse the
+        same source art and the same on-screen size every frame; only their
+        position changes. Re-running _fit for each instance every frame was
+        pure waste at higher fidelity, where scaling cost the most.
+        """
+        cache_key = (self._active_fid(sim), rel, size)
+        fitted = self._icon_fit_cache.get(cache_key)
+        if fitted is None:
+            fitted = self._fit(self._fid(sim, rel), size)
+            if len(self._icon_fit_cache) >= 256:
+                self._icon_fit_cache.clear()
+            self._icon_fit_cache[cache_key] = fitted
+        return fitted
 
     @staticmethod
     def _binding_pair(sim: GameSim, action: str) -> str:
@@ -2034,20 +2055,18 @@ class Renderer:
             px = int(entity.x * tw - cam_x * vs + float(entity.extra.get("offset_x") or 0.0) * vs)
             py = int(entity.y * tw - cam_y * vs + float(entity.extra.get("offset_y") or 0.0) * vs)
             if entity.kind == "penguin":
-                surf.blit(self._fit(self._fid(sim, "items/penguin.png"), (tw, tw)), (px, py))
+                surf.blit(self._fid_fit(sim, "items/penguin.png", (tw, tw)), (px, py))
             elif entity.kind == "logo":
                 bob = int(vs * __import__("math").sin(sim.tick / 8))
-                logo = self._fid(sim, "items/omarchy-logo.png")
                 if fid != "sixteen-bit":
                     glow = pygame.Surface((tw + 4 * vs, tw + 4 * vs), pygame.SRCALPHA)
                     glow.fill((158, 206, 106, 40))
                     surf.blit(glow, (px - 2 * vs, py - 2 * vs + bob))
-                surf.blit(self._fit(logo, (tw, tw)), (px, py + bob))
+                surf.blit(self._fid_fit(sim, "items/omarchy-logo.png", (tw, tw)), (px, py + bob))
             elif entity.kind == "item":
                 try:
                     item_name = str(entity.extra.get("item") or "logic-bomb")
-                    icon = self._fid(sim, f"items/{item_name}.png")
-                    surf.blit(self._fit(icon, (tw, tw)), (px, py))
+                    surf.blit(self._fid_fit(sim, f"items/{item_name}.png", (tw, tw)), (px, py))
                 except Exception:
                     pygame.draw.rect(surf, PALETTE["cyan"], (px + 4 * vs, py + 4 * vs, 8 * vs, 8 * vs))
             elif entity.kind == "network":
