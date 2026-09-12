@@ -64,9 +64,13 @@ async def compare(reference, *, frames=90, fixture=None, emit=print):
             raise RuntimeError(f"Benchmark fixture did not load: {sim.messages}")
     else:
         sim = GameSim.from_play_now()
+    fixture_sim = sim
     results = []
-    for scenario in ("start", "boss", "pit", "platforms", "turn", "cow"):
-        if scenario == "cow":
+    for scenario in ("start", "boss", "pit", "platforms", "turn", "cow", "cannon-charge", "cannon-aim"):
+        # Developer warps can retain an encounter or a transition flash. Each
+        # case must begin independently, not inherit the preceding scenario.
+        sim = copy.deepcopy(fixture_sim)
+        if scenario == "cow" or scenario.startswith("cannon-"):
             sim.dev_warp("cow")
         else:
             sim.dev_warp("start" if scenario == "platforms" else "boss" if scenario == "turn" else scenario)
@@ -77,6 +81,9 @@ async def compare(reference, *, frames=90, fixture=None, emit=print):
             boss_id = str(next(e for e in sim.entities if e.kind == "boss").extra["boss"])
             sim.combat = start_encounter(make_player(), make_foe(boss_id, as_boss=True), boss_id=boss_id, mode="turn")
             sim.scene = "turn"
+        sim.flash_ticks = 0
+        if scenario.startswith("cannon-"):
+            sim.cannon_loaded = True
         for fidelity in ("sixteen-bit", "high", "ultra"):
             sim.fidelity = fidelity
             sim.settings["fidelity"] = fidelity
@@ -94,6 +101,13 @@ async def compare(reference, *, frames=90, fixture=None, emit=print):
                 sim.tick = frame * 3
                 xy = (max(0, camera[0] + 28 * math.sin(frame / 15)),
                       max(0, camera[1] - 32 * math.sin(frame / 21)))
+                cannon_inputs = None
+                if scenario.startswith("cannon-"):
+                    cannon = next(e for e in sim.entities if e.kind == "cow-cannon")
+                    cannon_inputs = (dict(cannon.extra), sim.cannon_charge_ticks)
+                    sim.cannon_charge_ticks = min(100, frame * 2)
+                    if scenario == "cannon-aim":
+                        cannon.extra["angle"] = 42 + 26 * math.sin(frame / 15)
                 images, cameras = [None, None], [None, None]
                 for index in ((0, 1) if frame % 2 == 0 else (1, 0)):
                     sim.cam_x, sim.cam_y = xy
@@ -109,6 +123,8 @@ async def compare(reference, *, frames=90, fixture=None, emit=print):
                     cameras[index] = (sim.cam_x, sim.cam_y)
                 if images[0] != images[1] or cameras[0] != cameras[1]:
                     raise AssertionError(f"Render difference: {scenario}/{fidelity}/frame {frame}")
+                if cannon_inputs:
+                    cannon.extra, sim.cannon_charge_ticks = cannon_inputs
                 await asyncio.sleep(0)
             # Rendering must not change gameplay state; tick/camera are harness inputs.
             assert gameplay_state() == before

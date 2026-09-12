@@ -31,15 +31,23 @@ machine, using pygame 2.5.7 / SDL 2.28.4 / Python 3.12.12 WebAssembly:
 | Boss area | Ultra | 49.70 ms | 29.95 ms | 40% |
 | Platform area | Ultra | 43.40 ms | 20.70 ms | 52% |
 | RPG battle | Ultra | 68.55 ms | 49.65 ms | 28% |
-| Cow Level | Ultra | 95.80 ms | 67.60 ms | 29% |
+| Cow Level with retained battle overlay¹ | Ultra | 95.80 ms | 67.60 ms | 29% |
 
 All 18 browser scenarios improved their median and 95th-percentile render
 times. Median improvements ranged from 7.7% to 52.3%. The native comparison
 also improved all 18 medians, by 7.3% to 43.0%. These are single-machine,
 render-only comparisons, not an end-to-end FPS measurement or a hardware-wide
-guarantee. The Cow Level and Ultra RPG battle still exceed a 60 Hz frame budget
+guarantee. The combined Cow Level/battle case and Ultra RPG battle still exceed a 60 Hz frame budget
 on this machine. First-use image decoding also remains noticeable. These are
 useful targets for the next profiling pass.
+
+¹ A subsequent audit found that the original harness's Cow Level warp retained
+the preceding RPG encounter, and also retained a transition flash. Its numbers
+describe that combined rendering workload, not ordinary Cow Level play. The
+recorded measurements are preserved; the current harness now clones a clean
+fixture for every scenario, clears transition flashes, and separately covers
+cannon charging and continuous aiming. Compare both renderer revisions using
+the same corrected harness for subsequent measurements.
 
 Each scenario uses a fresh baseline and candidate renderer, alternates which
 one runs first each frame, and supplies identical camera and animation inputs.
@@ -57,6 +65,52 @@ regression coverage, not a substitute for playing through the campaign.
 
 Full measurements: [browser](evidence/render-browser-2026-09-12.json),
 [native](evidence/render-native-2026-09-12.json).
+
+## Second pass: opaque backgrounds, panels, and cannon artwork
+
+Compared with the deployed `14f7590` build using the corrected, isolated
+fixtures, all 24 browser cases improved their median and 95th-percentile
+render times. Median improvements ranged from 21.7% to 44.9%.
+
+| Scenario | Detail | Before median | After median | Less render time |
+| --- | --- | ---: | ---: | ---: |
+| Chapter 1 start | High | 11.20 ms | 7.20 ms | 36% |
+| Chapter 1 start | Ultra | 23.60 ms | 14.65 ms | 38% |
+| Boss area | Ultra | 28.85 ms | 20.10 ms | 30% |
+| Platform area | Ultra | 20.15 ms | 11.10 ms | 45% |
+| RPG battle | Ultra | 49.80 ms | 34.10 ms | 32% |
+| Cow Level, no battle overlay | Ultra | 34.00 ms | 22.10 ms | 35% |
+| Cannon charging | Ultra | 31.10 ms | 19.65 ms | 37% |
+| Cannon continuously aiming | Ultra | 31.30 ms | 21.70 ms | 31% |
+
+The largest browser gain comes from converting backgrounds certified fully
+opaque by asset-generation metadata into display-format surfaces. PNGs had
+retained an alpha channel even when every alpha value was 255. Transparent
+layers keep their existing blend operation and source rectangle. The metadata
+test verifies opacity against every source PNG.
+
+UI panels now bake their opaque fill and translucent frame together once;
+copying that opaque result preserves the original pixels while avoiding a
+repeated alpha pass. Constant overlays reuse their filled surfaces, without
+combining blend operations. HUD icons and player/battle sprite fits are reused.
+The cannon caches its exact rendered angle, charge label, and flash color;
+there is no angle rounding or reduction in animation cadence. Cache counts
+are bounded (16 cannon images, 32 panels, 24 overlays, 64 character fits).
+
+All 216 sampled browser frames and 288 native frames matched the baseline;
+every frame pair matched camera output. All scenario gameplay-state checks
+passed, as did 80 focused tests, including panel clipping/alpha equivalence
+and character-source separation. The opacity metadata checks were rerun after
+adding opaque background conversion.
+
+These remain render-only measurements. Ultra RPG combat and some gameplay
+areas still exceed a 16.7 ms frame budget on this browser. Native and browser
+gains differ substantially: cannon rotation caching was much more valuable
+in native SDL than WebAssembly, reinforcing the need to measure both.
+
+Measurements: [browser](evidence/render-browser-second-pass-2026-09-12.json),
+[native](evidence/render-native-second-pass-2026-09-12.json). Use `14f7590` as the
+reference revision in the commands below to reproduce this comparison.
 
 ## Repeat locally
 

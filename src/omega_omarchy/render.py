@@ -150,6 +150,10 @@ class Renderer:
         self._parallax_scale_cache: dict[tuple[Any, ...], tuple[Surface, pygame.Rect]] = {}
         self._parallax_metadata: dict[str, dict] = {}
         self._platform_cache: dict[tuple[Any, ...], Surface] = {}
+        self._panel_cache: dict[tuple[Any, ...], Surface] = {}
+        self._solid_overlay_cache: dict[tuple[Any, ...], Surface] = {}
+        self._character_fit_cache: dict[tuple[Any, ...], Surface] = {}
+        self._cannon_barrel_cache: dict[tuple[Any, ...], Surface] = {}
         self._icon_fit_cache: dict[tuple[str, str, tuple[int, int]], Surface] = {}
         self._fit_text_cache: dict[tuple[Any, ...], Surface] = {}
         self._blit_text_cache: dict[tuple[Any, ...], Surface] = {}
@@ -303,8 +307,31 @@ class Renderer:
             self._icon_fit_cache[cache_key] = fitted
         return fitted
 
-    def _parallax_bounds(self, layer: Surface, rel: str) -> pygame.Rect:
-        """Read offline alpha bounds; old/unlisted assets remain supported."""
+    def _fit_character(self, image: Surface, size: tuple[int, int]) -> Surface:
+        """Read-only fit of an accepted pose; source identity distinguishes packs."""
+        key = (image, size)
+        fitted = self._character_fit_cache.get(key)
+        if fitted is None:
+            fitted = self._fit(image, size)
+            if len(self._character_fit_cache) >= 64:
+                self._character_fit_cache.clear()
+            self._character_fit_cache[key] = fitted
+        return fitted
+
+    def _solid_overlay(self, size: tuple[int, int], color: tuple[int, ...]) -> Surface:
+        """Reuse immutable translucent fills without changing blend arithmetic."""
+        key = (size, color)
+        overlay = self._solid_overlay_cache.get(key)
+        if overlay is None:
+            overlay = Surface(size, pygame.SRCALPHA)
+            overlay.fill(color)
+            if len(self._solid_overlay_cache) >= 24:
+                self._solid_overlay_cache.clear()
+            self._solid_overlay_cache[key] = overlay
+        return overlay
+
+    def _parallax_entry(self, layer: Surface, rel: str) -> dict:
+        """Read size-checked offline metadata for the resolved fidelity asset."""
         key = self._fid_key_cache.get((self._fid_cur, rel), rel)
         folder = str(Path(key).parent)
         if folder not in self._parallax_metadata:
@@ -315,12 +342,17 @@ class Renderer:
                 self._parallax_metadata[folder] = {}
         entry = self._parallax_metadata[folder].get(Path(key).name, {})
         if isinstance(entry, dict) and entry.get("size") == list(layer.get_size()):
-            values = entry.get("bounds")
-            if (isinstance(values, list) and len(values) == 4
-                    and all(type(value) is int and value >= 0 for value in values)):
-                rect = pygame.Rect(values)
-                if rect.right <= layer.get_width() and rect.bottom <= layer.get_height():
-                    return rect
+            return entry
+        return {}
+
+    def _parallax_bounds(self, layer: Surface, rel: str) -> pygame.Rect:
+        """Read offline alpha bounds; old/unlisted assets remain supported."""
+        values = self._parallax_entry(layer, rel).get("bounds")
+        if (isinstance(values, list) and len(values) == 4
+                and all(type(value) is int and value >= 0 for value in values)):
+            rect = pygame.Rect(values)
+            if rect.right <= layer.get_width() and rect.bottom <= layer.get_height():
+                return rect
         return layer.get_bounding_rect(min_alpha=1)
 
     @staticmethod
@@ -424,19 +456,25 @@ class Renderer:
         return tuple(lines)
 
     def _panel(self, surf: Surface, rect: tuple[int, int, int, int], *, fill: tuple[int, int, int] = (8, 10, 18)) -> None:
-        pygame.draw.rect(surf, fill, self._lr(*rect))
         try:
             size = (rect[2] * self._vs, rect[3] * self._vs)
-            fit_key = (self._fid_cur, "ui/panel.png", size)
-            fitted = self._icon_fit_cache.get(fit_key)
-            if fitted is None:
+            key = (self._fid_cur, size, fill)
+            panel = self._panel_cache.get(key)
+            if panel is None:
                 frame = self._load(f"fidelity/{self._fid_cur}/ui/panel.png")
                 fitted = self._fit(frame, size)
-                if len(self._icon_fit_cache) >= 256:
-                    self._icon_fit_cache.clear()
-                self._icon_fit_cache[fit_key] = fitted
-            surf.blit(fitted, self._lp(rect[0], rect[1]))
+                # The original first filled this rectangle opaquely, then
+                # blended its frame. Bake that exact result once so repeated
+                # panels can use an opaque copy instead of another alpha pass.
+                panel = Surface(size)
+                panel.fill(fill)
+                panel.blit(fitted, (0, 0))
+                if len(self._panel_cache) >= 32:
+                    self._panel_cache.clear()
+                self._panel_cache[key] = panel
+            surf.blit(panel, self._lp(rect[0], rect[1]))
         except Exception:
+            pygame.draw.rect(surf, fill, self._lr(*rect))
             pygame.draw.rect(surf, BRONZE if self._fid_cur == "ultra" else LIME_MARK, self._lr(*rect), max(1, self._vs))
 
     def frame(self, sim: GameSim) -> Surface:
@@ -1926,7 +1964,12 @@ class Renderer:
                 # never blend its fully transparent padding. Some authored
                 # strips are >90% empty. Offline bounds avoid an expensive
                 # alpha scan on the first frame, with a fallback after scaling.
-                prepared = (scaled, self._parallax_bounds(scaled, rel))
+                bounds = self._parallax_bounds(scaled, rel)
+                if self._parallax_entry(scaled, rel).get("opaque") is True:
+                    # Fully opaque PNGs still arrive with SRCALPHA. A display
+                    # format copy avoids blending a full canvas unnecessarily.
+                    scaled = scaled.convert()
+                prepared = (scaled, bounds)
                 self._parallax_scale_cache[scale_key] = prepared
             layer, bounds = prepared
             # Keep the smoothed camera's fractional position for scenery. The
@@ -2216,53 +2259,14 @@ class Renderer:
                     pygame.draw.rect(surf, LIME_MARK, (px - 4 * vs, py - 30 * vs, tw + 8 * vs, 46 * vs), max(2, vs))
             elif entity.kind == "cow-cannon":
                 try:
-                    barrel_width = round(CANNON_BARREL_WIDTH * vs)
-                    barrel_height = round(CANNON_BARREL_HEIGHT * vs)
                     base_width = round(CANNON_BASE_WIDTH * vs)
                     base_height = round(CANNON_BASE_HEIGHT * vs)
-                    barrel = self._fit(
-                        self._fid(sim, "items/cow-cannon-barrel.png"),
-                        (barrel_width, barrel_height),
-                    ).copy()
-                    base = self._fit(
-                        self._fid(sim, "items/cow-cannon-base.png"),
+                    base = self._fid_fit(
+                        sim, "items/cow-cannon-base.png",
                         (base_width, base_height),
                     )
-                    panel = pygame.Rect(
-                        round(barrel_width * 0.42),
-                        round(barrel_height * 0.49),
-                        round(barrel_width * 0.32),
-                        round(barrel_height * 0.20),
-                    )
-                    pygame.draw.rect(barrel, (7, 10, 15, 242), panel, border_radius=max(1, 2 * vs))
-                    pygame.draw.rect(barrel, BRONZE, panel, max(1, vs), border_radius=max(1, 2 * vs))
-                    if sim.cannon_loaded:
-                        count = min(
-                            6,
-                            math.ceil(sim.cannon_charge_ticks * 6 / max(1, CANNON_MAX_CHARGE_TICKS)),
-                        )
-                        label = "LAUNCH"[:count]
-                        if label:
-                            full_power = sim.cannon_charge_ticks >= CANNON_MAX_CHARGE_TICKS
-                            label_color = (
-                                (255, 255, 255)
-                                if full_power and (sim.tick // 6) % 2
-                                else LIME_MARK
-                            )
-                            glyph = self._font(logical_size=7, bold=True).render(label, True, label_color)
-                            if glyph.get_width() > panel.width - 4 * vs:
-                                glyph = pygame.transform.smoothscale(
-                                    glyph,
-                                    (panel.width - 4 * vs, max(vs, panel.height - 4 * vs)),
-                                )
-                            barrel.blit(glyph, glyph.get_rect(center=panel.center))
-                    else:
-                        mark = self._load("ui/omarchy-wordmark.png")
-                        mark = self._fit(mark, (max(1, panel.width - 8 * vs), max(1, panel.height - 6 * vs)))
-                        barrel.blit(mark, mark.get_rect(center=panel.center))
-
                     angle = float(entity.extra.get("angle", sim.cannon_angle))
-                    rotated = pygame.transform.rotozoom(barrel, angle, 1.0)
+                    rotated = self._cannon_barrel(sim, angle)
                     geometry = cow_cannon_geometry(entity, angle)
                     pivot_x, pivot_y = geometry["pivot"]
                     center_dx = CANNON_BARREL_WIDTH / 2 - CANNON_BARREL_WIDTH * CANNON_BARREL_PIVOT[0]
@@ -2493,7 +2497,7 @@ class Renderer:
         target_h = CHAR_WORLD_HEIGHT * vs
         nh = target_h
         nw = max(1, int(sprite.get_width() / max(1, sprite.get_height()) * nh))
-        sprite = self._fit(sprite, (nw, nh))
+        sprite = self._fit_character(sprite, (nw, nh))
         if sim.body.facing < 0:
             sprite = pygame.transform.flip(sprite, True, False)
         feet_x, feet_y = sim.body.feet
@@ -2536,6 +2540,37 @@ class Renderer:
             except Exception:
                 pass
 
+    def _cannon_barrel(self, sim: GameSim, angle: float) -> Surface:
+        """Reuse an exact angle/label image; aiming and charging stay continuous."""
+        vs = self._vs
+        count = min(6, math.ceil(sim.cannon_charge_ticks * 6 / max(1, CANNON_MAX_CHARGE_TICKS)))
+        label = "LAUNCH"[:count] if sim.cannon_loaded else None
+        full_power = sim.cannon_charge_ticks >= CANNON_MAX_CHARGE_TICKS
+        color = (255, 255, 255) if label and full_power and (sim.tick // 6) % 2 else LIME_MARK
+        key = (self._fid_cur, vs, angle, label, color)
+        rotated = self._cannon_barrel_cache.get(key)
+        if rotated is not None:
+            return rotated
+        width, height = round(CANNON_BARREL_WIDTH * vs), round(CANNON_BARREL_HEIGHT * vs)
+        barrel = self._fid_fit(sim, "items/cow-cannon-barrel.png", (width, height)).copy()
+        panel = pygame.Rect(round(width * .42), round(height * .49), round(width * .32), round(height * .20))
+        pygame.draw.rect(barrel, (7, 10, 15, 242), panel, border_radius=max(1, 2 * vs))
+        pygame.draw.rect(barrel, BRONZE, panel, max(1, vs), border_radius=max(1, 2 * vs))
+        if label:
+            glyph = self._font(logical_size=7, bold=True).render(label, True, color)
+            if glyph.get_width() > panel.width - 4 * vs:
+                glyph = pygame.transform.smoothscale(glyph, (panel.width - 4 * vs, max(vs, panel.height - 4 * vs)))
+            barrel.blit(glyph, glyph.get_rect(center=panel.center))
+        elif label is None:
+            mark = self._load("ui/omarchy-wordmark.png")
+            mark = self._fit(mark, (max(1, panel.width - 8 * vs), max(1, panel.height - 6 * vs)))
+            barrel.blit(mark, mark.get_rect(center=panel.center))
+        rotated = pygame.transform.rotozoom(barrel, angle, 1.0)
+        if len(self._cannon_barrel_cache) >= 16:
+            self._cannon_barrel_cache.clear()
+        self._cannon_barrel_cache[key] = rotated
+        return rotated
+
     def _edit_ghost(self, surf: Surface, sim: GameSim, cam_x: int, cam_y: int) -> None:
         ghost_data = sim.edit_player_ghost
         if not ghost_data or int(ghost_data.get("map_index", -1)) != sim.map_index:
@@ -2557,8 +2592,7 @@ class Renderer:
         surf.blit(sprite, (px, py))
 
     def _hud(self, surf: Surface, sim: GameSim) -> None:
-        bar = Surface((self._iw, 28 * self._vs), pygame.SRCALPHA)
-        bar.fill((10, 12, 20, 200 if self._fid_cur == "sixteen-bit" else 220))
+        bar = self._solid_overlay((self._iw, 28 * self._vs), (10, 12, 20, 200 if self._fid_cur == "sixteen-bit" else 220))
         surf.blit(bar, (0, 0))
         if self._fid_cur != "sixteen-bit":
             pygame.draw.line(surf, LIME_MARK, (0, 28 * self._vs), (self._iw, 28 * self._vs), self._vs)
@@ -2580,8 +2614,8 @@ class Renderer:
         if sim.combo_name and sim.combo_ticks > 0:
             self.fit_text(surf, sim.combo_name, (76, 18, 104, 7), LIME_MARK, max_size=5, min_size=4, bold=True)
         try:
-            penguin = self._fid(sim, "items/penguin.png")
-            surf.blit(self._fit(penguin, (14 * self._vs, 14 * self._vs)), self._lp(146, 6))
+            penguin = self._fid_fit(sim, "items/penguin.png", (14 * self._vs, 14 * self._vs))
+            surf.blit(penguin, self._lp(146, 6))
             self.blit_text(surf, f"{sim.penguins:02d}", (162, 8), PALETTE["fg"])
         except Exception:
             self.blit_text(surf, f"p{sim.penguins:02d}", (148, 8), PALETTE["fg"])
@@ -2606,16 +2640,16 @@ class Renderer:
             )
         try:
             item = sim.current_item
-            icon = self._fid(sim, f"items/{item}.png")
-            surf.blit(self._fit(icon, (16 * self._vs, 16 * self._vs)), self._lp(208, 6))
+            icon = self._fid_fit(sim, f"items/{item}.png", (16 * self._vs, 16 * self._vs))
+            surf.blit(icon, self._lp(208, 6))
             pygame.draw.rect(surf, (20, 24, 31), self._lr(226, 8, 15, 10))
             pygame.draw.rect(surf, SHIFT_CYAN, self._lr(227, 9 + (8 - round(8 * sim.item_strength / 100)), 13, max(1, round(8 * sim.item_strength / 100))))
             pygame.draw.rect(surf, BRONZE, self._lr(226, 8, 15, 10), max(1, self._vs))
         except Exception:
             self.blit_text(surf, "--", (216, 9), PALETTE["fg"])
         try:
-            kick = self._fid(sim, "items/kick.png")
-            surf.blit(self._fit(kick, (17 * self._vs, 17 * self._vs)), self._lp(269, 6))
+            kick = self._fid_fit(sim, "items/kick.png", (17 * self._vs, 17 * self._vs))
+            surf.blit(kick, self._lp(269, 6))
         except Exception:
             self.blit_text(surf, "K", (271, 8), PALETTE["cyan"])
 
@@ -2645,8 +2679,7 @@ class Renderer:
             maximum = sum(max(1.0, float(entity.extra.get("max_hp") or 5.0)) for entity in minions)
             self._side_meter(surf, 310, 37, hp, maximum, "MINIONS", PALETTE["yellow"], label_left=True)
         if sim.messages and sim.scene != "boss-defeat":
-            foot = Surface((self._iw, 14 * self._vs), pygame.SRCALPHA)
-            foot.fill((10, 12, 20, 220))
+            foot = self._solid_overlay((self._iw, 14 * self._vs), (10, 12, 20, 220))
             surf.blit(foot, (0, 166 * self._vs))
             self.fit_text(surf, sim.messages[-1], (8, 167, 304, 12), PALETTE["yellow"], max_size=9, min_size=6)
 
@@ -2743,13 +2776,11 @@ class Renderer:
             return
         battle = sim.combat
         foe = battle.foe
-        shade = Surface((self._iw, self._ih), pygame.SRCALPHA)
-        shade.fill((2, 4, 12, 112 if self._fid_cur == "ultra" else 142))
+        shade = self._solid_overlay((self._iw, self._ih), (2, 4, 12, 112 if self._fid_cur == "ultra" else 142))
         surf.blit(shade, (0, 0))
 
         # Scenic battle stage: distant line, modeled floor, grounding shadows.
-        stage_tint = Surface((self._iw, 88 * self._vs), pygame.SRCALPHA)
-        stage_tint.fill((3, 6, 16, 88))
+        stage_tint = self._solid_overlay((self._iw, 88 * self._vs), (3, 6, 16, 88))
         surf.blit(stage_tint, (0, 24 * self._vs))
         for row, color in enumerate(((25, 34, 50), (22, 29, 42), (17, 22, 34), (12, 16, 26))):
             pygame.draw.polygon(
@@ -2787,7 +2818,7 @@ class Renderer:
             foe_img = self._fid(sim, foe_rel)
             fh = (82 if battle.boss_id else 58) * self._vs
             fw = max(1, round(foe_img.get_width() / max(1, foe_img.get_height()) * fh))
-            foe_img = self._fit(foe_img, (fw, fh))
+            foe_img = self._fid_fit(sim, foe_rel, (fw, fh))
             self._battle_actor_blit(
                 surf,
                 sim,
@@ -2801,7 +2832,7 @@ class Renderer:
             hero = self._character_sprite(sim, self._battle_player_pose(sim))
             hh = 66 * self._vs
             hw = max(1, round(hero.get_width() / max(1, hero.get_height()) * hh))
-            hero = self._fit(hero, (hw, hh))
+            hero = self._fit_character(hero, (hw, hh))
             # The player begins at the far-left of the formation, leaving the rest
             # of the player's field for recruited helpers.
             self._battle_actor_blit(
@@ -2828,7 +2859,7 @@ class Renderer:
                 ally = self._fid(sim, f"enemies/{companion_id}-converted.png")
                 ah = 34 * self._vs
                 aw = max(1, round(ally.get_width() / max(1, ally.get_height()) * ah))
-                ally = self._fit(ally, (aw, ah))
+                ally = self._fid_fit(sim, f"enemies/{companion_id}-converted.png", (aw, ah))
                 anchor_x = anchors[index] * self._vs
                 anchor_y = (106 - (index % 2) * 5) * self._vs
                 self._battle_actor_blit(

@@ -2002,9 +2002,11 @@ def emit_parallax_bounds(root: Path) -> None:
             metadata = {}
             for path in sorted(directory.glob("parallax-*.png")):
                 with Image.open(path) as source:
-                    bbox = source.convert("RGBA").getchannel("A").getbbox()
+                    alpha = source.convert("RGBA").getchannel("A")
+                    bbox = alpha.getbbox()
                     x, y, right, bottom = bbox or (0, 0, 0, 0)
-                    metadata[path.name] = {"size": list(source.size), "bounds": [x, y, right - x, bottom - y]}
+                    metadata[path.name] = {"size": list(source.size), "bounds": [x, y, right - x, bottom - y],
+                                           "opaque": alpha.getextrema() == (255, 255)}
             if metadata:
                 (directory / "parallax-bounds.json").write_text(json.dumps(metadata, sort_keys=True) + "\n")
 

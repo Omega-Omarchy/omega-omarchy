@@ -9,6 +9,14 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Transparent-padding and sprite-cache optimization: `/srv/omegaomarchy/releases/20260912T221939Z/`;
+  ships code `e00340c` and credits/build revision `14f7590`. Browser comparisons
+  improved all 18 measured medians while preserving sampled pixels and camera
+  output. The ordinary game build passed interactive checks. Every uploaded
+  file matched the local build before the atomic switch, changed URLs were
+  purged from Cloudflare, and the public bundle SHA-256 matched
+  `a7779617151fcf99b82291d3e2810938965ce198fb7184f883365691ad4e2cb5`.
+  Previous release `20260912T205036Z` remains available for rollback.
 - Landing-page refresh: `/srv/omegaomarchy/releases/20260911T124622Z/`;
   centered opening section, larger single-emblem pulses, and grounded gameplay
   previews in all three fidelity tiers. The previous release remains available.

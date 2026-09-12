@@ -1,1 +1,1 @@
-{"parallax-0.png": {"bounds": [0, 0, 697, 360], "size": [697, 360]}, "parallax-1.png": {"bounds": [0, 134, 696, 226], "size": [2820, 360]}, "parallax-2.png": {"bounds": [990, 5, 661, 337], "size": [2640, 360]}}
+{"parallax-0.png": {"bounds": [0, 0, 697, 360], "opaque": true, "size": [697, 360]}, "parallax-1.png": {"bounds": [0, 134, 696, 226], "opaque": false, "size": [2820, 360]}, "parallax-2.png": {"bounds": [990, 5, 661, 337], "opaque": false, "size": [2640, 360]}}
