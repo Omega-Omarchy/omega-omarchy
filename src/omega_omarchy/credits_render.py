@@ -35,23 +35,26 @@ class CreditsRenderer:
             self.fonts[key] = pygame.font.Font(str(self.r.root / "ui/credits/credits-sans-fallback.ttf"), round(size * scale))
         return self.fonts[key]
 
-    @staticmethod
-    def _has_glyph(font_obj, ch):
-        if ch.isspace():
-            return True
-        info = font_obj.metrics(ch)
-        if not info or info[0] is None:
-            return False
-        minx, maxx, miny, maxy, advance = info[0]
-        return bool(minx or maxx or miny or maxy)
+    # credits-sans.otf's cmap has no glyph for these five Latin Extended-A/B
+    # codepoints used by real contributor names (Roman Frołow, Barış
+    # Girişmen, Emir Beganović, ...), verified against the shipped .otf via
+    # fontTools' cmap. Detecting coverage at runtime through
+    # pygame.font.Font.metrics() matched this ground truth exactly on the
+    # native SDL_ttf build (a missing glyph reports an all-zero bounding
+    # box there), but the web build rendered these letters blank instead of
+    # falling back, which only happens if metrics() disagrees under
+    # pygbag's WebAssembly SDL_ttf/FreeType. A fixed, verified set
+    # sidesteps that per-platform font-backend inconsistency entirely.
+    _PRIMARY_FONT_GAPS = frozenset("ĆİŁŘŞ")
+
+    def _has_glyph(self, ch):
+        return ch.isspace() or ch not in self._PRIMARY_FONT_GAPS
 
     def _char_font(self, ch, size, scale):
-        primary = self.font(size, scale)
-        return primary if self._has_glyph(primary, ch) else self.fallback_font(size, scale)
+        return self.font(size, scale) if self._has_glyph(ch) else self.fallback_font(size, scale)
 
     def _fully_covered(self, text, size, scale):
-        primary = self.font(size, scale)
-        return all(self._has_glyph(primary, ch) for ch in text)
+        return all(self._has_glyph(ch) for ch in text)
 
     def _measure_text(self, text, size, scale):
         if self._fully_covered(text, size, scale):

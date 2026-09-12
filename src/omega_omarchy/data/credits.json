@@ -323,6 +323,7 @@
         "63086e2c7eda2b20a14ce4b37f2fa959a4d0d059",
         "64a00b224d35077ac7f81941a5be43cc64940ac3",
         "65af3bdae4cc29bd98e23902511547ac0ad33ff9",
+        "6c2c2236c7f62b32b0238ab5e0d538b0248de787",
         "6cbc1208c343d46d9bfa09b781bdbe414343fec0",
         "6ebb82d0f1d11e3d22b1b4266a7a722dbaa651ee",
         "72ef40ad68ce73bcaead107f9955f692104ca3b8",
@@ -334,6 +335,8 @@
         "a3a17180847a345cd8cd5c81bcbf44a178ebd99a",
         "b12bde595c2eeb5b20c10059342eb271998c21c4",
         "d3ec3554c8ef6411f43fa2dc93ae0b81a2aef4f2",
+        "dcd88ef4cc1f2e65409610eea3a71e442a6705d0",
+        "e18e5dd47fc05fdb0da9d58a47adcb90088fec60",
         "e24a4f0c10eb13c4e50417d2a057b115dcd709e0",
         "e636b4be5c18eb30c493ed56d6b354b3a4998e6a",
         "e691dc5432e296a9960a315080d88ab1c51a961e",
@@ -3317,6 +3320,15 @@
       ]
     },
     {
+      "commit": "6c2c2236c7f62b32b0238ab5e0d538b0248de787",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
+      ]
+    },
+    {
       "commit": "6cbc1208c343d46d9bfa09b781bdbe414343fec0",
       "contributors": [
         "jeremydixon22"
@@ -4039,6 +4051,24 @@
       ]
     },
     {
+      "commit": "dcd88ef4cc1f2e65409610eea3a71e442a6705d0",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "tests/test_credits.py"
+      ]
+    },
+    {
+      "commit": "e18e5dd47fc05fdb0da9d58a47adcb90088fec60",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
       "commit": "e24a4f0c10eb13c4e50417d2a057b115dcd709e0",
       "contributors": [
         "jeremydixon22"
@@ -4167,7 +4197,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "6ebb82d0f1d11e3d22b1b4266a7a722dbaa651ee",
+  "revision": "dcd88ef4cc1f2e65409610eea3a71e442a6705d0",
   "rows": [
     {
       "height": 90,
