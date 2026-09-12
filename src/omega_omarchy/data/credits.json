@@ -311,12 +311,14 @@
   "contributors": [
     {
       "commits": [
+        "0e01c2411ccab5b7355a624a31ea156c75475cd9",
         "11b0aab8c36e8c24e6183c23cb5c5198fc3ad998",
         "212d3c253faa07f9784a33e33b8eacee6a379544",
         "21c956d74e75bca6e1c8bd88c75c94d1e37598f2",
         "29f2dceec4638b99dd3f14528a1099158df2f2be",
         "30a198c9939f97ed643ea77c9b6bdf35ad0246cc",
         "324ae8f49668bf1f4b4c934f0eb80812de6d1a2f",
+        "37258d8e1ea81057742829d6ba2f19c702d0b8ca",
         "373b1282da264f2b8912c3fedf35e641c02f79c8",
         "38b18bb628772364911267c25c79f8a6425669c5",
         "3b600fa2535ad09a56a170a7a2c1cce07524fd16",
@@ -341,6 +343,7 @@
         "94ed7dd93af36009f2c5f620cffe3ddb8a3d8819",
         "96a97a01f1a871d3ebb33b61e8b7c63e7979264a",
         "9e8268f23820cab2a16fe9fabb40a5e775c9d166",
+        "a0f32bcc5d290c6a96c5bd88e4311a25278444d6",
         "a3a17180847a345cd8cd5c81bcbf44a178ebd99a",
         "a7e6042305b3a134eacbd5f8c507649655593f42",
         "b12bde595c2eeb5b20c10059342eb271998c21c4",
@@ -348,6 +351,7 @@
         "c8e7dae829ff1d5d0c871c6a997757e242b34c3a",
         "d3ec3554c8ef6411f43fa2dc93ae0b81a2aef4f2",
         "dcd88ef4cc1f2e65409610eea3a71e442a6705d0",
+        "dfce69a10d9c25d973f9b181fb65e42cc4f60399",
         "e18e5dd47fc05fdb0da9d58a47adcb90088fec60",
         "e24a4f0c10eb13c4e50417d2a057b115dcd709e0",
         "e636b4be5c18eb30c493ed56d6b354b3a4998e6a",
@@ -2019,6 +2023,15 @@
   ],
   "history": [
     {
+      "commit": "0e01c2411ccab5b7355a624a31ea156c75475cd9",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
       "commit": "11b0aab8c36e8c24e6183c23cb5c5198fc3ad998",
       "contributors": [
         "jeremydixon22"
@@ -2094,6 +2107,16 @@
         "requirements/audit-targets.txt",
         "requirements/audit-tool.txt",
         "requirements/ci.txt"
+      ]
+    },
+    {
+      "commit": "37258d8e1ea81057742829d6ba2f19c702d0b8ca",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/web_build.py",
+        "tests/test_web.py"
       ]
     },
     {
@@ -3533,6 +3556,15 @@
       ]
     },
     {
+      "commit": "a0f32bcc5d290c6a96c5bd88e4311a25278444d6",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
+      ]
+    },
+    {
       "commit": "a3a17180847a345cd8cd5c81bcbf44a178ebd99a",
       "contributors": [
         "jeremydixon22"
@@ -4195,6 +4227,15 @@
       ]
     },
     {
+      "commit": "dfce69a10d9c25d973f9b181fb65e42cc4f60399",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/audio.py"
+      ]
+    },
+    {
       "commit": "e18e5dd47fc05fdb0da9d58a47adcb90088fec60",
       "contributors": [
         "jeremydixon22"
@@ -4367,7 +4408,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "5b50a59e7c592d77fdaefd1ffb4e03488c95e259",
+  "revision": "dfce69a10d9c25d973f9b181fb65e42cc4f60399",
   "rows": [
     {
       "height": 90,
