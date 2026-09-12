@@ -352,6 +352,13 @@ async def run_game_async(
                 sim.last_input_device = "gamepad"
             elif event.type == pygame.JOYAXISMOTION and abs(float(event.value)) > 0.5:
                 sim.last_input_device = "gamepad"
+        if not running:
+            # A quit request can otherwise sit behind an expensive frame:
+            # procedural generation's traversal/terrain-check yields can each
+            # take hundreds of milliseconds, and simulating one more frame
+            # here means finishing whichever yield step is in flight before
+            # the window can close. Skip the rest of the frame instead.
+            break
         keys = pygame.key.get_pressed()
         raw_joy = _joystick_state(joysticks, just_buttons, sim.accessibility)
         joy = _joystick_edges(raw_joy, previous_joy)
