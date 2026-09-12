@@ -313,6 +313,7 @@
       "commits": [
         "0e01c2411ccab5b7355a624a31ea156c75475cd9",
         "11b0aab8c36e8c24e6183c23cb5c5198fc3ad998",
+        "14f75906f3933526c8b7d7863b4b3d57080d6292",
         "212d3c253faa07f9784a33e33b8eacee6a379544",
         "21c956d74e75bca6e1c8bd88c75c94d1e37598f2",
         "29f2dceec4638b99dd3f14528a1099158df2f2be",
@@ -323,6 +324,7 @@
         "38b18bb628772364911267c25c79f8a6425669c5",
         "39b94879d0a81f1febf1153c08abba31b3d2e798",
         "3b600fa2535ad09a56a170a7a2c1cce07524fd16",
+        "3cf5caeac6802434be58b75cac6f99c2e8f4860c",
         "434fca8ab977650ed47ce3cb63f907ea2497ebc2",
         "4e1f41487619f9e50c7fc3e00ed2901f618f2e21",
         "5b50a59e7c592d77fdaefd1ffb4e03488c95e259",
@@ -1809,7 +1811,9 @@
         "docs/evidence/pause-high.png",
         "docs/evidence/perf.txt",
         "docs/evidence/render-browser-2026-09-12.json",
+        "docs/evidence/render-browser-second-pass-2026-09-12.json",
         "docs/evidence/render-native-2026-09-12.json",
+        "docs/evidence/render-native-second-pass-2026-09-12.json",
         "docs/evidence/sixteen-block.png",
         "docs/evidence/spawn-eight-bit-clean.png",
         "docs/evidence/spawn-eight-bit-crt.png",
@@ -2083,6 +2087,15 @@
       ]
     },
     {
+      "commit": "14f75906f3933526c8b7d7863b4b3d57080d6292",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
       "commit": "212d3c253faa07f9784a33e33b8eacee6a379544",
       "contributors": [
         "jeremydixon22"
@@ -2186,6 +2199,45 @@
       "paths": [
         "src/omega_omarchy/app.py",
         "src/omega_omarchy/audio.py"
+      ]
+    },
+    {
+      "commit": "3cf5caeac6802434be58b75cac6f99c2e8f4860c",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "assets/fidelity/high/bg/corrupted/parallax-bounds.json",
+        "assets/fidelity/high/bg/cow/parallax-bounds.json",
+        "assets/fidelity/high/bg/front/parallax-bounds.json",
+        "assets/fidelity/high/bg/garden/parallax-bounds.json",
+        "assets/fidelity/high/bg/goliath/parallax-bounds.json",
+        "assets/fidelity/high/bg/parallax-bounds.json",
+        "assets/fidelity/high/bg/singularity/parallax-bounds.json",
+        "assets/fidelity/high/bg/wilderness/parallax-bounds.json",
+        "assets/fidelity/sixteen-bit/bg/corrupted/parallax-bounds.json",
+        "assets/fidelity/sixteen-bit/bg/cow/parallax-bounds.json",
+        "assets/fidelity/sixteen-bit/bg/front/parallax-bounds.json",
+        "assets/fidelity/sixteen-bit/bg/garden/parallax-bounds.json",
+        "assets/fidelity/sixteen-bit/bg/goliath/parallax-bounds.json",
+        "assets/fidelity/sixteen-bit/bg/parallax-bounds.json",
+        "assets/fidelity/sixteen-bit/bg/singularity/parallax-bounds.json",
+        "assets/fidelity/sixteen-bit/bg/wilderness/parallax-bounds.json",
+        "assets/fidelity/ultra/bg/corrupted/parallax-bounds.json",
+        "assets/fidelity/ultra/bg/cow/parallax-bounds.json",
+        "assets/fidelity/ultra/bg/front/parallax-bounds.json",
+        "assets/fidelity/ultra/bg/garden/parallax-bounds.json",
+        "assets/fidelity/ultra/bg/goliath/parallax-bounds.json",
+        "assets/fidelity/ultra/bg/singularity/parallax-bounds.json",
+        "assets/fidelity/ultra/bg/wilderness/parallax-bounds.json",
+        "docs/evidence/render-browser-second-pass-2026-09-12.json",
+        "docs/evidence/render-native-second-pass-2026-09-12.json",
+        "docs/performance.md",
+        "src/omega_omarchy/assets.py",
+        "src/omega_omarchy/render.py",
+        "tests/test_render_performance.py",
+        "tools/benchmark_render.py",
+        "website/deploy/README.md"
       ]
     },
     {
@@ -4499,7 +4551,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "e00340c1786492ad2aaf23728294ba7746bb92a7",
+  "revision": "3cf5caeac6802434be58b75cac6f99c2e8f4860c",
   "rows": [
     {
       "height": 90,
