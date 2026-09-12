@@ -36,7 +36,8 @@ async function start() {
   const tint = tinted.getContext('2d');
   let colors, l, stageScale = 1, fieldScale = 1, width = 0, height = 0;
   let paused = false, inView = true, frame = 0, previous = null, elapsed = 0, ambientTime = 0;
-  let particles = [], bursts = [], lastPointer = null, nextBurst = 7;
+  let particles = [], bursts = [], lastPointer = null;
+  let lastLogoX = null, lastLogoY = null, lastLogoDirX = 0, lastLogoDirY = 0;
   try { paused = localStorage.getItem('omega-site-motion') === 'paused'; } catch { /* Optional preference. */ }
   if (paused || reduced.matches) elapsed = ASSEMBLY.complete;
 
@@ -69,6 +70,7 @@ async function start() {
     field.width = Math.max(1, Math.round(width * fieldScale));
     field.height = Math.max(1, Math.round(height * fieldScale));
     particles = []; bursts = []; lastPointer = null;
+    lastLogoX = null; lastLogoY = null; lastLogoDirX = 0; lastLogoDirY = 0;
     if (colors) drawStage();
     wake();
   }
@@ -180,12 +182,18 @@ async function start() {
     // The escaped Omega artifact bounces inside the viewport, below the nav.
     // It is faint and cannot capture clicks, selections, or keyboard focus.
     if (width >= 800 && height >= 320) {
-      if (ambientTime >= nextBurst) {
-        const logo = floatingLogoAt(ambientTime, width, height);
-        bursts.push({x: logo.x + logo.size / 2, y: logo.y + logo.size / 2, age: 0});
-        bursts = bursts.slice(-4);
-        nextBurst = ambientTime + 9 + Math.random() * 5;
+      const logo = floatingLogoAt(ambientTime, width, height);
+      if (lastLogoX !== null) {
+        // A direction reversal on either axis means it just hit an edge.
+        const dirX = Math.sign(logo.x - lastLogoX) || lastLogoDirX;
+        const dirY = Math.sign(logo.y - lastLogoY) || lastLogoDirY;
+        if ((lastLogoDirX && dirX !== lastLogoDirX) || (lastLogoDirY && dirY !== lastLogoDirY)) {
+          bursts.push({x: logo.x + logo.size / 2, y: logo.y + logo.size / 2, age: 0});
+          bursts = bursts.slice(-4);
+        }
+        lastLogoDirX = dirX; lastLogoDirY = dirY;
       }
+      lastLogoX = logo.x; lastLogoY = logo.y;
       for (let i = 4; i >= 0; i--) {
         const {x, y, size} = floatingLogoAt(ambientTime - i * .12, width, height);
         fx.globalAlpha = i ? .045 * (5 - i) : .44;
@@ -228,6 +236,7 @@ async function start() {
     if (paused || reduced.matches) elapsed = Math.max(elapsed, ASSEMBLY.complete);
     if (!enabled()) {
       particles = []; bursts = []; lastPointer = null;
+      lastLogoX = null; lastLogoY = null; lastLogoDirX = 0; lastLogoDirY = 0;
       drawField(0);
     }
     button.hidden = false;
