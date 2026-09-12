@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import unittest
 
-from news_build import build_news, pin_to_top
+from news_build import build_news, latest_announcement, pin_to_top
 
 
 class NewsBuildTests(unittest.TestCase):
@@ -70,6 +70,17 @@ class NewsBuildTests(unittest.TestCase):
             root.mkdir()
             with self.assertRaises(ValueError):
                 build_news(fake_source, root, root)
+
+    def test_latest_announcement_matches_pin_to_top_and_follows_a_newer_entry(self):
+        source = Path(__file__).resolve().parent
+        self.assertEqual(latest_announcement(source)["id"], "introducing-omega-omarchy")
+        with tempfile.TemporaryDirectory() as temp:
+            fake_source = Path(temp) / "source"
+            shutil.copytree(source, fake_source)
+            editorial = json.loads((fake_source / "news/editorial.json").read_text())
+            editorial.append({**editorial[0], "id": "a-newer-announcement", "date": "2099-01-01T00:00:00Z"})
+            (fake_source / "news/editorial.json").write_text(json.dumps(editorial))
+            self.assertEqual(latest_announcement(fake_source)["id"], "a-newer-announcement")
 
     def test_source_archive_still_has_editorial_news(self):
         source = Path(__file__).resolve().parent

@@ -1,10 +1,12 @@
 """Package the local launch site, optionally including a fresh browser game."""
 from __future__ import annotations
 import argparse
+from datetime import datetime
+from html import escape
 from pathlib import Path
 import shutil
 import sys
-from news_build import build_news
+from news_build import build_news, latest_announcement
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "website"
@@ -20,6 +22,13 @@ def build(out: Path, *, game_dir: Path | None = None, with_game: bool = True) ->
         if (SOURCE / name).is_file():
             shutil.copyfile(SOURCE / name, out / name)
     shutil.copytree(SOURCE / "assets", out / "assets", dirs_exist_ok=True)
+    announcement = latest_announcement(SOURCE)
+    date = datetime.fromisoformat(announcement["date"])
+    index_path = out / "index.html"
+    page = index_path.read_text()
+    page = page.replace("<!-- LAUNCH_URL -->", escape(announcement["url"], quote=True))
+    page = page.replace("<!-- LAUNCH_DATE -->", escape(f"{date:%B} {date.day}, {date.year}"))
+    index_path.write_text(page)
     build_news(SOURCE, out, ROOT)
     if game_dir:
         game_dir = game_dir.resolve()

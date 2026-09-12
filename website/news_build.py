@@ -43,6 +43,16 @@ def pin_to_top(entries: list[dict]) -> list[dict]:
     return [pin, *(e for e in entries if e is not pin)]
 
 
+def latest_announcement(source: Path) -> dict:
+    """The entry the landing page's launch-note badge should link to: whatever
+    News pinning currently promotes to the top (see pin_to_top), so that badge
+    is always a live hook to the most recent announcement rather than a link
+    hand-maintained separately from the News page's own pinning."""
+    editorial = json.loads((source / "news/editorial.json").read_text())
+    editorial = sorted(editorial, key=lambda item: datetime.fromisoformat(item["date"]), reverse=True)
+    return pin_to_top(editorial)[0]
+
+
 def render_entry(entry: dict) -> str:
     e = lambda value: escape(str(value), quote=True)
     date = datetime.fromisoformat(entry["date"]).astimezone(timezone.utc)
