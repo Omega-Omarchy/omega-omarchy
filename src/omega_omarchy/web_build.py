@@ -367,6 +367,27 @@ def _repair_pygbag_launcher(built: Path) -> None:
         "background: green;\n            color: blue;",
         "background: #1a1b26;\n            color: #b9f27c;\n            border: 1px solid #9ece6a;",
     )
+    # The template's own JS centers this by measuring offsetWidth/offsetHeight
+    # (show_infobox(), later in the page) and only runs once pygbag's loader
+    # reaches that step, so the box was visible at its unstyled top-left flow
+    # position for a beat first. Center it with plain CSS from first paint;
+    # the JS recomputes the same true-center point and overwrites these as
+    # inline styles, so there's nothing left to visibly snap into place.
+    html = _replace_required(
+        html,
+        "position: fixed; /* center relative to viewport */",
+        "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); /* center relative to viewport */",
+        label="infobox centering",
+    )
+    # show_infobox() computes left/top assuming a plain top-left box (no
+    # transform); left uncleared, the CSS transform above would additionally
+    # shift its own top-left-corner-positioned result, landing off-center.
+    html = _replace_required(
+        html,
+        '    infobox.style.top = top + "px";\n',
+        '    infobox.style.top = top + "px";\n    infobox.style.transform = "none";\n',
+        label="infobox transform reset",
+    )
     html = html.replace(
         "</style>",
         "#infobox-build{display:block;font-size:11px;font-weight:600;color:#7aa2f7;"

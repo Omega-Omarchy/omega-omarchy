@@ -84,7 +84,10 @@ def test_launcher_workarounds_are_explicit_and_archive_is_stored(tmp_path):
         "    await shell.source(main, callback=ui_callback)\n"
         "        platform.window.infobox.innerText = msg\n"
         "#7f7f7f background-color:powderblue;\n"
+        "position: fixed; /* center relative to viewport */\n"
         "background: green;\n            color: blue;\n"
+        '    infobox.style.left = left + "px";\n'
+        '    infobox.style.top = top + "px";\n'
         '<div id="infobox">Loading, please wait ...</div>\n'
         "</html>",
         encoding="utf-8",
@@ -113,6 +116,8 @@ def test_launcher_workarounds_are_explicit_and_archive_is_stored(tmp_path):
     assert "Omega Omarchy" in html
     assert "Loading, please wait ..." in html
     assert '(document.getElementById("infobox-msg") or platform.window.infobox).innerText' in html
+    assert "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);" in html
+    assert 'infobox.style.top = top + "px";\n    infobox.style.transform = "none";' in html
     assert not (built / "omega-omarchy.tar.gz").exists()
     assert (built / "browserfs.min.js").stat().st_size > 200_000
     assert (built / "BROWSERFS-LICENSE.txt").is_file()
