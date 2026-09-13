@@ -9,6 +9,18 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Pickup and block-break performance: `/srv/omegaomarchy/releases/20260913T021321Z/`;
+  ships code `6bbafb7` and credits/build revision `4a7e1eb`. Uniform-alpha
+  browser flashes reduce Ultra post-event rendering from about 24.3 ms to
+  16.2 ms; incremental menu SFX preloading removes first-use sound decoding
+  from normal pickups and hits. The 154 focused tests passed. All 1,872
+  browser comparison pairs preserved camera/gameplay state and stayed within
+  the documented one-unit RGB rounding tolerance during flashes; unflashed
+  output and all 1,872 native pairs matched exactly. Every uploaded file
+  matched the local build before promotion; changed URLs were purged from
+  Cloudflare. Public bundle SHA-256:
+  `fa952a001e8a0e196e575db920c50fdc1a9f489ea90886b0ac02d9ff36a06894`.
+  Previous release `20260913T001018Z` remains available for rollback.
 - Prologue, route-map, and title-card optimization: `/srv/omegaomarchy/releases/20260913T001018Z/`;
   ships code `3ee10b7` and credits/build revision `b4986d5`. All 42 browser
   cases improved median and p95 render time; all 3,024 browser frame pairs
