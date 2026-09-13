@@ -9,6 +9,13 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Automatic landing announcement: `/srv/omegaomarchy/releases/20260913T043402Z/`;
+  ships `e5ee4dd`. The landing link now mirrors the newest News headline,
+  UTC date, and permalink at build time, with a wrapping headline and date
+  below on narrow screens. All 15 News tests and the site export checks passed.
+  Only the landing page, News snapshot, and stylesheet changed. Uploaded files
+  were hash-verified and changed URLs purged from Cloudflare; the game bundle
+  remains unchanged. Previous release `20260913T042709Z` is retained for rollback.
 - Version 0.1.2 performance announcement: `/srv/omegaomarchy/releases/20260913T042709Z/`;
   publishes the News entry from `bcd7490`, automatically promoted to the top
   of the feed and linked from the landing page. All 14 News tests and the site
