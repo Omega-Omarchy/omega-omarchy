@@ -348,8 +348,10 @@
         "6d312f86694df2239147ad5a6e549ba96f9be720",
         "6e40357cd5946d550f0293126cf960b2380e6bb2",
         "6ebb82d0f1d11e3d22b1b4266a7a722dbaa651ee",
+        "6fab6517530f7dc4b0777e631051458e405ec36e",
         "72ef40ad68ce73bcaead107f9955f692104ca3b8",
         "782067d93801c259a43884e81b76dd40dfcd0931",
+        "78cb91fb534e0d3d593b01e44f4bcc5f69e63b0c",
         "852240c898fb82b5fa28ed36c5beb30afb5a891b",
         "863fb9ea7e03f6e9cc0ab5a0786b7eec1e011b27",
         "8a5414d8007465af8b620fd1608c5bae35dc73f4",
@@ -384,8 +386,10 @@
         "e9f282b3acba0a596b14b8570cf42184d91aca92",
         "ea03b65180d3c079f5abb41b7db0533473ee60a3",
         "ebed1a4940dff6ea0db38b5287642b23d67cf160",
+        "f13934e32772f95962130717e909fd58de9f1309",
         "f198c8f91bce20c50939ef8526a95e1245307d2b",
-        "f61ec28a915b6da4ac53cac7f34d85df3e9b7a9b"
+        "f61ec28a915b6da4ac53cac7f34d85df3e9b7a9b",
+        "f9557afd1a8ff1911a7970218206beaaed188d94"
       ],
       "id": "jeremydixon22",
       "name": "Jeremy Dixon",
@@ -1808,6 +1812,7 @@
         "docs/evidence/boss-sixteen-bit-crt.png",
         "docs/evidence/credits-browser-2026-09-13.json",
         "docs/evidence/credits-native-2026-09-13.json",
+        "docs/evidence/credits-opening-2026-09-13.json",
         "docs/evidence/edit-eight-bit-clean.png",
         "docs/evidence/edit-eight-bit-crt.png",
         "docs/evidence/edit-high-clean.png",
@@ -3686,6 +3691,15 @@
       ]
     },
     {
+      "commit": "6fab6517530f7dc4b0777e631051458e405ec36e",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
       "commit": "72ef40ad68ce73bcaead107f9955f692104ca3b8",
       "contributors": [
         "jeremydixon22"
@@ -3705,6 +3719,15 @@
       "paths": [
         "tests/test_credits.py",
         "tests/test_gameplay_upgrade.py"
+      ]
+    },
+    {
+      "commit": "78cb91fb534e0d3d593b01e44f4bcc5f69e63b0c",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/credits_render.py"
       ]
     },
     {
@@ -4723,6 +4746,15 @@
       ]
     },
     {
+      "commit": "f13934e32772f95962130717e909fd58de9f1309",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
+      ]
+    },
+    {
       "commit": "f198c8f91bce20c50939ef8526a95e1245307d2b",
       "contributors": [
         "jeremydixon22"
@@ -4739,6 +4771,19 @@
       "paths": [
         "src/omega_omarchy/credits_render.py",
         "src/omega_omarchy/render.py"
+      ]
+    },
+    {
+      "commit": "f9557afd1a8ff1911a7970218206beaaed188d94",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "docs/credits.md",
+        "docs/evidence/credits-opening-2026-09-13.json",
+        "src/omega_omarchy/credits.py",
+        "src/omega_omarchy/credits_render.py",
+        "tests/test_credits.py"
       ]
     }
   ],
@@ -4776,7 +4821,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "627c327f83e650cd128186528f3cafb5442df15b",
+  "revision": "f9557afd1a8ff1911a7970218206beaaed188d94",
   "rows": [
     {
       "height": 90,
