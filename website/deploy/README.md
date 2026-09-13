@@ -9,6 +9,13 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Version 0.1.2 performance announcement: `/srv/omegaomarchy/releases/20260913T042709Z/`;
+  publishes the News entry from `bcd7490`, automatically promoted to the top
+  of the feed and linked from the landing page. All 14 News tests and the site
+  export checks passed. Only `index.html` and `news/index.html` changed; the
+  game and other assets matched the prior release. Uploaded hashes were
+  verified before promotion, and changed URLs were purged from Cloudflare.
+  Previous release `20260913T023737Z` remains available for rollback.
 - Closing-credit artwork: `/srv/omegaomarchy/releases/20260913T023737Z/`;
   ships code `2fde504` and credits/build revision `af4c996`. The Roman-numeral
   copyright notice credits the Omega Omarchy contributors collectively. Four
