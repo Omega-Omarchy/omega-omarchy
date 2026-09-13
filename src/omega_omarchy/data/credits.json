@@ -325,10 +325,12 @@
         "39b94879d0a81f1febf1153c08abba31b3d2e798",
         "3b600fa2535ad09a56a170a7a2c1cce07524fd16",
         "3cf5caeac6802434be58b75cac6f99c2e8f4860c",
+        "3ee10b7ac512246ccf931a3983f24efda44ef1f3",
         "434fca8ab977650ed47ce3cb63f907ea2497ebc2",
         "4e1f41487619f9e50c7fc3e00ed2901f618f2e21",
         "5b50a59e7c592d77fdaefd1ffb4e03488c95e259",
         "5e90c6139987c876d5be4ddeb6d173f5e16494f4",
+        "5eb5838df76bb1a9a3978b1c42962f1965730f5e",
         "63086e2c7eda2b20a14ce4b37f2fa959a4d0d059",
         "6457b72ddc641aa897ab7b3a0cca3724bf6f07ef",
         "64a00b224d35077ac7f81941a5be43cc64940ac3",
@@ -366,6 +368,7 @@
         "e9f282b3acba0a596b14b8570cf42184d91aca92",
         "ea03b65180d3c079f5abb41b7db0533473ee60a3",
         "ebed1a4940dff6ea0db38b5287642b23d67cf160",
+        "f198c8f91bce20c50939ef8526a95e1245307d2b",
         "f61ec28a915b6da4ac53cac7f34d85df3e9b7a9b"
       ],
       "id": "jeremydixon22",
@@ -1001,6 +1004,7 @@
         "assets/fidelity/high/ui/prologue-campus.png",
         "assets/fidelity/high/ui/prologue-rift.png",
         "assets/fidelity/high/ui/prologue-transfer.png",
+        "assets/fidelity/high/ui/scene-backgrounds.json",
         "assets/fidelity/high/ui/stage-world-map.png",
         "assets/fidelity/sixteen-bit/bg/corrupted/parallax-0.png",
         "assets/fidelity/sixteen-bit/bg/corrupted/parallax-1.png",
@@ -1228,6 +1232,7 @@
         "assets/fidelity/sixteen-bit/ui/prologue-campus.png",
         "assets/fidelity/sixteen-bit/ui/prologue-rift.png",
         "assets/fidelity/sixteen-bit/ui/prologue-transfer.png",
+        "assets/fidelity/sixteen-bit/ui/scene-backgrounds.json",
         "assets/fidelity/sixteen-bit/ui/stage-world-map.png",
         "assets/fidelity/ultra/bg/corrupted/parallax-0.png",
         "assets/fidelity/ultra/bg/corrupted/parallax-1.png",
@@ -1466,6 +1471,7 @@
         "assets/fidelity/ultra/ui/prologue-campus.png",
         "assets/fidelity/ultra/ui/prologue-rift.png",
         "assets/fidelity/ultra/ui/prologue-transfer.png",
+        "assets/fidelity/ultra/ui/scene-backgrounds.json",
         "assets/fidelity/ultra/ui/stage-world-map.png",
         "assets/items/block-high.png",
         "assets/items/block.png",
@@ -1738,6 +1744,7 @@
         "assets/ui/oligarchy.png",
         "assets/ui/omarchy-font.ttf",
         "assets/ui/omarchy-logo-hud.png",
+        "assets/ui/omarchy-wordmark-pulse.png",
         "assets/ui/omarchy-wordmark.png",
         "assets/ui/omarchy.png",
         "assets/ui/omega-omarchy-icon-128.png",
@@ -1812,8 +1819,10 @@
         "docs/evidence/perf.txt",
         "docs/evidence/render-browser-2026-09-12.json",
         "docs/evidence/render-browser-second-pass-2026-09-12.json",
+        "docs/evidence/render-browser-story-2026-09-12.json",
         "docs/evidence/render-native-2026-09-12.json",
         "docs/evidence/render-native-second-pass-2026-09-12.json",
+        "docs/evidence/render-native-story-2026-09-12.json",
         "docs/evidence/sixteen-block.png",
         "docs/evidence/spawn-eight-bit-clean.png",
         "docs/evidence/spawn-eight-bit-crt.png",
@@ -2238,6 +2247,26 @@
         "tests/test_render_performance.py",
         "tools/benchmark_render.py",
         "website/deploy/README.md"
+      ]
+    },
+    {
+      "commit": "3ee10b7ac512246ccf931a3983f24efda44ef1f3",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "assets/fidelity/high/ui/scene-backgrounds.json",
+        "assets/fidelity/sixteen-bit/ui/scene-backgrounds.json",
+        "assets/fidelity/ultra/ui/scene-backgrounds.json",
+        "assets/ui/omarchy-wordmark-pulse.png",
+        "docs/evidence/render-browser-story-2026-09-12.json",
+        "docs/evidence/render-native-story-2026-09-12.json",
+        "docs/performance.md",
+        "src/omega_omarchy/assets.py",
+        "src/omega_omarchy/render.py",
+        "tests/test_render_performance.py",
+        "tools/benchmark_render.py",
+        "tools/build_render_benchmark.py"
       ]
     },
     {
@@ -3465,6 +3494,15 @@
       ]
     },
     {
+      "commit": "5eb5838df76bb1a9a3978b1c42962f1965730f5e",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
       "commit": "63086e2c7eda2b20a14ce4b37f2fa959a4d0d059",
       "contributors": [
         "jeremydixon22"
@@ -4507,6 +4545,15 @@
       ]
     },
     {
+      "commit": "f198c8f91bce20c50939ef8526a95e1245307d2b",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
+      ]
+    },
+    {
       "commit": "f61ec28a915b6da4ac53cac7f34d85df3e9b7a9b",
       "contributors": [
         "jeremydixon22"
@@ -4551,7 +4598,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "3cf5caeac6802434be58b75cac6f99c2e8f4860c",
+  "revision": "3ee10b7ac512246ccf931a3983f24efda44ef1f3",
   "rows": [
     {
       "height": 90,
