@@ -44,23 +44,28 @@ def pin_to_top(entries: list[dict]) -> list[dict]:
 
 
 def latest_announcement(source: Path) -> dict:
-    """The entry the landing page's launch-note badge should link to: whatever
-    News pinning currently promotes to the top (see pin_to_top), so that badge
-    is always a live hook to the most recent announcement rather than a link
-    hand-maintained separately from the News page's own pinning."""
+    """The newest authored News entry supplies the landing headline/date/link.
+
+    Feed pins affect the News page's ordering, not which announcement is newest.
+    """
     editorial = json.loads((source / "news/editorial.json").read_text())
     editorial = sorted(editorial, key=lambda item: datetime.fromisoformat(item["date"]), reverse=True)
-    return pin_to_top(editorial)[0]
+    return editorial[0]
+
+
+def display_date(timestamp: str) -> str:
+    """Match the News client's English UTC date on both static pages."""
+    date = datetime.fromisoformat(timestamp).astimezone(timezone.utc)
+    return f'{date.strftime("%b")} {date.day}, {date.year}'
 
 
 def render_entry(entry: dict) -> str:
     e = lambda value: escape(str(value), quote=True)
-    date = datetime.fromisoformat(entry["date"]).astimezone(timezone.utc)
     label = {"news": "News", "commit": "Commit", "release": "Release"}[entry["type"]]
     paragraphs = "".join(f"<p>{e(p)}</p>" for p in entry.get("paragraphs", []))
     sha = f'<span class="news-sha">{e(entry["sha"])}</span>' if entry.get("sha") else ""
     return (f'<article class="news-entry" id="{e(entry["id"])}" data-kind="{e(entry["type"])}">'
-            f'<div class="news-meta"><time datetime="{e(entry["date"])}">{date.strftime("%b")} {date.day}, {date.year}</time>'
+            f'<div class="news-meta"><time datetime="{e(entry["date"])}">{display_date(entry["date"])}</time>'
             f'<span class="news-kind">{label}</span>{sha}</div>'
             f'<div class="news-copy"><h2><a href="{e(entry["url"])}">{e(entry["title"])}</a></h2>{paragraphs}</div></article>')
 

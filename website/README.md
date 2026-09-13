@@ -116,6 +116,11 @@ bouncing effects; it does not embed that site's code or effect runtime.
 Add intentional announcements to `news/editorial.json`, using a unique slug,
 a timestamp with a timezone, a title, and plain-text paragraphs. The permalink
 must be `/news/#YOUR-SLUG`. Rebuild the site to include the announcement.
+The landing-page announcement automatically copies the newest News entry's
+headline, date, and permalink on every build. Its date uses the same UTC
+format as the News page. An older pinned entry can stay at the top of the
+News feed without replacing this newest-announcement link. No separate
+landing-page text needs updating when publishing news.
 
 Every build reads the latest 20 commits from the local checkout and renders
 them directly into `news/index.html`, so the feed is readable without JavaScript.

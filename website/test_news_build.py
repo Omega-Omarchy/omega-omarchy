@@ -5,7 +5,9 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
+import build as site_build
 from news_build import build_news, latest_announcement, pin_to_top
 
 
@@ -71,7 +73,7 @@ class NewsBuildTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 build_news(fake_source, root, root)
 
-    def test_latest_announcement_matches_pin_to_top_and_follows_a_newer_entry(self):
+    def test_latest_announcement_follows_a_newer_entry(self):
         source = Path(__file__).resolve().parent
         with tempfile.TemporaryDirectory() as temp:
             fake_source = Path(temp) / "source"
@@ -84,6 +86,32 @@ class NewsBuildTests(unittest.TestCase):
             editorial.append({**editorial[0], "id": "a-newer-announcement", "date": "2099-01-01T00:00:00Z"})
             (fake_source / "news/editorial.json").write_text(json.dumps(editorial))
             self.assertEqual(latest_announcement(fake_source)["id"], "a-newer-announcement")
+
+    def test_landing_announcement_mirrors_newest_news_title_date_and_link(self):
+        source = Path(__file__).resolve().parent
+        with tempfile.TemporaryDirectory() as temp:
+            fake_source, out = Path(temp) / "source", Path(temp) / "site"
+            shutil.copytree(source, fake_source)
+            older = {"id": "older", "type": "news", "date": "2026-09-10T12:00:00Z",
+                     "title": "Older pinned news", "url": "/news/#older", "pinned": True}
+            newer = {"id": "newer", "type": "news", "date": "2026-09-12T23:30:00-04:00",
+                     "title": 'New <script> & "improved"', "url": "/news/#newer"}
+            (fake_source / "news/editorial.json").write_text(json.dumps([older, newer]))
+            with patch.object(site_build, "SOURCE", fake_source):
+                site_build.build(out, with_game=False)
+            home = (out / "index.html").read_text()
+            notice = re.search(r'<a class="launch-note".*?</a>', home, re.S).group(0)
+            self.assertIn('href="/news/#newer"', notice)
+            self.assertIn('New &lt;script&gt; &amp; &quot;improved&quot;', notice)
+            self.assertNotIn("<script>", notice)
+            self.assertNotIn("LAUNCH_", notice)
+            self.assertNotIn("Open-source launch", notice)
+            self.assertIn('datetime="2026-09-12T23:30:00-04:00">Sep 13, 2026</time>', notice)
+            # An older feed pin stays pinned, but cannot make the landing
+            # announcement stale. Both pages agree across a UTC day boundary.
+            news = (out / "news/index.html").read_text()
+            self.assertIn('datetime="2026-09-12T23:30:00-04:00">Sep 13, 2026</time>', news)
+            self.assertEqual(re.search(r'<article class="news-entry" id="([^"]+)"', news).group(1), "older")
 
     def test_source_archive_still_has_editorial_news(self):
         source = Path(__file__).resolve().parent

@@ -51,4 +51,6 @@ button{cursor:pointer}.theme-toggle{display:flex;align-items:center;gap:8px;padd
    A minimum, rather than a fixed height, lets short screens and zoomed text scroll. */
 .hero{min-height:calc(100vh - var(--site-header-height,73px));min-height:calc(100svh - var(--site-header-height,73px));display:grid;align-items:center}
 .hero-content{padding-block:clamp(28px,4vh,56px)}
+.launch-note{max-width:100%}.launch-headline{overflow-wrap:anywhere}.launch-headline .status-light{margin-right:6px}.launch-date{white-space:nowrap}.launch-date::before{content:"·";margin-right:12px}
+@media(max-width:600px){.launch-date{flex-basis:100%}.launch-date::before{display:none}}
 @media(max-width:600px){.hero{min-height:calc(100svh - var(--site-header-height,65px))}}
