@@ -330,12 +330,14 @@
         "3b600fa2535ad09a56a170a7a2c1cce07524fd16",
         "3cf5caeac6802434be58b75cac6f99c2e8f4860c",
         "3ee10b7ac512246ccf931a3983f24efda44ef1f3",
+        "3fbdc64272b8e2e729f87049257bf4c69bbaad1c",
         "434fca8ab977650ed47ce3cb63f907ea2497ebc2",
         "4a7e1eb42bbb0d11cf8c05bb3c9facdf9fdc4b4b",
         "4e1f41487619f9e50c7fc3e00ed2901f618f2e21",
         "5b50a59e7c592d77fdaefd1ffb4e03488c95e259",
         "5e90c6139987c876d5be4ddeb6d173f5e16494f4",
         "5eb5838df76bb1a9a3978b1c42962f1965730f5e",
+        "627c327f83e650cd128186528f3cafb5442df15b",
         "63086e2c7eda2b20a14ce4b37f2fa959a4d0d059",
         "6457b72ddc641aa897ab7b3a0cca3724bf6f07ef",
         "64a00b224d35077ac7f81941a5be43cc64940ac3",
@@ -358,9 +360,11 @@
         "a0f32bcc5d290c6a96c5bd88e4311a25278444d6",
         "a3a17180847a345cd8cd5c81bcbf44a178ebd99a",
         "a7e6042305b3a134eacbd5f8c507649655593f42",
+        "af4c99618aaf26f03cf23f1799ecd2e0617e55ed",
         "b12bde595c2eeb5b20c10059342eb271998c21c4",
         "b4986d5e7d406675181139ad8ac22a57c9ec3801",
         "bcd2cb8ef31ecfcdb2d2070aa0f1d7edf896c7b2",
+        "bcd74909cd7e9db563ca5b8cb9698839718a00fe",
         "bd29dfda73516104cd0456fc955f9a0ed29ce869",
         "c8e7dae829ff1d5d0c871c6a997757e242b34c3a",
         "d3ec3554c8ef6411f43fa2dc93ae0b81a2aef4f2",
@@ -370,10 +374,13 @@
         "e00340c1786492ad2aaf23728294ba7746bb92a7",
         "e18e5dd47fc05fdb0da9d58a47adcb90088fec60",
         "e24a4f0c10eb13c4e50417d2a057b115dcd709e0",
+        "e3f243e3d344a25ec1a49a4d8a799a9e13f65dbc",
+        "e5ee4dd37b11a3573073a1207ec9ce9814a44efe",
         "e636b4be5c18eb30c493ed56d6b354b3a4998e6a",
         "e691dc5432e296a9960a315080d88ab1c51a961e",
         "e7162d608bc517b5a0dce448d31627ee3a84d811",
         "e72677102fa577212c94dc8a487974f85cac14a9",
+        "e79ff911da4efa4a88ebe4afffb4f2e1405f6a24",
         "e9f282b3acba0a596b14b8570cf42184d91aca92",
         "ea03b65180d3c079f5abb41b7db0533473ee60a3",
         "ebed1a4940dff6ea0db38b5287642b23d67cf160",
@@ -1799,6 +1806,8 @@
         "docs/evidence/boss-high-crt.png",
         "docs/evidence/boss-sixteen-bit-clean.png",
         "docs/evidence/boss-sixteen-bit-crt.png",
+        "docs/evidence/credits-browser-2026-09-13.json",
+        "docs/evidence/credits-native-2026-09-13.json",
         "docs/evidence/edit-eight-bit-clean.png",
         "docs/evidence/edit-eight-bit-crt.png",
         "docs/evidence/edit-high-clean.png",
@@ -1957,6 +1966,7 @@
         "tests/test_combat.py",
         "tests/test_content_packs.py",
         "tests/test_corruption.py",
+        "tests/test_credit_scrubbing.py",
         "tests/test_credits.py",
         "tests/test_edit_challenge.py",
         "tests/test_flight_render.py",
@@ -1993,6 +2003,7 @@
         "tests/test_zone_delta.py",
         "tools/__init__.py",
         "tools/audit_release.py",
+        "tools/benchmark_credits.py",
         "tools/benchmark_render.py",
         "tools/build_credit_badges.py",
         "tools/build_native.py",
@@ -2299,6 +2310,15 @@
         "tests/test_render_performance.py",
         "tools/benchmark_render.py",
         "tools/build_render_benchmark.py"
+      ]
+    },
+    {
+      "commit": "3fbdc64272b8e2e729f87049257bf4c69bbaad1c",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
       ]
     },
     {
@@ -3544,6 +3564,27 @@
       ]
     },
     {
+      "commit": "627c327f83e650cd128186528f3cafb5442df15b",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "docs/controls.md",
+        "docs/credits.md",
+        "docs/evidence/credits-browser-2026-09-13.json",
+        "docs/evidence/credits-native-2026-09-13.json",
+        "docs/performance.md",
+        "src/omega_omarchy/app.py",
+        "src/omega_omarchy/audio.py",
+        "src/omega_omarchy/credits.py",
+        "src/omega_omarchy/credits_render.py",
+        "src/omega_omarchy/sim.py",
+        "tests/test_credit_scrubbing.py",
+        "tests/test_credits.py",
+        "tools/benchmark_credits.py"
+      ]
+    },
+    {
       "commit": "63086e2c7eda2b20a14ce4b37f2fa959a4d0d059",
       "contributors": [
         "jeremydixon22"
@@ -4297,6 +4338,15 @@
       ]
     },
     {
+      "commit": "af4c99618aaf26f03cf23f1799ecd2e0617e55ed",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
       "commit": "b12bde595c2eeb5b20c10059342eb271998c21c4",
       "contributors": [
         "jeremydixon22"
@@ -4327,6 +4377,16 @@
       "paths": [
         "src/omega_omarchy/credits_render.py",
         "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
+      "commit": "bcd74909cd7e9db563ca5b8cb9698839718a00fe",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/news/editorial.json",
+        "website/test_news_build.py"
       ]
     },
     {
@@ -4543,6 +4603,29 @@
       ]
     },
     {
+      "commit": "e3f243e3d344a25ec1a49a4d8a799a9e13f65dbc",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
+      ]
+    },
+    {
+      "commit": "e5ee4dd37b11a3573073a1207ec9ce9814a44efe",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/README.md",
+        "website/build.py",
+        "website/index.html",
+        "website/news_build.py",
+        "website/style.css",
+        "website/test_news_build.py"
+      ]
+    },
+    {
       "commit": "e636b4be5c18eb30c493ed56d6b354b3a4998e6a",
       "contributors": [
         "jeremydixon22"
@@ -4592,6 +4675,15 @@
         "src/omega_omarchy/credits_render.py",
         "src/omega_omarchy/data/credits.json",
         "tests/test_credits.py"
+      ]
+    },
+    {
+      "commit": "e79ff911da4efa4a88ebe4afffb4f2e1405f6a24",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
       ]
     },
     {
@@ -4684,7 +4776,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "2fde504ebbadbcf46c20d1cdbe9461a97211c4d5",
+  "revision": "627c327f83e650cd128186528f3cafb5442df15b",
   "rows": [
     {
       "height": 90,
