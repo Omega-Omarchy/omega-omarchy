@@ -1,0 +1,812 @@
+{
+  "python": "3.12.3",
+  "platform": "linux",
+  "suite": "story",
+  "pygame": "2.5.8",
+  "sdl": [
+    2,
+    32,
+    10
+  ],
+  "results": [
+    {
+      "scenario": "prologue-title",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.988,
+        "p95Ms": 1.506,
+        "coldMs": 2.881
+      },
+      "after": {
+        "medianMs": 0.254,
+        "p95Ms": 0.512,
+        "coldMs": 4.273
+      },
+      "improvementPercent": 74.3
+    },
+    {
+      "scenario": "prologue-title",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.176,
+        "p95Ms": 1.574,
+        "coldMs": 3.454
+      },
+      "after": {
+        "medianMs": 0.453,
+        "p95Ms": 0.598,
+        "coldMs": 4.794
+      },
+      "improvementPercent": 61.5
+    },
+    {
+      "scenario": "prologue-title",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.638,
+        "p95Ms": 2.024,
+        "coldMs": 5.429
+      },
+      "after": {
+        "medianMs": 0.836,
+        "p95Ms": 1.213,
+        "coldMs": 6.871
+      },
+      "improvementPercent": 48.9
+    },
+    {
+      "scenario": "prologue-orb-capture",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.272,
+        "p95Ms": 0.366,
+        "coldMs": 3.892
+      },
+      "after": {
+        "medianMs": 0.181,
+        "p95Ms": 0.265,
+        "coldMs": 4.302
+      },
+      "improvementPercent": 33.3
+    },
+    {
+      "scenario": "prologue-orb-capture",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.679,
+        "p95Ms": 1.037,
+        "coldMs": 8.011
+      },
+      "after": {
+        "medianMs": 0.336,
+        "p95Ms": 0.55,
+        "coldMs": 9.74
+      },
+      "improvementPercent": 50.6
+    },
+    {
+      "scenario": "prologue-orb-capture",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.609,
+        "p95Ms": 2.093,
+        "coldMs": 19.156
+      },
+      "after": {
+        "medianMs": 0.629,
+        "p95Ms": 0.985,
+        "coldMs": 25.045
+      },
+      "improvementPercent": 60.9
+    },
+    {
+      "scenario": "prologue-orb-door",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.28,
+        "p95Ms": 0.463,
+        "coldMs": 4.024
+      },
+      "after": {
+        "medianMs": 0.17,
+        "p95Ms": 0.285,
+        "coldMs": 3.895
+      },
+      "improvementPercent": 39.1
+    },
+    {
+      "scenario": "prologue-orb-door",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.661,
+        "p95Ms": 0.922,
+        "coldMs": 7.929
+      },
+      "after": {
+        "medianMs": 0.321,
+        "p95Ms": 0.519,
+        "coldMs": 9.721
+      },
+      "improvementPercent": 51.4
+    },
+    {
+      "scenario": "prologue-orb-door",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.533,
+        "p95Ms": 2.171,
+        "coldMs": 18.087
+      },
+      "after": {
+        "medianMs": 0.659,
+        "p95Ms": 0.935,
+        "coldMs": 24.625
+      },
+      "improvementPercent": 57.0
+    },
+    {
+      "scenario": "prologue-orb-machine",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.357,
+        "p95Ms": 0.592,
+        "coldMs": 5.977
+      },
+      "after": {
+        "medianMs": 0.229,
+        "p95Ms": 0.349,
+        "coldMs": 4.96
+      },
+      "improvementPercent": 35.8
+    },
+    {
+      "scenario": "prologue-orb-machine",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.775,
+        "p95Ms": 1.103,
+        "coldMs": 9.341
+      },
+      "after": {
+        "medianMs": 0.446,
+        "p95Ms": 0.79,
+        "coldMs": 11.704
+      },
+      "improvementPercent": 42.5
+    },
+    {
+      "scenario": "prologue-orb-machine",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.7,
+        "p95Ms": 2.388,
+        "coldMs": 20.112
+      },
+      "after": {
+        "medianMs": 0.825,
+        "p95Ms": 1.23,
+        "coldMs": 24.836
+      },
+      "improvementPercent": 51.5
+    },
+    {
+      "scenario": "prologue-transfer",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.358,
+        "p95Ms": 0.484,
+        "coldMs": 4.963
+      },
+      "after": {
+        "medianMs": 0.236,
+        "p95Ms": 0.329,
+        "coldMs": 4.895
+      },
+      "improvementPercent": 33.9
+    },
+    {
+      "scenario": "prologue-transfer",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.91,
+        "p95Ms": 1.39,
+        "coldMs": 10.341
+      },
+      "after": {
+        "medianMs": 0.472,
+        "p95Ms": 0.7,
+        "coldMs": 10.437
+      },
+      "improvementPercent": 48.1
+    },
+    {
+      "scenario": "prologue-transfer",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 2.015,
+        "p95Ms": 2.588,
+        "coldMs": 21.394
+      },
+      "after": {
+        "medianMs": 0.889,
+        "p95Ms": 1.161,
+        "coldMs": 25.61
+      },
+      "improvementPercent": 55.9
+    },
+    {
+      "scenario": "prologue-corrupt",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.49,
+        "p95Ms": 0.709,
+        "coldMs": 5.289
+      },
+      "after": {
+        "medianMs": 0.347,
+        "p95Ms": 0.577,
+        "coldMs": 4.997
+      },
+      "improvementPercent": 29.2
+    },
+    {
+      "scenario": "prologue-corrupt",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.136,
+        "p95Ms": 1.558,
+        "coldMs": 10.637
+      },
+      "after": {
+        "medianMs": 0.708,
+        "p95Ms": 1.063,
+        "coldMs": 11.658
+      },
+      "improvementPercent": 37.7
+    },
+    {
+      "scenario": "prologue-corrupt",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 2.549,
+        "p95Ms": 3.271,
+        "coldMs": 20.594
+      },
+      "after": {
+        "medianMs": 1.469,
+        "p95Ms": 2.306,
+        "coldMs": 26.186
+      },
+      "improvementPercent": 42.4
+    },
+    {
+      "scenario": "prologue-rift",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.504,
+        "p95Ms": 0.714,
+        "coldMs": 3.937
+      },
+      "after": {
+        "medianMs": 0.476,
+        "p95Ms": 0.701,
+        "coldMs": 3.967
+      },
+      "improvementPercent": 5.5
+    },
+    {
+      "scenario": "prologue-rift",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.37,
+        "p95Ms": 1.818,
+        "coldMs": 9.513
+      },
+      "after": {
+        "medianMs": 1.211,
+        "p95Ms": 1.621,
+        "coldMs": 10.636
+      },
+      "improvementPercent": 11.7
+    },
+    {
+      "scenario": "prologue-rift",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 4.945,
+        "p95Ms": 6.519,
+        "coldMs": 25.582
+      },
+      "after": {
+        "medianMs": 2.563,
+        "p95Ms": 3.978,
+        "coldMs": 26.116
+      },
+      "improvementPercent": 48.2
+    },
+    {
+      "scenario": "prologue-login",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.226,
+        "p95Ms": 0.336,
+        "coldMs": 3.408
+      },
+      "after": {
+        "medianMs": 0.18,
+        "p95Ms": 0.268,
+        "coldMs": 3.014
+      },
+      "improvementPercent": 20.4
+    },
+    {
+      "scenario": "prologue-login",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.452,
+        "p95Ms": 0.739,
+        "coldMs": 3.214
+      },
+      "after": {
+        "medianMs": 0.328,
+        "p95Ms": 0.48,
+        "coldMs": 3.429
+      },
+      "improvementPercent": 27.6
+    },
+    {
+      "scenario": "prologue-login",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.906,
+        "p95Ms": 1.261,
+        "coldMs": 3.63
+      },
+      "after": {
+        "medianMs": 0.628,
+        "p95Ms": 0.995,
+        "coldMs": 4.971
+      },
+      "improvementPercent": 30.7
+    },
+    {
+      "scenario": "login-transition",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.436,
+        "p95Ms": 0.588,
+        "coldMs": 0.914
+      },
+      "after": {
+        "medianMs": 0.158,
+        "p95Ms": 0.334,
+        "coldMs": 0.838
+      },
+      "improvementPercent": 63.6
+    },
+    {
+      "scenario": "login-transition",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.92,
+        "p95Ms": 1.321,
+        "coldMs": 1.359
+      },
+      "after": {
+        "medianMs": 0.446,
+        "p95Ms": 0.885,
+        "coldMs": 1.607
+      },
+      "improvementPercent": 51.5
+    },
+    {
+      "scenario": "login-transition",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 2.09,
+        "p95Ms": 2.832,
+        "coldMs": 1.846
+      },
+      "after": {
+        "medianMs": 1.019,
+        "p95Ms": 1.489,
+        "coldMs": 2.028
+      },
+      "improvementPercent": 51.3
+    },
+    {
+      "scenario": "stage-map",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.406,
+        "p95Ms": 0.527,
+        "coldMs": 6.883
+      },
+      "after": {
+        "medianMs": 0.103,
+        "p95Ms": 0.233,
+        "coldMs": 7.294
+      },
+      "improvementPercent": 74.7
+    },
+    {
+      "scenario": "stage-map",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.805,
+        "p95Ms": 1.097,
+        "coldMs": 13.007
+      },
+      "after": {
+        "medianMs": 0.245,
+        "p95Ms": 0.413,
+        "coldMs": 16.603
+      },
+      "improvementPercent": 69.5
+    },
+    {
+      "scenario": "stage-map",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.813,
+        "p95Ms": 2.427,
+        "coldMs": 24.223
+      },
+      "after": {
+        "medianMs": 0.538,
+        "p95Ms": 0.921,
+        "coldMs": 30.829
+      },
+      "improvementPercent": 70.3
+    },
+    {
+      "scenario": "stage-map-advanced",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.4,
+        "p95Ms": 0.555,
+        "coldMs": 7.038
+      },
+      "after": {
+        "medianMs": 0.103,
+        "p95Ms": 0.219,
+        "coldMs": 7.67
+      },
+      "improvementPercent": 74.3
+    },
+    {
+      "scenario": "stage-map-advanced",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.818,
+        "p95Ms": 1.015,
+        "coldMs": 13.068
+      },
+      "after": {
+        "medianMs": 0.258,
+        "p95Ms": 0.462,
+        "coldMs": 14.629
+      },
+      "improvementPercent": 68.5
+    },
+    {
+      "scenario": "stage-map-advanced",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.801,
+        "p95Ms": 2.378,
+        "coldMs": 24.23
+      },
+      "after": {
+        "medianMs": 0.534,
+        "p95Ms": 0.936,
+        "coldMs": 30.048
+      },
+      "improvementPercent": 70.3
+    },
+    {
+      "scenario": "map-transition",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.419,
+        "p95Ms": 0.631,
+        "coldMs": 0.227
+      },
+      "after": {
+        "medianMs": 0.146,
+        "p95Ms": 0.361,
+        "coldMs": 0.186
+      },
+      "improvementPercent": 65.1
+    },
+    {
+      "scenario": "map-transition",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.926,
+        "p95Ms": 1.55,
+        "coldMs": 0.562
+      },
+      "after": {
+        "medianMs": 0.43,
+        "p95Ms": 0.774,
+        "coldMs": 0.866
+      },
+      "improvementPercent": 53.6
+    },
+    {
+      "scenario": "map-transition",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.993,
+        "p95Ms": 2.944,
+        "coldMs": 4.638
+      },
+      "after": {
+        "medianMs": 0.971,
+        "p95Ms": 1.548,
+        "coldMs": 4.914
+      },
+      "improvementPercent": 51.2
+    },
+    {
+      "scenario": "intro-build",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.729,
+        "p95Ms": 1.163,
+        "coldMs": 6.89
+      },
+      "after": {
+        "medianMs": 0.55,
+        "p95Ms": 0.863,
+        "coldMs": 7.346
+      },
+      "improvementPercent": 24.4
+    },
+    {
+      "scenario": "intro-build",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.665,
+        "p95Ms": 2.582,
+        "coldMs": 13.624
+      },
+      "after": {
+        "medianMs": 1.55,
+        "p95Ms": 2.105,
+        "coldMs": 16.681
+      },
+      "improvementPercent": 6.9
+    },
+    {
+      "scenario": "intro-build",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 3.512,
+        "p95Ms": 4.666,
+        "coldMs": 28.182
+      },
+      "after": {
+        "medianMs": 3.262,
+        "p95Ms": 3.941,
+        "coldMs": 29.858
+      },
+      "improvementPercent": 7.1
+    },
+    {
+      "scenario": "intro-hold",
+      "fidelity": "sixteen-bit",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 0.76,
+        "p95Ms": 1.267,
+        "coldMs": 8.028
+      },
+      "after": {
+        "medianMs": 0.11,
+        "p95Ms": 0.196,
+        "coldMs": 7.617
+      },
+      "improvementPercent": 85.5
+    },
+    {
+      "scenario": "intro-hold",
+      "fidelity": "high",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 1.807,
+        "p95Ms": 2.259,
+        "coldMs": 14.598
+      },
+      "after": {
+        "medianMs": 0.286,
+        "p95Ms": 0.39,
+        "coldMs": 14.006
+      },
+      "improvementPercent": 84.2
+    },
+    {
+      "scenario": "intro-hold",
+      "fidelity": "ultra",
+      "frames": 60,
+      "pixelsEqual": true,
+      "cameraEqual": true,
+      "gameplayUnchanged": true,
+      "before": {
+        "medianMs": 3.642,
+        "p95Ms": 4.331,
+        "coldMs": 24.827
+      },
+      "after": {
+        "medianMs": 0.612,
+        "p95Ms": 0.851,
+        "coldMs": 25.135
+      },
+      "improvementPercent": 83.2
+    }
+  ],
+  "reference": "f198c8f"
+}

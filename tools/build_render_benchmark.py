@@ -24,7 +24,7 @@ async def main():
         from benchmark_render import compare
         from omega_omarchy._render_reference import Renderer as ReferenceRenderer
         report = await compare(ReferenceRenderer, frames=__FRAMES__,
-            fixture=Path(__file__).parent / 'benchmark-fixture.json', emit=emit)
+            fixture=Path(__file__).parent / 'benchmark-fixture.json', emit=emit, suite=__SUITE__)
         output.textContent = 'COMPLETE\\n' + json.dumps(report)
     except Exception:
         output.textContent = 'FAILED\\n' + traceback.format_exc()
@@ -41,6 +41,7 @@ def main():
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="A new local directory; never deploy it")
     parser.add_argument("--frames", type=int, default=60)
+    parser.add_argument("--suite", choices=("gameplay", "story"), default="gameplay")
     args = parser.parse_args()
     if args.frames < 20:
         parser.error("Use at least 20 measured frames")
@@ -63,7 +64,7 @@ def main():
             for info in source.infolist():
                 if info.filename != entry:
                     output.writestr(info, source.read(info.filename))
-            output.writestr(entry, WEB_MAIN.replace("__FRAMES__", str(args.frames)))
+            output.writestr(entry, WEB_MAIN.replace("__FRAMES__", str(args.frames)).replace("__SUITE__", repr(args.suite)))
             output.writestr("assets/benchmark_render.py", runner)
             output.writestr("assets/omega_omarchy/_render_reference.py", reference)
             output.writestr("assets/benchmark-fixture.json", json.dumps(fixture))

@@ -1209,6 +1209,24 @@ def emit_official_wordmark(root: Path) -> None:
         oligarchy.save(root / "ui" / "oligarchy-logo-hud.png")
 
 
+def emit_wordmark_pulse(root: Path) -> None:
+    """Bake the ten exact cyan falloffs used by the moving title highlight."""
+    source = root / "ui" / "omarchy-wordmark.png"
+    if not source.is_file():
+        return
+    with Image.open(source) as image:
+        base = image.convert("RGBA")
+    atlas = Image.new("RGBA", (base.width, base.height * 10))
+    for distance in range(10):
+        falloff = 1.0 - distance / 10
+        pixels = [tuple(int(c + (target - c) * falloff) for c, target in zip(pixel[:3], (125, 207, 255))) + (pixel[3],)
+                  if pixel[3] >= 16 else pixel for pixel in base.getdata()]
+        tint = Image.new("RGBA", base.size)
+        tint.putdata(pixels)
+        atlas.paste(tint, (0, distance * base.height))
+    atlas.save(root / "ui" / "omarchy-wordmark-pulse.png")
+
+
 def emit_app_icons(root: Path) -> None:
     """Derive mask-safe runtime icons from the selected brand master."""
 
@@ -2011,6 +2029,21 @@ def emit_parallax_bounds(root: Path) -> None:
                 (directory / "parallax-bounds.json").write_text(json.dumps(metadata, sort_keys=True) + "\n")
 
 
+def emit_scene_background_metadata(root: Path) -> None:
+    """Certify opaque story/map artwork without scanning it at runtime."""
+    import json
+
+    names = ("prologue-campus", "prologue-transfer", "prologue-rift", "stage-world-map")
+    for folder in sorted((root / "fidelity").glob("*/ui")):
+        metadata = {}
+        for name in names:
+            path = folder / f"{name}.png"
+            with Image.open(path) as source:
+                metadata[path.name] = {"size": list(source.size),
+                                       "opaque": source.convert("RGBA").getchannel("A").getextrema() == (255, 255)}
+        (folder / "scene-backgrounds.json").write_text(json.dumps(metadata, sort_keys=True) + "\n")
+
+
 def build_assets(root: Path | None = None) -> Path:
     root = Path(root) if root else asset_dir()
     resolved = root.resolve()
@@ -2061,6 +2094,7 @@ def build_assets(root: Path | None = None) -> Path:
         d.text((8, 4), word, fill=LIME)
         img.save(ui / f"{name}.png")
     emit_official_wordmark(root)
+    emit_wordmark_pulse(root)
     emit_app_icons(root)
     omarchy_font = root / "source" / "fonts" / "omarchy-font.ttf"
     if omarchy_font.is_file():
@@ -2070,6 +2104,7 @@ def build_assets(root: Path | None = None) -> Path:
         shutil.copyfile(omarchy_font_license, ui / "OMARCHY-FONT-LICENSE.txt")
     emit_fidelity_art(root)
     emit_parallax_bounds(root)
+    emit_scene_background_metadata(root)
     from .refinement_art import emit_refinement_art
 
     emit_refinement_art(root)

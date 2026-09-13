@@ -24,7 +24,40 @@ import pygame
 
 from omega_omarchy.combat import make_foe, make_player, start_encounter
 from omega_omarchy.render import Renderer
-from omega_omarchy.sim import GameSim
+from omega_omarchy.campaign import CAMPAIGN_ROSTER
+from omega_omarchy.sim import (GameSim, PROLOGUE_BEATS, PROLOGUE_LOGIN_TRANSITION_TICKS,
+                              STAGE_MAP_TRANSITION_TICKS, LEVEL_INTRO_MAP_FADE_TICKS,
+                              LEVEL_INTRO_WHITE_HOLD_TICKS, LEVEL_INTRO_BUILD_TICKS)
+
+
+GAMEPLAY_SCENARIOS = ("start", "boss", "pit", "platforms", "turn", "cow", "cannon-charge", "cannon-aim")
+STORY_SCENARIOS = tuple("prologue-" + beat[2] for beat in PROLOGUE_BEATS) + (
+    "login-transition", "stage-map", "stage-map-advanced", "map-transition", "intro-build", "intro-hold")
+
+
+def prepare_scenario(sim, scenario):
+    if scenario in STORY_SCENARIOS:
+        sim.scene = "prologue" if scenario.startswith("prologue-") or scenario == "login-transition" else (
+            "level-intro" if scenario.startswith("intro-") else "stage-map")
+        staging = scenario.removeprefix("prologue-") if scenario.startswith("prologue-") else "login"
+        sim.story_beat = next(i for i, beat in enumerate(PROLOGUE_BEATS) if beat[2] == staging)
+        sim.story_transition_ticks = sim.stage_map_transition_ticks = 0
+        if scenario == "stage-map-advanced":
+            sim.converted = [spec.boss.id for spec in CAMPAIGN_ROSTER[:3]]
+        return
+    if scenario == "cow" or scenario.startswith("cannon-"):
+        sim.dev_warp("cow")
+    else:
+        sim.dev_warp("start" if scenario == "platforms" else "boss" if scenario == "turn" else scenario)
+    if scenario == "platforms":
+        entity = next(e for e in sim.entities if e.kind == "tilt-platform")
+        sim.body = replace(sim.body, x=entity.x * 16, y=entity.y * 16 - 40)
+    if scenario == "turn":
+        boss_id = str(next(e for e in sim.entities if e.kind == "boss").extra["boss"])
+        sim.combat = start_encounter(make_player(), make_foe(boss_id, as_boss=True), boss_id=boss_id, mode="turn")
+        sim.scene = "turn"
+    if scenario.startswith("cannon-"):
+        sim.cannon_loaded = True
 
 
 def median(values):
@@ -41,7 +74,7 @@ def reference_renderer(path: Path):
     return module.Renderer
 
 
-async def compare(reference, *, frames=90, fixture=None, emit=print):
+async def compare(reference, *, frames=90, fixture=None, emit=print, suite="gameplay"):
     """Run interleaved pairs; stop immediately on any pixel/camera difference."""
     pygame.init()
     pygame.display.set_mode((960, 540))
@@ -66,24 +99,12 @@ async def compare(reference, *, frames=90, fixture=None, emit=print):
         sim = GameSim.from_play_now()
     fixture_sim = sim
     results = []
-    for scenario in ("start", "boss", "pit", "platforms", "turn", "cow", "cannon-charge", "cannon-aim"):
+    for scenario in STORY_SCENARIOS if suite == "story" else GAMEPLAY_SCENARIOS:
         # Developer warps can retain an encounter or a transition flash. Each
         # case must begin independently, not inherit the preceding scenario.
         sim = copy.deepcopy(fixture_sim)
-        if scenario == "cow" or scenario.startswith("cannon-"):
-            sim.dev_warp("cow")
-        else:
-            sim.dev_warp("start" if scenario == "platforms" else "boss" if scenario == "turn" else scenario)
-        if scenario == "platforms":
-            entity = next(e for e in sim.entities if e.kind == "tilt-platform")
-            sim.body = replace(sim.body, x=entity.x * 16, y=entity.y * 16 - 40)
-        if scenario == "turn":
-            boss_id = str(next(e for e in sim.entities if e.kind == "boss").extra["boss"])
-            sim.combat = start_encounter(make_player(), make_foe(boss_id, as_boss=True), boss_id=boss_id, mode="turn")
-            sim.scene = "turn"
+        prepare_scenario(sim, scenario)
         sim.flash_ticks = 0
-        if scenario.startswith("cannon-"):
-            sim.cannon_loaded = True
         for fidelity in ("sixteen-bit", "high", "ultra"):
             sim.fidelity = fidelity
             sim.settings["fidelity"] = fidelity
@@ -99,6 +120,18 @@ async def compare(reference, *, frames=90, fixture=None, emit=print):
             for frame in range(frames + 12):
                 # Both renderers see identical moving camera/animation inputs.
                 sim.tick = frame * 3
+                story_fields = ("story_ticks", "story_transition_ticks", "stage_map_transition_ticks", "stage_cursor", "level_intro_ticks")
+                story_inputs = {name: getattr(sim, name) for name in story_fields}
+                if suite == "story":
+                    sim.story_ticks = frame * 5
+                    sim.stage_cursor = (frame // 12) % len(CAMPAIGN_ROSTER)
+                    if scenario == "login-transition":
+                        sim.story_transition_ticks = 1 + frame % PROLOGUE_LOGIN_TRANSITION_TICKS
+                    if scenario == "map-transition":
+                        sim.stage_map_transition_ticks = STAGE_MAP_TRANSITION_TICKS - frame % STAGE_MAP_TRANSITION_TICKS
+                    build_start = LEVEL_INTRO_MAP_FADE_TICKS + LEVEL_INTRO_WHITE_HOLD_TICKS
+                    build_end = build_start + LEVEL_INTRO_BUILD_TICKS
+                    sim.level_intro_ticks = (frame * 2) % build_end if scenario == "intro-build" else build_end + frame
                 xy = (max(0, camera[0] + 28 * math.sin(frame / 15)),
                       max(0, camera[1] - 32 * math.sin(frame / 21)))
                 cannon_inputs = None
@@ -118,13 +151,15 @@ async def compare(reference, *, frames=90, fixture=None, emit=print):
                         cold[index] = elapsed
                     if frame >= 12:
                         timings[index].append(elapsed)
-                    if frame % 10 == 0 or frame == frames + 11:
+                    if suite == "story" or frame % 10 == 0 or frame == frames + 11:
                         images[index] = pygame.image.tobytes(surface, "RGB")
                     cameras[index] = (sim.cam_x, sim.cam_y)
                 if images[0] != images[1] or cameras[0] != cameras[1]:
                     raise AssertionError(f"Render difference: {scenario}/{fidelity}/frame {frame}")
                 if cannon_inputs:
                     cannon.extra, sim.cannon_charge_ticks = cannon_inputs
+                for name, value in story_inputs.items():
+                    setattr(sim, name, value)
                 await asyncio.sleep(0)
             # Rendering must not change gameplay state; tick/camera are harness inputs.
             assert gameplay_state() == before
@@ -137,7 +172,7 @@ async def compare(reference, *, frames=90, fixture=None, emit=print):
             row["improvementPercent"] = round(100 * (1 - median(timings[1]) / median(timings[0])), 1)
             results.append(row)
             emit(json.dumps(row))
-    report = {"python": sys.version.split()[0], "platform": sys.platform,
+    report = {"python": sys.version.split()[0], "platform": sys.platform, "suite": suite,
               "pygame": pygame.version.ver, "sdl": pygame.get_sdl_version(), "results": results}
     if sys.platform != "emscripten":
         pygame.quit()
@@ -149,12 +184,13 @@ def main():
     parser.add_argument("--reference", type=Path, required=True, help="A saved baseline render.py")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--frames", type=int, default=90)
+    parser.add_argument("--suite", choices=("gameplay", "story"), default="gameplay")
     args = parser.parse_args()
     if args.frames < 20:
         parser.error("Use at least 20 measured frames")
     os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
-    report = asyncio.run(compare(reference_renderer(args.reference), frames=args.frames))
+    report = asyncio.run(compare(reference_renderer(args.reference), frames=args.frames, suite=args.suite))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
 

@@ -148,7 +148,9 @@ class Renderer:
         self._actor_transform_cache: dict[tuple[Any, ...], Surface] = {}
         self._tile_blit_cache: dict[tuple[Any, ...], Surface] = {}
         self._parallax_scale_cache: dict[tuple[Any, ...], tuple[Surface, pygame.Rect]] = {}
-        self._parallax_metadata: dict[str, dict] = {}
+        self._image_metadata: dict[str, dict] = {}
+        self._scene_background_cache: dict[tuple[Any, ...], tuple[Surface, bool]] = {}
+        self._scene_art_cache: dict[tuple[Any, ...], Surface] = {}
         self._platform_cache: dict[tuple[Any, ...], Surface] = {}
         self._panel_cache: dict[tuple[Any, ...], Surface] = {}
         self._solid_overlay_cache: dict[tuple[Any, ...], Surface] = {}
@@ -330,30 +332,79 @@ class Renderer:
             self._solid_overlay_cache[key] = overlay
         return overlay
 
-    def _parallax_entry(self, layer: Surface, rel: str) -> dict:
+    def _image_entry(self, layer: Surface, rel: str, manifest: str = "parallax-bounds.json") -> dict:
         """Read size-checked offline metadata for the resolved fidelity asset."""
         key = self._fid_key_cache.get((self._fid_cur, rel), rel)
         folder = str(Path(key).parent)
-        if folder not in self._parallax_metadata:
+        metadata_key = str(Path(folder) / manifest)
+        if metadata_key not in self._image_metadata:
             try:
-                metadata = json.loads((self.root / folder / "parallax-bounds.json").read_text())
-                self._parallax_metadata[folder] = metadata if isinstance(metadata, dict) else {}
+                metadata = json.loads((self.root / metadata_key).read_text())
+                self._image_metadata[metadata_key] = metadata if isinstance(metadata, dict) else {}
             except (OSError, ValueError):
-                self._parallax_metadata[folder] = {}
-        entry = self._parallax_metadata[folder].get(Path(key).name, {})
+                self._image_metadata[metadata_key] = {}
+        entry = self._image_metadata[metadata_key].get(Path(key).name, {})
         if isinstance(entry, dict) and entry.get("size") == list(layer.get_size()):
             return entry
         return {}
 
     def _parallax_bounds(self, layer: Surface, rel: str) -> pygame.Rect:
         """Read offline alpha bounds; old/unlisted assets remain supported."""
-        values = self._parallax_entry(layer, rel).get("bounds")
+        values = self._image_entry(layer, rel).get("bounds")
         if (isinstance(values, list) and len(values) == 4
                 and all(type(value) is int and value >= 0 for value in values)):
             rect = pygame.Rect(values)
             if rect.right <= layer.get_width() and rect.bottom <= layer.get_height():
                 return rect
         return layer.get_bounding_rect(min_alpha=1)
+
+    def _scene_layer(self, sim: GameSim, rel: str, shade: tuple[int, ...] | None = None) -> tuple[Surface, bool]:
+        """Cache the original smoothscale, baking tint only over opaque art."""
+        size = (self._iw, self._ih)
+        key = (self._fid_cur, rel, size, shade)
+        prepared = self._scene_background_cache.get(key)
+        if prepared is None:
+            source = self._fid(sim, rel)
+            image = pygame.transform.smoothscale(source, size)
+            opaque = self._image_entry(source, rel, "scene-backgrounds.json").get("opaque") is True
+            if opaque:
+                background = Surface(size)
+                background.blit(image, (0, 0))
+                if shade is not None:
+                    background.blit(self._solid_overlay(size, shade), (0, 0))
+                image = background
+            prepared = (image, opaque)
+            if len(self._scene_background_cache) >= 16:
+                self._scene_background_cache.clear()
+            self._scene_background_cache[key] = prepared
+        return prepared
+
+    def _scene_background(self, surf: Surface, sim: GameSim, rel: str,
+                          shade: tuple[int, ...], fallback: tuple[int, ...]) -> None:
+        baked = False
+        try:
+            image, baked = self._scene_layer(sim, rel, shade)
+            surf.blit(image, (0, 0))
+        except Exception:
+            surf.fill(fallback)
+        if not baked:
+            surf.blit(self._solid_overlay((self._iw, self._ih), shade), (0, 0))
+
+    def _remember_scene_art(self, key: tuple[Any, ...], image: Surface) -> Surface:
+        if len(self._scene_art_cache) >= 96:
+            self._scene_art_cache.clear()
+        self._scene_art_cache[key] = image
+        return image
+
+    def _scene_box(self, size: tuple[int, int], color: tuple[int, ...]) -> Surface:
+        key = ("box", self._vs, size, color)
+        box = self._scene_art_cache.get(key)
+        if box is None:
+            box = Surface(size, pygame.SRCALPHA)
+            box.fill(color)
+            pygame.draw.rect(box, BRONZE, box.get_rect(), max(1, self._vs))
+            self._remember_scene_art(key, box)
+        return box
 
     @staticmethod
     def _binding_pair(sim: GameSim, action: str) -> str:
@@ -729,31 +780,41 @@ class Renderer:
             base = mark.render("OMARCHY", True, LIME_MARK)
         img = base
         if pulse:
-            img = base.copy()
-            w, h = img.get_size()
-            band = 10
-            center = (tick * 2) % (w + band * 2) - band
-            for px in range(max(0, center - band), min(w, center + band)):
-                falloff = 1.0 - abs(px - center) / max(1, band)
-                for py in range(h):
-                    color = img.get_at((px, py))
-                    if color.a < 16:
-                        continue
-                    img.set_at(
-                        (px, py),
-                        (
-                            int(color.r + (SHIFT_CYAN[0] - color.r) * falloff),
-                            int(color.g + (SHIFT_CYAN[1] - color.g) * falloff),
-                            int(color.b + (SHIFT_CYAN[2] - color.b) * falloff),
-                            color.a,
-                        ),
-                    )
+            img = self._wordmark_pulse(base, tick)
         if self._vs != 1:
             img = pygame.transform.scale(img, (img.get_width() * self._vs, img.get_height() * self._vs))
         x = (self._iw - img.get_width()) // 2
         self._omega_modifier(surf, x + 4 * self._vs, max(0, (y - 7) * self._vs))
         surf.blit(img, (x, y * self._vs))
         return img.get_height()
+
+    def _wordmark_pulse(self, base: Surface, tick: int) -> Surface:
+        img = base.copy()
+        w, h = img.get_size()
+        band = 10
+        center = (tick * 2) % (w + band * 2) - band
+        try:
+            atlas = self._load("ui/omarchy-wordmark-pulse.png")
+            if atlas.get_size() != (w, h * band):
+                atlas = None
+        except Exception:
+            atlas = None
+        for px in range(max(0, center - band + 1), min(w, center + band)):
+            distance = abs(px - center)
+            if atlas is not None:
+                # Copy RGBA exactly, including partially transparent edges.
+                # Ordinary alpha blending would tint the existing pixel twice.
+                img.fill((0, 0, 0, 0), (px, 0, 1, h))
+                img.blit(atlas, (px, 0), (px, distance * h, 1, h), special_flags=pygame.BLEND_RGBA_ADD)
+            else:
+                # Older asset bundles and the missing-logo fallback still work.
+                falloff = 1.0 - distance / band
+                for py in range(h):
+                    color = img.get_at((px, py))
+                    if color.a >= 16:
+                        img.set_at((px, py), tuple(int(c + (target - c) * falloff)
+                                   for c, target in zip(color[:3], SHIFT_CYAN)) + (color.a,))
+        return img
 
     def _omega_modifier(self, surf: Surface, x: int, y: int, owned: str | None = None) -> None:
         """Draw the installer/title OMEGA modifier, optionally as progress."""
@@ -782,18 +843,11 @@ class Renderer:
         rel: str,
         shade_alpha: int = 44,
     ) -> None:
-        try:
-            backdrop = self._fid(sim, rel)
-            surf.blit(pygame.transform.smoothscale(backdrop, (self._iw, self._ih)), (0, 0))
-        except Exception:
-            surf.fill((8, 14, 24))
-        shade = Surface((self._iw, self._ih), pygame.SRCALPHA)
-        shade.fill((0, 0, 10, shade_alpha))
-        surf.blit(shade, (0, 0))
+        self._scene_background(surf, sim, rel, (0, 0, 10, shade_alpha), (8, 14, 24))
 
     def _rig_part(self, surf: Surface, sim: GameSim, name: str, point: tuple[float, float], angle: float,
                   size: tuple[int, int], pivot: tuple[float, float]) -> None:
-        image = self._fit(self._fid(sim, f"ui/custodian-{name}.png"), (size[0] * self._vs, size[1] * self._vs))
+        image = self._fid_fit(sim, f"ui/custodian-{name}.png", (size[0] * self._vs, size[1] * self._vs))
         # Rotate around the measured hinge, not around the sprite's center.
         offset = pygame.Vector2((size[0] / 2 - pivot[0]) * self._vs,
                                 (size[1] / 2 - pivot[1]) * self._vs).rotate(angle)
@@ -809,12 +863,12 @@ class Renderer:
         for right, home in ((False, 94), (True, 238)):
             x = custodian_x(home, tick, right=right, staging=staging, reduced=reduced)
             pose = custodian_pose(x, 122, tick, right=right, reduced=reduced, corrupt=staging == "corrupt")
-            body = self._fit(self._fid(sim, "ui/custodian-body.png"), (30 * self._vs, 44 * self._vs))
+            body = self._fid_fit(sim, "ui/custodian-body.png", (30 * self._vs, 44 * self._vs))
             surf.blit(body, self._lp(x - 15, 78))
             self._rig_part(surf, sim, "upper", pose.shoulder, pose.angles[0], (36, 10), (4.5, 5))
             self._rig_part(surf, sim, "fore", pose.elbow, pose.angles[1], (32, 9), (4, 4.5))
             self._rig_part(surf, sim, "claw-closed" if pose.closed else "claw-open", pose.wrist, pose.angles[2], (22, 18), (3, 9))
-            joint = self._fit(self._fid(sim, "ui/custodian-joint.png"), (7 * self._vs, 7 * self._vs))
+            joint = self._fid_fit(sim, "ui/custodian-joint.png", (7 * self._vs, 7 * self._vs))
             for point in (pose.shoulder, pose.elbow, pose.wrist):
                 surf.blit(joint, joint.get_rect(center=self._lp(*point)))
 
@@ -834,11 +888,16 @@ class Renderer:
         hero = self._character_sprite(sim, frame)
         height = max(1, round(logical_height * self._vs))
         width = max(1, round(hero.get_width() / max(1, hero.get_height()) * height))
-        hero = self._fit(hero, (width, height))
-        if flip:
-            hero = pygame.transform.flip(hero, True, False)
-        if angle:
-            hero = pygame.transform.rotozoom(hero, angle, 1.0)
+        key = ("hero", hero, width, height, flip, angle)
+        prepared = self._scene_art_cache.get(key)
+        if prepared is None:
+            prepared = self._fit_character(hero, (width, height))
+            if flip:
+                prepared = pygame.transform.flip(prepared, True, False)
+            if angle:
+                prepared = pygame.transform.rotozoom(prepared, angle, 1.0)
+            self._remember_scene_art(key, prepared)
+        hero = prepared
         if alpha < 255:
             hero = hero.copy()
             hero.set_alpha(max(0, alpha))
@@ -943,8 +1002,7 @@ class Renderer:
         """Animate a first-person rush through the dimensional tunnel."""
 
         try:
-            tunnel = self._fid(sim, "ui/prologue-rift.png")
-            base = pygame.transform.smoothscale(tunnel, (self._iw, self._ih))
+            base, _ = self._scene_layer(sim, "ui/prologue-rift.png")
             cycle = (sim.story_ticks % 36) / 36.0
             zoom = 1.07 + cycle * 0.09 + math.sin(sim.story_ticks / 7.0) * 0.015
             size = (round(self._iw * zoom), round(self._ih * zoom))
@@ -999,8 +1057,11 @@ class Renderer:
         # official mark, a lock, one outlined entry field, and image bullets.
         surf.fill((26, 27, 38))
         try:
-            logo = self._load("ui/omarchy-wordmark.png")
-            logo = pygame.transform.smoothscale(logo, (256 * self._vs, 60 * self._vs))
+            key = ("login-logo", self._vs)
+            logo = self._scene_art_cache.get(key)
+            if logo is None:
+                logo = pygame.transform.smoothscale(self._load("ui/omarchy-wordmark.png"), (256 * self._vs, 60 * self._vs))
+                self._remember_scene_art(key, logo)
             logo_x = (self._iw - logo.get_width()) // 2
             self._omega_modifier(surf, logo_x + 5 * self._vs, 1 * self._vs)
             surf.blit(logo, (logo_x, 9 * self._vs))
@@ -1179,9 +1240,7 @@ class Renderer:
             dy = (0, 0, 0, 1, 0, -1, 0, 0)[phase % 8]
             surf.blit(surf.copy(), self._lp(dx, dy))
 
-        box = Surface((300 * self._vs, 55 * self._vs), pygame.SRCALPHA)
-        box.fill((3, 5, 12, 232))
-        pygame.draw.rect(box, BRONZE, box.get_rect(), max(1, self._vs))
+        box = self._scene_box((300 * self._vs, 55 * self._vs), (3, 5, 12, 232))
         surf.blit(box, self._lp(10, 118))
         self.fit_text(surf, heading, (20, 124, 280, 12), PALETTE["bright_green"], max_size=9, min_size=6, bold=True)
         revealed_count = max(1, sim.story_ticks // PROLOGUE_TYPE_TICKS)
@@ -1243,6 +1302,10 @@ class Renderer:
         )
 
     def _stage_title(self) -> Surface:
+        key = ("stage-title", self._vs)
+        title = self._scene_art_cache.get(key)
+        if title is not None:
+            return title
         title_font = self._omarchy_font(12)
         title = title_font.render("Omega Omarchy", True, PALETTE["bright_green"])
         max_title = self._lr(18, 4, 284, 15)
@@ -1258,14 +1321,18 @@ class Renderer:
                     max(1, round(title.get_height() * ratio)),
                 ),
             )
-        return title
+        return self._remember_scene_art(key, title)
 
     def _stage_emblem(self, diameter: int) -> Surface:
+        key = ("stage-emblem", diameter)
+        fitted = self._scene_art_cache.get(key)
+        if fitted is not None:
+            return fitted
         emblem = self._load("ui/omega-omarchy-icon.png")
         bounds = emblem.get_bounding_rect(min_alpha=8)
         if bounds.width and bounds.height:
             emblem = emblem.subsurface(bounds).copy()
-        return self._fit(emblem, (diameter, diameter))
+        return self._remember_scene_art(key, self._fit(emblem, (diameter, diameter)))
 
     def _stage_map(
         self, surf: Surface, sim: GameSim, *, omit_intro_identity: bool = False
@@ -1290,14 +1357,7 @@ class Renderer:
             surf.blit(whiteout, (0, 0))
             return
 
-        try:
-            world = self._fid(sim, "ui/stage-world-map.png")
-            surf.blit(pygame.transform.smoothscale(world, (self._iw, self._ih)), (0, 0))
-        except Exception:
-            surf.fill((3, 5, 13))
-        shade = Surface((self._iw, self._ih), pygame.SRCALPHA)
-        shade.fill((0, 0, 8, 30))
-        surf.blit(shade, (0, 0))
+        self._scene_background(surf, sim, "ui/stage-world-map.png", (0, 0, 8, 30), (3, 5, 13))
         if not omit_intro_identity:
             title = self._stage_title()
             max_title = self._lr(18, 4, 284, 15)
@@ -1332,9 +1392,14 @@ class Renderer:
                 boss = self._fid(sim, f"bosses/{spec.boss.id}{suffix}.png")
                 bh = (27 if selected else 23) * self._vs
                 bw = max(1, round(boss.get_width() / max(1, boss.get_height()) * bh))
-                boss = self._fit(boss, (bw, bh))
-                if not available:
-                    boss = pygame.transform.grayscale(boss)
+                key = ("stage-boss", boss, bw, bh, available)
+                prepared = self._scene_art_cache.get(key)
+                if prepared is None:
+                    prepared = self._fit(boss, (bw, bh))
+                    if not available:
+                        prepared = pygame.transform.grayscale(prepared)
+                    self._remember_scene_art(key, prepared)
+                boss = prepared
                 surf.blit(boss, (x * self._vs - bw // 2, y * self._vs - bh // 2))
             except Exception:
                 pass
@@ -1345,9 +1410,7 @@ class Renderer:
             state = "AVAILABLE"
         else:
             state = "LOCKED"
-        panel = Surface((304 * self._vs, 25 * self._vs), pygame.SRCALPHA)
-        panel.fill((2, 5, 11, 226))
-        pygame.draw.rect(panel, BRONZE, panel.get_rect(), max(1, self._vs))
+        panel = self._scene_box((304 * self._vs, 25 * self._vs), (2, 5, 11, 226))
         surf.blit(panel, self._lp(8, 151))
         self.fit_text(
             surf,
@@ -1396,6 +1459,10 @@ class Renderer:
         """Assemble a geometric title-card field out of the white transition."""
 
         progress = 1.0 if reduced else self._intro_ease(progress)
+        key = ("intro-backdrop", self._fid_cur, self._vs, sim.level_intro_target)
+        if progress == 1.0 and key in self._scene_art_cache:
+            surf.blit(self._scene_art_cache[key], (0, 0))
+            return
         surf.fill((250, 250, 252))
         width = round(self._iw * progress)
         if not width:
@@ -1492,6 +1559,8 @@ class Renderer:
             pygame.draw.line(design, SHIFT_CYAN if index <= sim.level_intro_target else (42, 56, 65),
                              self._lp(18 + index * 25, 112), self._lp(35 + index * 25, 112), max(2, 2 * self._vs))
         left = self._iw - width
+        if progress == 1.0:
+            self._remember_scene_art(key, design)
         surf.blit(design, (left, 0), pygame.Rect(left, 0, width, self._ih))
 
     def _level_intro_identity(
@@ -1539,7 +1608,7 @@ class Renderer:
             boss = self._fid(sim, self._boss_pose_rel(sim, spec.boss.id, defeated=bool(suffix)))
             boss_height = max(1, round((27 + (102 - 27) * motion) * self._vs))
             boss_width = max(1, round(boss.get_width() / max(1, boss.get_height()) * boss_height))
-            boss = self._fit(boss, (boss_width, boss_height))
+            boss = self._fit_character(boss, (boss_width, boss_height))
             boss_center = (
                 node_x + (239 - node_x) * motion,
                 node_y + (78 - node_y) * motion,
@@ -1965,7 +2034,7 @@ class Renderer:
                 # strips are >90% empty. Offline bounds avoid an expensive
                 # alpha scan on the first frame, with a fallback after scaling.
                 bounds = self._parallax_bounds(scaled, rel)
-                if self._parallax_entry(scaled, rel).get("opaque") is True:
+                if self._image_entry(scaled, rel).get("opaque") is True:
                     # Fully opaque PNGs still arrive with SRCALPHA. A display
                     # format copy avoids blending a full canvas unnecessarily.
                     scaled = scaled.convert()

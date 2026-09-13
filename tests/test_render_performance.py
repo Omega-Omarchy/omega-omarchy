@@ -2,6 +2,7 @@
 
 import json
 import os
+from types import SimpleNamespace
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -101,4 +102,109 @@ def test_character_fit_cache_distinguishes_sources_without_mutating_them():
             fitted = renderer._fit_character(source, (14, 20))
             assert pygame.image.tobytes(fitted, "RGBA") == pygame.image.tobytes(expected, "RGBA")
             assert pygame.image.tobytes(source, "RGBA") == original
+    pygame.quit()
+
+
+@pytest.mark.parametrize("atlas_available", [True, False])
+def test_wordmark_pulse_preserves_rgba_for_a_complete_sweep(atlas_available):
+    pygame.init()
+    pygame.display.set_mode((320, 180))
+    renderer = Renderer(ensure_assets=False)
+    base = renderer._load("ui/omarchy-wordmark.png")
+    original = pygame.image.tobytes(base, "RGBA")
+    if not atlas_available:
+        renderer._load = lambda _path: (_ for _ in ()).throw(FileNotFoundError())
+    # All positions, including the low-alpha antialiasing and offscreen edges.
+    for tick in range(base.get_width() + 20):
+        expected = base.copy()
+        center = (tick * 2) % (base.get_width() + 20) - 10
+        for x in range(max(0, center - 10), min(base.get_width(), center + 10)):
+            falloff = 1.0 - abs(x - center) / 10
+            for y in range(base.get_height()):
+                color = base.get_at((x, y))
+                if color.a >= 16:
+                    expected.set_at((x, y), tuple(int(c + (t - c) * falloff)
+                                    for c, t in zip(color[:3], (125, 207, 255))) + (color.a,))
+        actual = renderer._wordmark_pulse(base, tick)
+        assert pygame.image.tobytes(actual, "RGBA") == pygame.image.tobytes(expected, "RGBA"), tick
+        assert pygame.image.tobytes(base, "RGBA") == original
+    pygame.quit()
+
+
+def test_shipped_scene_metadata_matches_opacity_and_size():
+    manifests = list((asset_dir() / "fidelity").glob("*/ui/scene-backgrounds.json"))
+    assert len(manifests) == 3
+    for manifest in manifests:
+        entries = json.loads(manifest.read_text())
+        assert len(entries) == 4
+        for name, entry in entries.items():
+            with Image.open(manifest.parent / name) as image:
+                assert entry["size"] == list(image.size)
+                assert entry["opaque"] == (image.convert("RGBA").getchannel("A").getextrema() == (255, 255))
+
+
+@pytest.mark.parametrize("metadata", ["opaque", "missing", "wrong-size", "transparent", "missing-art"])
+@pytest.mark.parametrize("scale", [1, 2, 3])
+def test_scene_background_cache_preserves_shading_and_fallback(tmp_path, metadata, scale):
+    pygame.init()
+    pygame.display.set_mode((96, 64))
+    renderer = Renderer(ensure_assets=False)
+    renderer.root = tmp_path
+    renderer._iw, renderer._ih = 48 * scale, 32 * scale
+    size = (renderer._iw, renderer._ih)
+    source = pygame.Surface((48, 32), pygame.SRCALPHA)
+    source.fill((37, 95, 150, 110 if metadata == "transparent" else 255))
+    pygame.draw.rect(source, (231, 175, 80, 255), (8, 3, 22, 18))
+    renderer._fid = lambda _sim, _rel: source
+    directory = tmp_path / "ui"
+    directory.mkdir()
+    if metadata != "missing":
+        (directory / "scene-backgrounds.json").write_text(json.dumps({"scene.png": {
+            "size": [1, 1] if metadata == "wrong-size" else [48, 32], "opaque": metadata != "transparent"}}))
+    if metadata == "missing-art":
+        renderer._fid = lambda *_args: (_ for _ in ()).throw(FileNotFoundError())
+    for shade in ((0, 0, 10, 44), (0, 0, 10, 92), (0, 0, 10, 44)):
+        expected = pygame.Surface(size)
+        expected.fill((100, 45, 16))
+        actual = expected.copy()
+        if metadata == "missing-art":
+            expected.fill((8, 14, 24))
+        else:
+            expected.blit(pygame.transform.smoothscale(source, size), (0, 0))
+        overlay = pygame.Surface(size, pygame.SRCALPHA)
+        overlay.fill(shade)
+        expected.blit(overlay, (0, 0))
+        renderer._scene_background(actual, None, "ui/scene.png", shade, (8, 14, 24))
+        assert pygame.image.tobytes(actual, "RGB") == pygame.image.tobytes(expected, "RGB")
+    pygame.quit()
+
+
+def test_prologue_hero_cache_preserves_pose_alpha_and_character_changes():
+    pygame.init()
+    pygame.display.set_mode((320, 180))
+    renderer = Renderer(ensure_assets=False)
+    sources = [pygame.Surface((15, 24), pygame.SRCALPHA) for _ in range(2)]
+    sources[0].fill((160, 210, 45, 120))
+    sources[1].fill((75, 45, 180, 200))
+    renderer._character_sprite = lambda sim, _pose: sources[sim.kind]
+    for scale in (1, 3, 1):
+        renderer._vs = scale
+        for kind, flip, angle, alpha in ((0, False, -13.0, 255), (1, True, -5.0, 80),
+                                         (0, False, -13.0, 90), (0, False, -13.0, 255)):
+            source = sources[kind]
+            expected = pygame.Surface((320 * scale, 180 * scale))
+            expected.fill((8, 14, 24))
+            actual = expected.copy()
+            height = 45 * scale
+            hero = renderer._fit(source, (round(source.get_width() / source.get_height() * height), height))
+            if flip:
+                hero = pygame.transform.flip(hero, True, False)
+            hero = pygame.transform.rotozoom(hero, angle, 1.0)
+            if alpha < 255:
+                hero = hero.copy()
+                hero.set_alpha(alpha)
+            expected.blit(hero, hero.get_rect(center=(160 * scale, round((116 - 45 / 2) * scale))))
+            renderer._prologue_hero(actual, SimpleNamespace(kind=kind), "prologue-transfer", 160, 116, 45,
+                                   flip=flip, angle=angle, alpha=alpha)
+            assert pygame.image.tobytes(actual, "RGB") == pygame.image.tobytes(expected, "RGB")
     pygame.quit()

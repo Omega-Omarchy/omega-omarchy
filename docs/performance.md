@@ -112,6 +112,61 @@ Measurements: [browser](evidence/render-browser-second-pass-2026-09-12.json),
 [native](evidence/render-native-second-pass-2026-09-12.json). Use `14f7590` as the
 reference revision in the commands below to reproduce this comparison.
 
+## Third pass: prologue, route map, and boss title cards
+
+These scenes use their own drawing paths. They still resized full-screen art
+every frame and alpha-blended backgrounds known to be opaque. The route map
+also rebuilt its title, cropped emblem, and fitted/grayscaled boss portraits.
+The title card reconstructed its settled backdrop throughout its hold.
+
+Compared with `f198c8f` (the same renderer as deployed build `5eb5838`), all
+42 browser cases improved both median and 95th-percentile render time:
+
+| Scenario | Detail | Before median | After median | Less render time |
+| --- | --- | ---: | ---: | ---: |
+| Prologue title | Ultra | 7.65 ms | 6.00 ms | 22% |
+| Orb capture | Ultra | 23.65 ms | 4.40 ms | 81% |
+| Mind machine | Ultra | 24.20 ms | 5.15 ms | 79% |
+| Transfer | Ultra | 26.00 ms | 6.10 ms | 77% |
+| Installation corrupted | Ultra | 25.50 ms | 6.20 ms | 76% |
+| Moving tunnel | Ultra | 36.80 ms | 27.75 ms | 25% |
+| Route map | High | 10.50 ms | 1.50 ms | 86% |
+| Route map | Ultra | 23.95 ms | 3.20 ms | 87% |
+| Boss card construction | Ultra | 19.70 ms | 18.65 ms | 5% |
+| Boss card hold | Ultra | 19.20 ms | 3.20 ms | 83% |
+
+Backgrounds now reuse the original smoothscale result. Build-time opacity
+metadata permits baking their existing shade into an opaque copy; unlisted,
+transparent, or size-mismatched assets retain the original blending behavior.
+Robot part fits, registered hero poses, map artwork, and the finished title-card
+backdrop are reused. Cache keys distinguish detail, source character, pose,
+rotation, boss target, and availability as appropriate; counts are bounded to
+16 scene backgrounds and 96 scene art entries.
+
+The moving wordmark highlight uses a generated ten-row tint atlas, copying the
+original RGBA values for each of its ten falloff distances. This removes the
+Python pixel loop without rounding colors or changing its motion. Tests compare
+a full sweep, including low-alpha edges, and exercise the old-bundle fallback.
+All continuously moving robot joints, tunnel zooms, rings, shakes, and scene
+timings remain unchanged.
+
+Both browser and native comparisons checked every frame: 3,024 identical RGB
+pairs per runtime, plus matching camera output and unchanged gameplay state in
+all cases. Coverage includes all eight prologue beats, login and map flashes,
+locked/available/converted map nodes, and title-card construction and hold at
+all three detail settings. The focused regression suite passed 158 tests.
+
+The remaining Ultra tunnel and title-card construction costs still exceed a
+16.7 ms render budget on this browser. Cold asset decoding also still costs up
+to roughly 130 ms in these isolated cases; these changes principally improve
+sustained rendering. Measurements exclude simulation, audio, and presentation,
+and describe this machine rather than an end-to-end FPS guarantee.
+
+Evidence: [browser](evidence/render-browser-story-2026-09-12.json),
+[native](evidence/render-native-story-2026-09-12.json). Select `--suite story`
+in **both** benchmark commands below and use reference `f198c8f` to repeat this
+pass. The default suite continues to cover gameplay.
+
 ## Repeat locally
 
 Save the reference renderer before changing it. Use a revision compatible with
