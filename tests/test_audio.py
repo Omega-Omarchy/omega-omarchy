@@ -176,3 +176,41 @@ def test_no_audio_device_fails_silently(monkeypatch):
     manager = AudioManager()
     assert manager.available is False
     manager.update(scene="action", in_combat=False, settings={}, cues=("jump",))
+
+
+def test_effect_preload_is_incremental_silent_and_excludes_music(monkeypatch):
+    manager = AudioManager(enabled=False, browser=True)
+    manager.available = True
+    attempts = []
+    manager.manifest = {"cues": {"collect": {"kind": "sfx"}, "credits-roll": {"kind": "music"},
+                                "hit": {"kind": "sfx"}, "missing": {"kind": "sfx"}}}
+    monkeypatch.setattr(manager, "_sound", lambda cue: attempts.append(cue))
+    monkeypatch.setattr(manager, "_apply_music_volume", lambda: None)
+    manager.update(scene="installer", in_combat=False, settings={})
+    assert attempts == ["collect"] and not manager.unlocked and not manager.active
+    manager.update(scene="action", in_combat=False, settings={})
+    assert attempts == ["collect"], "gameplay must not spend time preloading unrelated effects"
+    manager.update(scene="prologue", in_combat=False, settings={})
+    assert attempts == ["collect", "hit"]
+    for _ in range(10):
+        manager.update(scene="stage-map", in_combat=False, settings={})
+    assert attempts == ["collect", "hit", "missing"], "failed effects must not be retried every menu frame"
+    manager.update(scene="audio-settings", in_combat=False, settings={"audioFidelity": "high"})
+    assert attempts == ["collect", "hit", "missing", "collect"], "a new tier must preload its own sounds"
+
+
+def test_preloaded_effect_is_reused_on_first_play(monkeypatch):
+    manager = AudioManager(enabled=False)
+    manager.available = True
+    loads = []
+    class Sound:
+        def set_volume(self, volume):
+            pass
+        def play(self):
+            return None
+    monkeypatch.setattr(pygame.mixer, "Sound", lambda path: loads.append(path) or Sound())
+    manager._preload_next_effect()
+    cue = next(iter(manager.sounds))
+    assert len(loads) == 1
+    manager.play(cue)
+    assert len(loads) == 1

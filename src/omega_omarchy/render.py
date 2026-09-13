@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -160,6 +161,8 @@ class Renderer:
         self._fit_text_cache: dict[tuple[Any, ...], Surface] = {}
         self._blit_text_cache: dict[tuple[Any, ...], Surface] = {}
         self._flash_overlay: Surface | None = None
+        self._flash_color: tuple[int, int, int] | None = None
+        self._use_surface_alpha_flash = sys.platform == "emscripten"
         self._vs = 1
         self._fid_cur = "ultra"
         self._iw, self._ih = INTERNAL
@@ -1896,9 +1899,21 @@ class Renderer:
             "combat": (247, 118, 142, alpha),
         }.get(kind, (255, 255, 255, alpha))
         if self._flash_overlay is None or self._flash_overlay.get_size() != (self._iw, self._ih):
-            self._flash_overlay = Surface((self._iw, self._ih), pygame.SRCALPHA)
+            self._flash_overlay = Surface((self._iw, self._ih), 0 if self._use_surface_alpha_flash else pygame.SRCALPHA)
+            self._flash_color = None
         overlay = self._flash_overlay
-        overlay.fill(color)
+        if self._use_surface_alpha_flash:
+            # The flash has one alpha value everywhere. SDL's uniform-alpha
+            # path is much faster in WebAssembly than blending an RGBA image.
+            # Its integer rounding differs by at most one RGB unit; preserve
+            # the same color, opacity curve, full-screen coverage, and ticks.
+            if self._flash_color != color[:3]:
+                overlay.fill(color[:3])
+                self._flash_color = color[:3]
+            overlay.set_alpha(alpha)
+        else:
+            # Native SDL's per-pixel path benchmarks faster on this workload.
+            overlay.fill(color)
         surf.blit(overlay, (0, 0))
 
     def _goliath_arena_story_layer(self, surf: Surface, sim: GameSim, cam_x: int, cam_y: int) -> None:

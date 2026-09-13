@@ -167,6 +167,68 @@ Evidence: [browser](evidence/render-browser-story-2026-09-12.json),
 in **both** benchmark commands below and use reference `f198c8f` to repeat this
 pass. The default suite continues to cover gameplay.
 
+## Fourth pass: pickup and block-break stalls
+
+Profiling actual pickup and break handlers separated event dispatch, simulation,
+audio, and rendering. The scene caches remained valid. In the Ultra browser
+test, a hardware-block break increased rendering from about 15.3 ms to
+24.5–24.9 ms for seven frames; the full-screen flash alone consumed 9.2–9.3 ms
+each frame. Simulation stayed around 0.4–0.6 ms. Particles and score labels
+remained inexpensive after their first draw. A first-use sound decode added
+about 2.6–2.9 ms independently (4.2 ms on the first diagnostic case).
+
+The browser now uses SDL's uniform surface-alpha path for the single-color
+flash, retaining one RGB surface and changing its opacity. An isolated Ultra
+blend comparison dropped from 9.2 ms to 1.3 ms. Native SDL retains the previous
+per-pixel path, which measured faster there. No flashes or particles are removed,
+and their color choices, opacity curves, coverage, and simulation ticks remain
+unchanged. SDL's two blend paths round differently: a flashed RGB channel may
+differ by one value out of 255. This is an explicit exception to exact pixel
+equivalence, limited to browser flash frames; all unflashed frames must still
+match exactly. The tests cover all flash colors, the complete opacity ramp,
+canvas resizing, and every possible input value per color channel.
+
+Short sound effects preload one per frame during installation, the prologue,
+map selection, level intros, pause, and audio settings. Preloading decodes but
+does not play sounds, respects audio-tier changes, and excludes long music.
+Failed preload attempts do not retry every menu frame. Gameplay retains lazy
+loading as a fallback but does not preload unrelated sounds during action.
+
+The `effects` benchmark suite creates post-event states through the real pickup
+and break handlers, including changed tiles, inventory, score labels, and
+particles. It checks every rendered pair, cycles the flash through zero and all
+active opacities, and checks camera and gameplay state. Use `--suite effects`
+in both benchmark commands with reference `bd29dfd`. Native output must match
+exactly; the browser permits at most one RGB unit while a flash is active.
+The 154 focused rendering, audio, gameplay, simulation-event, and web tests pass.
+
+Interleaved browser rendering results (66 measured frames per case):
+
+| Post-event state | Detail | Before median | After median | Less render time |
+| --- | --- | ---: | ---: | ---: |
+| Item pickup + flash | 16-bit | 3.90 ms | 3.00 ms | 23% |
+| Item pickup + flash | High | 11.80 ms | 8.20 ms | 31% |
+| Item pickup + flash | Ultra | 24.25 ms | 16.15 ms | 33% |
+| Hardware block + flash | Ultra | 24.25 ms | 16.20 ms | 33% |
+| Combat flash | Ultra | 24.20 ms | 15.90 ms | 34% |
+| Penguin pickup, no flash | Ultra | 14.55 ms | 14.65 ms | effectively unchanged |
+| Cracked tile, no flash | Ultra | 14.65 ms | 14.60 ms | effectively unchanged |
+
+All 18 flash-bearing cases improved median and p95 rendering time. The six
+unflashed controls remained effectively unchanged. All 1,872 browser frame
+pairs passed their declared tolerance, with matching camera output and unchanged
+gameplay state; all 1,872 native pairs matched exactly. Native timing is
+effectively unchanged. A separate run through actual events after eight
+pre-game audio updates measured first-use audio at 0–0.1 ms in all 12 cases.
+This removes sound decoding from the event, rather than changing the sound.
+Cold text/asset creation and ordinary gameplay rendering still take time;
+some Ultra frames exceed a 16.7 ms total-frame budget. These remain
+single-machine measurements, not an FPS guarantee.
+
+Evidence: [browser rendering](evidence/render-browser-effects-2026-09-12.json),
+[native rendering](evidence/render-native-effects-2026-09-12.json), and
+[actual event timings](evidence/interaction-profile-2026-09-12.json).
+
 ## Repeat locally
 
 Save the reference renderer before changing it. Use a revision compatible with
@@ -198,7 +260,7 @@ storage key.
 ```
 
 Open `http://127.0.0.1:8841/` in a foreground browser tab and leave it visible
-until `COMPLETE` appears. Copy the JSON report below it. Any pixel, camera,
+until `COMPLETE` appears. Copy the JSON report below it. Any out-of-tolerance pixel, camera,
 fixture-loading, or gameplay-state failure stops the comparison and displays a
 traceback. Keep other heavy work stopped during measurement. Serve the ordinary
 `.local/perf-game` separately for interactive gameplay checks.

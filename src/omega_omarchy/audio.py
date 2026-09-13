@@ -102,6 +102,7 @@ class AudioManager:
         self.fidelity = "ultra"
         self.settings = normalize_audio_settings({})
         self.sounds: dict[str, pygame.mixer.Sound] = {}
+        self._effect_preload_attempts: set[str] = set()
         self.active: dict[str, list[pygame.mixer.Channel]] = {}
         self.music_cue = ""
         self.music_path: Path | None = None
@@ -180,6 +181,7 @@ class AudioManager:
         self.fidelity = next_fidelity
         if changed:
             self.sounds.clear()
+            self._effect_preload_attempts.clear()
             if self.music_cue:
                 self._play_music(self.music_cue, preserve_position=True)
         self._apply_music_volume()
@@ -241,6 +243,21 @@ class AudioManager:
             return False
         active.append(channel)
         return True
+
+    def _preload_next_effect(self) -> None:
+        """Decode one short effect during menus; never preload long music here."""
+        if not self.available:
+            return
+        cues = self.manifest.get("cues")
+        if not isinstance(cues, dict):
+            return
+        for cue_id, cue in cues.items():
+            if (not isinstance(cue, dict) or cue.get("kind") != "sfx"
+                    or cue_id in self.sounds or cue_id in self._effect_preload_attempts):
+                continue
+            self._effect_preload_attempts.add(cue_id)
+            self._sound(cue_id)
+            return
 
     def _stop_theme_channel(self, *, fade_ms: int = 0) -> None:
         channel = self._theme_channel
@@ -449,6 +466,8 @@ class AudioManager:
                 self._deferred_music = ""
         for cue_id in cues:
             self.play(str(cue_id))
+        if scene in {"installer", "prologue", "stage-map", "level-intro", "pause", "audio-settings"}:
+            self._preload_next_effect()
 
     def shutdown(self) -> None:
         if not self.available:

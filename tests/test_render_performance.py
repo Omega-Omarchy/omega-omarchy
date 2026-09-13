@@ -208,3 +208,33 @@ def test_prologue_hero_cache_preserves_pose_alpha_and_character_changes():
                                    flip=flip, angle=angle, alpha=alpha)
             assert pygame.image.tobytes(actual, "RGB") == pygame.image.tobytes(expected, "RGB")
     pygame.quit()
+
+
+@pytest.mark.parametrize("uniform_alpha", [False, True])
+@pytest.mark.parametrize("kind", ["bomb", "convert", "penguin", "combat", "unknown"])
+def test_flash_preserves_color_opacity_and_coverage(uniform_alpha, kind):
+    pygame.init()
+    pygame.display.set_mode((256, 256))
+    renderer = Renderer(ensure_assets=False)
+    renderer._use_surface_alpha_flash = uniform_alpha
+    for size in ((256, 256), (512, 256), (256, 256)):
+        renderer._iw, renderer._ih = size
+        base = pygame.Surface(size)
+        for x in range(size[0]):
+            pygame.draw.line(base, (x % 256, (x * 3) % 256, 255 - x % 256), (x, 0), (x, size[1]))
+        for tick in range(19):
+            alpha = min(90, tick * 8)
+            rgb = {"bomb": (125, 207, 255), "convert": (158, 206, 106),
+                   "penguin": (232, 176, 64), "combat": (247, 118, 142)}.get(kind, (255, 255, 255))
+            expected, actual = base.copy(), base.copy()
+            overlay = pygame.Surface(size, pygame.SRCALPHA)
+            overlay.fill((*rgb, alpha))
+            expected.blit(overlay, (0, 0))
+            renderer._flash(actual, SimpleNamespace(flash_kind=kind, flash_ticks=tick))
+            tolerance = int(uniform_alpha)
+            assert pygame.transform.threshold(None, actual, None, (tolerance, tolerance, tolerance, 255),
+                                              set_behavior=0, search_surf=expected) == size[0] * size[1]
+            if uniform_alpha:
+                assert renderer._flash_overlay.get_masks()[3] == 0
+                assert renderer._flash_overlay.get_alpha() == alpha
+    pygame.quit()

@@ -41,7 +41,7 @@ def main():
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="A new local directory; never deploy it")
     parser.add_argument("--frames", type=int, default=60)
-    parser.add_argument("--suite", choices=("gameplay", "story"), default="gameplay")
+    parser.add_argument("--suite", choices=("gameplay", "story", "effects"), default="gameplay")
     args = parser.parse_args()
     if args.frames < 20:
         parser.error("Use at least 20 measured frames")
