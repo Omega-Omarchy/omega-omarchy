@@ -1,5 +1,17 @@
 [
   {
+    "id": "version-0-1-2-a-smoother-revolution",
+    "type": "news",
+    "date": "2026-09-13T00:26:11-04:00",
+    "title": "0.1.2 is live. The revolution runs smoother.",
+    "paragraphs": [
+      "Omega Omarchy 0.1.2 is now live! We’ve been putting serious work into making the web game feel faster and more responsive, from the opening prologue and map selection to exploring levels, collecting items, and breaking blocks.",
+      "The improvements add up. Across our browser benchmarks, several demanding Ultra-detail gameplay scenes now take roughly 50–75% less time to draw than before this series of updates. Key prologue scenes have seen reductions of around 75–80%, and the map screen reaches 87%. Pickups, block breaks, and corruption flashes are smoother too, with fewer interruptions when the action picks up. Gains vary by device and browser.",
+      "These gains keep the game’s visual detail, animation, and gameplay intact. Chapter 1 remains free to play in your browser and open source, and we’re continuing to chase the rough edges. The installation is still corrupted. The experience should feel considerably less so."
+    ],
+    "url": "/news/#version-0-1-2-a-smoother-revolution"
+  },
+  {
     "id": "introducing-omega-omarchy",
     "type": "news",
     "date": "2026-09-11T12:00:00-04:00",
