@@ -1004,14 +1004,23 @@ def test_gust_can_carry_the_player_through_a_solid_column():
     assert sim.body.x > 4 * TILE, "gust-phase collision must clear the complete obstacle"
 
 
-def test_edit_selector_uses_a_slow_repeat_instead_of_one_tile_per_tick():
+def test_edit_selector_waits_before_repeating_held_movement():
     sim = _flat_action_sim()
+    sim.scene, sim.editing = "edit", True
     sim.cam_x = sim.cam_y = 0
     sim.edit_cursor = (2, 2)
-    sim._step_edit(InputState(right=True, right_pressed=True))
+    # Repeat timing follows simulation ticks, including interruption detection.
+    # Exercise the same public step used by the app instead of bypassing it.
+    sim.step(InputState(right=True, right_pressed=True))
     assert sim.edit_cursor == (3, 2)
-    sim._step_edit(InputState(right=True))
-    assert sim.edit_cursor == (3, 2)
+    for _ in range(17):
+        sim.step(InputState(right=True))
+        assert sim.edit_cursor == (3, 2)
+    sim.step(InputState(right=True))
+    assert sim.edit_cursor == (4, 2)
+    sim.step(InputState())
+    sim.step(InputState(right=True, right_pressed=True))
+    assert sim.edit_cursor == (5, 2), "a fresh tap must still move immediately"
 
 
 def test_slide_is_a_kick_and_knocks_a_non_boss_backward_once():
