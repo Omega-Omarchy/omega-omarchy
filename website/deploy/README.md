@@ -9,6 +9,19 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Closing-credit artwork: `/srv/omegaomarchy/releases/20260913T023737Z/`;
+  ships code `2fde504` and credits/build revision `af4c996`. The Roman-numeral
+  copyright notice credits the Omega Omarchy contributors collectively. Four
+  original guild parodies now use detailed, deterministically prepared artwork
+  at each detail tier, drawn with one cached opaque blit during the roll.
+  The 101 focused credits/render tests passed; after enlarging the small
+  inscriptions, all 36 credits tests passed again. All three detail tiers were
+  inspected in the browser. The production package contains the accepted PNGs
+  and updated notice, with no diagnostic entry point. Every uploaded file was
+  hash-verified before the atomic switch, and changed URLs were purged from
+  Cloudflare. Public bundle SHA-256:
+  `5b366e3ee54483af0ae69b85f20284a1d67bf16d0ea242be9618a24975e7e307`.
+  Previous release `20260913T021321Z` remains available for rollback.
 - Pickup and block-break performance: `/srv/omegaomarchy/releases/20260913T021321Z/`;
   ships code `6bbafb7` and credits/build revision `4a7e1eb`. Uniform-alpha
   browser flashes reduce Ultra post-event rendering from about 24.3 ms to
