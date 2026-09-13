@@ -63,6 +63,13 @@ class CreditsRenderer:
     def _fully_covered(self, text, size, scale):
         return all(self._has_glyph(ch) for ch in text)
 
+    @staticmethod
+    def control_label(sim, action):
+        # The subset font has no arrow symbols. Keep remapped bindings, but
+        # spell arrow keys out instead of emitting an invisible character.
+        label = sim.prompt_binding(action, compact=True)
+        return {"↑": "Up", "↓": "Down", "←": "Left", "→": "Right"}.get(label, label)
+
     def _measure_text(self, text, size, scale):
         if self._fully_covered(text, size, scale):
             return self.font(size, scale).size(text)[0]
@@ -321,11 +328,12 @@ class CreditsRenderer:
             return
         # Instructions disappear once the sequence has had time to establish.
         if seconds < 3:
-            action = sim.prompt_binding("jump", compact=True)
+            action = self.control_label(sim, "jump")
             try:
                 self.text(surf, f"{action} / Esc  {'skip to credits' if sim.scene == 'ending' else 'return'}", 310, 168, 6, "right", (150, 150, 150))
-                up, down = sim.prompt_binding("up", compact=True), sim.prompt_binding("down", compact=True)
-                self.text(surf, f"{up}/{down} scrub (hold to accelerate)", 10, 168, 6, "left", (150, 150, 150))
+                up, down = self.control_label(sim, "up"), self.control_label(sim, "down")
+                directions = "D-pad Up/Down" if sim.last_input_device == "gamepad" else f"{up}/{down}"
+                self.text(surf, f"{directions} scrub (hold to accelerate)", 10, 168, 6, "left", (150, 150, 150))
             except pygame.error:
                 return
         if sim.credits_scrub_direction:
