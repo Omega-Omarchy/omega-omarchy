@@ -34,6 +34,19 @@ the existing orb drawing and articulated custodian rigs. Its order, timing,
 pose choices and movements depend only on the manifest, chosen character,
 detail setting and elapsed time. It creates no new generative imagery.
 
+The roll opens with the complete wordmark centered vertically and held for
+three seconds, leaving the control hints clear of credit text. It then eases
+into the four introductory lines. This brief lead-in catches up with the
+original scroll before **STARRING** enters, preserving the header's first
+visible pixel on the same soundtrack frame (currently 7.20 seconds at 16-bit,
+7.18 seconds at High/Ultra). Every subsequent credit retains its timing, and
+no silence or time is inserted into the music. Scrubbing backward reproduces
+the same opening. Reduced Motion holds the centered wordmark, then resumes
+its original static-page schedule. If a much larger future roster brings
+STARRING forward, the hold can shorten to preserve its timing.
+The [browser frame comparison](evidence/credits-opening-2026-09-13.json) records
+the unchanged cue frames and 450 matching frames after the lead-in.
+
 The roll uses the title screen's wordmark silhouette in white on black, with
 paired role/name columns, department headings and two-column name lists.
 The four closing badges are original fictional guild parodies: I.A.T.S.E.T.,

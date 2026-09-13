@@ -9,6 +9,7 @@ from pathlib import Path
 FPS = 60
 SILENT_TAIL = 5.0
 CAST_THEME_FADE_SECONDS = 2.5
+ROLL_OPENING_HOLD = 3.0
 # Logical pixels per second: about ten seconds for a full screen to pass.
 # A target rather than a hard cap: never omit names or shrink below the floor.
 ROLL_TARGET_SPEED = 18.0
@@ -45,7 +46,28 @@ def cast_card(seconds: float) -> tuple[dict, float]:
 
 
 def roll_offset(seconds: float, height: float) -> float:
-    # Begin with the title near center, finish the last seal above the frame
-    # as the recording ends, then leave five seconds of unbroken black.
+    # Original linear timing anchors STARRING and every subsequent credit.
+    # Finish the last seal above the frame as the recording ends, then leave
+    # five seconds of unbroken black.
     duration = float(credit_manifest()["music"]["duration"])
     return (height + 105.0) * max(0.0, min(1.0, seconds / duration)) - 105.0
+
+
+def roll_opening_offset(seconds: float, height: float, start: float, join: float) -> float:
+    """Hold, then smoothly join the original scroll position and velocity.
+
+    Joining before STARRING enters keeps that cue and every later credit on
+    its existing soundtrack frame. A much longer future roster may shorten
+    the hold to leave at least half the opening available for movement.
+    """
+    if seconds >= join:
+        return roll_offset(seconds, height)
+    hold = min(ROLL_OPENING_HOLD, join / 2)
+    if seconds <= hold:
+        return start
+    span = join - hold
+    t = (seconds - hold) / span
+    end = roll_offset(join, height)
+    speed = (height + 105.0) / float(credit_manifest()["music"]["duration"])
+    # Cubic Hermite: start at rest, arrive at the ordinary rolling speed.
+    return (2 * t**3 - 3 * t**2 + 1) * start + (-2 * t**3 + 3 * t**2) * end + (t**3 - t**2) * span * speed

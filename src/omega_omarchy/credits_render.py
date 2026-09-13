@@ -7,7 +7,7 @@ from bisect import bisect_right
 from collections import OrderedDict
 import pygame
 
-from .credits import FPS, PATRON_FONT_SIZES, ROLL_TARGET_SPEED, cast_card, credit_manifest, roll_offset
+from .credits import FPS, PATRON_FONT_SIZES, ROLL_OPENING_HOLD, ROLL_TARGET_SPEED, cast_card, credit_manifest, roll_offset, roll_opening_offset
 
 WHITE = (255, 255, 255)
 
@@ -17,6 +17,7 @@ class CreditsRenderer:
         self.r = renderer
         self.fonts = {}
         self.layouts = {}
+        self.openings = {}
         self.glyphs = {}
         self.logos = {}
         self.seal_bakes = {}
@@ -153,7 +154,7 @@ class CreditsRenderer:
         for i, line in enumerate(self.wrap(text, width, size)):
             self.text(surf, line, x, y + i * (size + 3), size, align, color)
 
-    def wordmark(self, surf, y, *, width=196):
+    def _wordmark_image(self, width=196):
         scale = self.r._vs
         key = (scale, width)
         if key not in self.logos:
@@ -177,9 +178,32 @@ class CreditsRenderer:
             )
             plate.blit(mark, (0, mark_top))
             self.logos[key] = (plate, mark_top)
-        image, mark_top = self.logos[key]
+        return self.logos[key]
+
+    def wordmark(self, surf, y, *, width=196):
+        scale = self.r._vs
+        image, mark_top = self._wordmark_image(width)
         left = (320 - width) / 2
         surf.blit(image, (round(left * scale), round(y * scale) - mark_top))
+
+    def opening(self, character):
+        key = (character, self.r._vs)
+        if key not in self.openings:
+            entries, height = self.layout(character)
+            logo = next((y for y, _, row in entries if row["kind"] == "logo"), None)
+            first_text = next((y for y, _, row in entries if row["kind"] != "logo"), None)
+            starring = next((y for y, _, row in entries if row.get("text") == "STARRING"), None)
+            opening = None
+            if logo is not None and first_text is not None and starring is not None:
+                speed = (height + 105.0) / float(credit_manifest()["music"]["duration"])
+                join = max(0.0, (starring - 180 + 105) / speed)
+                image, mark_top = self._wordmark_image()
+                ink = image.get_bounding_rect()
+                center = (ink.y + ink.height / 2 - mark_top) / self.r._vs
+                opening = {"join": join, "hold": min(ROLL_OPENING_HOLD, join / 2),
+                           "logoStart": logo + 12 + center - 90, "textStart": first_text - 180}
+            self.openings[key] = opening
+        return self.openings[key]
 
     def layout(self, character):
         if character in self.layouts:
@@ -327,7 +351,8 @@ class CreditsRenderer:
         except pygame.error:
             return
         # Instructions disappear once the sequence has had time to establish.
-        if seconds < 3:
+        opening = self.opening(sim.character_name) if sim.scene != "ending" else None
+        if seconds < (opening["hold"] if opening else 3):
             action = self.control_label(sim, "jump")
             try:
                 self.text(surf, f"{action} / Esc  {'skip to credits' if sim.scene == 'ending' else 'return'}", 310, 168, 6, "right", (150, 150, 150))
@@ -352,7 +377,11 @@ class CreditsRenderer:
         if seconds >= duration:
             return
         entries, height = self.layout(sim.character_name)
+        opening = self.opening(sim.character_name)
         if reduced:
+            if opening and seconds < opening["hold"]:
+                self.wordmark(surf, 12 - opening["logoStart"])
+                return
             # Static pages, broken only between complete credit entries.
             if sim.character_name not in self.pages:
                 pages, page, used = [], [], 0
@@ -371,8 +400,12 @@ class CreditsRenderer:
                 self.draw_row(surf, row, y + 12)
             return
         offset = roll_offset(seconds, height)
+        logo_offset = offset
+        if opening and seconds < opening["join"]:
+            offset = roll_opening_offset(seconds, height, opening["textStart"], opening["join"])
+            logo_offset = roll_opening_offset(seconds, height, opening["logoStart"], opening["join"])
         for y, size, row in entries:
-            top = y - offset
+            top = y - (logo_offset if row["kind"] == "logo" else offset)
             if top + size >= 0 and top < 180:
                 self.draw_row(surf, row, top)
 

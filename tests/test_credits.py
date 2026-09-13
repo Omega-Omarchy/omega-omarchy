@@ -561,6 +561,79 @@ def test_omega_wordmark_bakes_underline_below_the_lettering(studio):
     assert plate.get_at((max(0, 4 * scale), line_top))[:3] == (255, 255, 255)
 
 
+@pytest.mark.parametrize("scale", [1, 2, 3])
+def test_credit_opening_holds_only_the_centered_wordmark_and_scrubs_deterministically(studio, scale):
+    from omega_omarchy.credits_render import CreditsRenderer
+
+    _, renderer = studio
+    renderer._vs = scale
+    credits = CreditsRenderer(renderer)
+    sim = GameSim(installer=InstallerSession())
+    sim.start_credits()
+    opening = credits.opening(sim.character_name)
+    assert opening["hold"] == 3
+    for reduced in (False, True):
+        sim.settings["reducedMotion"] = reduced
+        held = []
+        # Revisit early times after seeking ahead, with no reset of caches.
+        for tick in (0, 120, 179, 360, 0):
+            frame = pygame.Surface((320 * scale, 180 * scale))
+            sim.credits_ticks = tick
+            credits.draw(frame, sim)
+            if tick < 180:
+                pixels = pygame.surfarray.array3d(frame)[:, :164 * scale]
+                xs, ys = pixels.any(axis=2).nonzero()
+                assert abs((ys.min() + ys.max() + 1) / 2 - 90 * scale) <= .5
+                assert abs((xs.min() + xs.max() + 1) / 2 - 160 * scale) <= .5
+                expected = pygame.Surface(frame.get_size())
+                image, _ = credits._wordmark_image()
+                ink = image.get_bounding_rect()
+                expected.blit(image, (int(xs.min()) - ink.x, int(ys.min()) - ink.y))
+                assert pygame.image.tobytes(frame.subsurface((0, 0, 320 * scale, 164 * scale)), "RGB") == pygame.image.tobytes(expected.subsurface((0, 0, 320 * scale, 164 * scale)), "RGB")
+                held.append(pygame.image.tobytes(frame, "RGB"))
+        assert len(set(held)) == 1
+
+
+@pytest.mark.parametrize("scale,first_tick", [(1, 432), (2, 431), (3, 431)])
+def test_starring_first_pixel_and_later_roll_keep_the_original_music_frames(studio, scale, first_tick):
+    from omega_omarchy.credits import roll_offset, roll_opening_offset
+    from omega_omarchy.credits_render import CreditsRenderer
+
+    _, renderer = studio
+    renderer._vs = scale
+    credits = CreditsRenderer(renderer)
+    sim = GameSim(installer=InstallerSession())
+    sim.start_credits()
+    entries, height = credits.layout(sim.character_name)
+    opening = credits.opening(sim.character_name)
+    actual_first = None
+    # Compare the entire frame from the join onward against the original
+    # linear roll, including every introductory line and the wordmark.
+    ticks = list(range(math.ceil(opening["join"] * FPS), first_tick + 3)) + [600, 1200, 3600, 18000]
+    for tick in ticks:
+        actual = pygame.Surface((320 * scale, 180 * scale))
+        expected = pygame.Surface(actual.get_size())
+        sim.credits_ticks = tick
+        credits.draw(actual, sim)
+        offset = roll_offset(tick / FPS, height)
+        for y, size, row in entries:
+            if y - offset + size >= 0 and y - offset < 180:
+                credits.draw_row(expected, row, y - offset)
+        assert pygame.image.tobytes(actual, "RGB") == pygame.image.tobytes(expected, "RGB"), tick
+        if actual_first is None and pygame.surfarray.array3d(actual)[:, -1].any():
+            actual_first = tick
+    assert actual_first == first_tick
+    for start in (opening["logoStart"], opening["textStart"]):
+        offsets = [roll_opening_offset(t / FPS, height, start, opening["join"]) for t in range(480)]
+        assert offsets[:181] == [start] * 181
+        assert all(b >= a for a, b in zip(offsets, offsets[1:]))
+        epsilon = .0001
+        speed = (height + 105) / credit_manifest()["music"]["duration"]
+        end = roll_opening_offset(opening["join"], height, start, opening["join"])
+        near_end = roll_opening_offset(opening["join"] - epsilon, height, start, opening["join"])
+        assert (end - near_end) / epsilon == pytest.approx(speed, abs=.01)
+
+
 def test_fallback_letters_share_the_primary_baseline_without_clipping(studio):
     from omega_omarchy.credits_render import CreditsRenderer
     _, renderer = studio

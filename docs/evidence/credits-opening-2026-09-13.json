@@ -1,0 +1,26 @@
+{
+  "platform": "emscripten",
+  "reference": "f13934e",
+  "pairs": 450,
+  "allPixelsEqualAfterJoin": true,
+  "timing": [
+    {
+      "scale": 1,
+      "beforeFirstStarringTick": 432,
+      "afterFirstStarringTick": 432,
+      "seconds": 7.2
+    },
+    {
+      "scale": 2,
+      "beforeFirstStarringTick": 431,
+      "afterFirstStarringTick": 431,
+      "seconds": 7.183333333333334
+    },
+    {
+      "scale": 3,
+      "beforeFirstStarringTick": 431,
+      "afterFirstStarringTick": 431,
+      "seconds": 7.183333333333334
+    }
+  ]
+}
