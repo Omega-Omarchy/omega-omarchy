@@ -13,6 +13,21 @@ use the selected character, and return to the previous screen. Pressing either
 shortcut again restarts its sequence while retaining the original return
 screen. In the browser, click the game canvas to focus it first.
 
+**Up rewinds; Down advances** both the cast cinematic and the roll together
+with their backing track. A tap moves one second. After a quarter-second hold,
+scrubbing accelerates from 4× to a maximum of 32× over three seconds. Release
+to resume at the selected position. Both ends clamp while held, so the sequence
+only finishes when the control is released. Keyboard remaps and gamepad movement
+controls work too. The initial instructions explain the controls; a small time
+readout appears only while scrubbing.
+
+Audible scrubbing plays short previews at successive seek positions, up to eight
+per second, with an immediate final seek on release. Rewinding previews earlier
+parts of the recording; it does not play the waveform backward. This uses the
+existing Ogg stream without decoding an additional full recording into memory.
+Muted playback stays muted, and the silent tail stays silent. If a host's mixer
+does not support seeking, the visual controls remain available.
+
 The cast sequence uses accepted David/custom-character assets, both Omarch
 packs, all shipped mobs, every campaign boss and Goliath's cyborg penguin, plus
 the existing orb drawing and articulated custodian rigs. Its order, timing,
@@ -151,7 +166,14 @@ The roll vendors a subset of Noto Sans CJK with Latin, Greek, Cyrillic, general
 punctuation and the current roster's CJK glyphs. Its OFL notice is included in
 `assets/ui/credits/FONT-LICENSE.txt`. When adding names in additional scripts,
 extend the font subset and run the glyph-coverage test. No host system font or
-live website font is needed for the roll.
+live website font is needed for the roll. Extended Latin glyphs missing from
+the primary face use the pinned fallback; ascent-based offsets align their
+baselines without clipping accents or descenders.
+
+Rendering caches line wrapping and Reduced Motion page partitions, skips
+offscreen patron rows, and prepares cropped text against the roll's black
+background. Cast text keeps transparency. Normal spacing, timing, colors,
+artwork and motion remain the same; see [measured results](performance.md#credits).
 
 ## Workshop movement
 
@@ -162,3 +184,7 @@ row. The camera follows vertically with a central quiet band. Controls move to
 the top when the cursor reaches the bottom rows, and the foreground character
 becomes translucent when it would cover the selected tile. The physical player
 and its protected ghost remain at their original playfield position.
+Each movement tap moves exactly one tile. Holding waits 0.3 seconds before
+repeating, then accelerates to at most 20 tiles per second after about 2.4
+seconds. Releasing, changing direction, or returning from pause resets the
+acceleration so fine adjustments remain precise.

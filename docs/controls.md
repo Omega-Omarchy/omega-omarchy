@@ -21,6 +21,10 @@ the start (hot-plug / keyboard fallback).
 Pause → Credits opens the cinematic roll. Jump/confirm, Interact or Pause returns
 to the previous screen; after Goliath, the first skip advances the cast sequence
 to the roll. Reduced Motion presents static pages on the same soundtrack timer.
+Up rewinds the credits and backing music; Down advances them. Tap for one second,
+or hold to accelerate up to 32×. Release to resume playback. Scrubbing gives
+short audible previews and respects mute. These controls also work in the cast
+cinematic, with keyboard remaps and gamepad movement controls.
 In the over-the-shoulder editor, Up/Down pans through the full playfield height.
 
 Character setup: Up/Down or Left/Right chooses David, The Omarch King, The Omarch
@@ -60,8 +64,9 @@ Closing and closed boss gates stop friendly and hostile projectiles. If BS
 overload returns David to the checkpoint, the gate reopens and must be crossed
 again before its boss becomes active.
 
-OMARCHY edit: arrows or D-pad move the viewport-bounded cursor at a controlled
-repeat rate, R/Y cycles
+OMARCHY edit: arrows or D-pad move the cursor within the editable playfield.
+Taps move one tile; holding accelerates after a short delay, capped at 20 tiles
+per second. Release or change direction to reset the acceleration. R/Y cycles
 platform, ladder, and bumper, X/B places, C/RB removes, Space/Z or A seals,
 E/X undoes the last operation (or cancels when no operations remain), and
 Tab/Back resets the whole unsealed arrangement. Every edit is previewed before

@@ -229,6 +229,59 @@ Evidence: [browser rendering](evidence/render-browser-effects-2026-09-12.json),
 [native rendering](evidence/render-native-effects-2026-09-12.json), and
 [actual event timings](evidence/interaction-profile-2026-09-12.json).
 
+## Credits
+
+The September 13 credits pass applies the same black-background preparation
+used elsewhere: cropped text is composited once, then copied without alpha
+blending during the roll. Tall glyphs that could overlap another line retain
+transparency, as does cast text. Cached wrapping and Reduced Motion page
+partitions avoid repeated layout work. A binary search skips offscreen rows
+inside the long patron groups. The backing track, scroll timing, spacing,
+artwork, and normal animation remain unchanged.
+
+Interleaved browser results against `e79ff91` (90 measured frames per case,
+12 warm-up frames, rendering only):
+
+| Section | Detail | Before median | After median | Less render time |
+| --- | --- | ---: | ---: | ---: |
+| Crew | Ultra | 3.3 ms | 0.8 ms | 76% |
+| Names | Ultra | 3.0 ms | 0.8 ms | 73% |
+| Patron list | 16-bit | 2.0 ms | 0.4 ms | 80% |
+| Patron list | High | 3.4 ms | 0.6 ms | 82% |
+| Patron list | Ultra | 5.6 ms | 0.9 ms | 84% |
+| Patron list, lower portion | Ultra | 5.4 ms | 0.8 ms | 85% |
+| Reduced Motion page | Ultra | 2.5 ms | 0.6 ms | 76% |
+| Cast boss card | Ultra | 3.4 ms | 3.0 ms | 12% |
+| Guild badges | Ultra | 0.7 ms | 0.7 ms | unchanged |
+
+All 2,754 browser pairs and 2,754 native pairs matched exactly. The separately
+requested fallback-font baseline correction was applied to both renderers for
+this comparison. Native Ultra patron rendering improved by 64–68%. The already
+prepared badges and player/robot cast cards remain effectively unchanged.
+These are single-machine rendering measurements, not end-to-end FPS promises.
+The 164 focused credits, audio, input, edit, skyway, and rendering tests pass.
+
+Evidence: [browser](evidence/credits-browser-2026-09-13.json) and
+[native](evidence/credits-native-2026-09-13.json). Reproduce the native comparison:
+
+```sh
+git show e79ff91:src/omega_omarchy/credits_render.py > .local/credits-reference.py
+.venv/bin/python tools/benchmark_credits.py \
+  --reference .local/credits-reference.py --output .local/credits-native.json
+```
+
+The async `compare()` function also runs in a separate local WebAssembly build
+with the reference module and the same assets. Its report excludes audio,
+simulation, display presentation, and pixel comparisons from timed intervals.
+Never deploy a benchmark entry point.
+
+A separate browser integration run drove held forward/reverse controls through
+the real simulation, renderer, and audio manager for both sequences. Ordinary
+Ogg seeks took 0.4–0.9 ms; exchanging the cast Sound for its seekable stream on
+the first scrub took 2.8 ms. Release resumed from the selected time, rewinding
+out of the silent tail restarted playback, and the cast fade/roll transition
+completed successfully. Normal playback performs no additional seeking.
+
 ## Repeat locally
 
 Save the reference renderer before changing it. Use a revision compatible with

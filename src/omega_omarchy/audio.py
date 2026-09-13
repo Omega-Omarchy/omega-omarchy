@@ -112,6 +112,11 @@ class AudioManager:
         self._theme_channel: pygame.mixer.Channel | None = None
         self._need_roll_preload = False
         self._roll_preloaded = False
+        self._credit_scrub_direction = 0
+        self._credit_seek_elapsed = 0.0
+        self._credit_seek_pending = False
+        self._credit_cast_stream = False
+        self._credit_seek_unsupported: set[str] = set()
         self.error = ""
         self._last_settings_ref: Mapping[str, Any] | None = None
         self._last_normalized_settings: dict[str, Any] | None = None
@@ -295,7 +300,9 @@ class AudioManager:
         if channel is None:
             return False
         self._theme_channel = channel
+        self._credit_cast_stream = False
         self.music_cue = "credits-theme"
+        self.music_start_offset = 0.0
         self.music_path = path
         self._need_roll_preload = True
         self._roll_preloaded = False
@@ -330,6 +337,7 @@ class AudioManager:
                 self._roll_preloaded = False
                 return False
         self.music_cue = "credits-roll"
+        self.music_start_offset = 0.0
         self.music_path = self.cue_path("credits-roll")
         self._music_fading = False
         self._deferred_music = ""
@@ -417,9 +425,77 @@ class AudioManager:
         self.music_cue = ""
         self.music_path = None
         self.music_start_offset = 0.0
+        self._credit_cast_stream = False
         if fade_ms <= 0:
             self._music_fading = False
             self._deferred_music = ""
+
+    def _seek_credit_music(self, position: float) -> bool:
+        """Seek the existing Ogg stream; audible slices preview the scrub point.
+
+        The cast normally uses a Sound to leave the roll's stream preloaded.
+        On its first scrub only, exchange that channel for a seekable stream.
+        Never decode or retain a second full PCM copy for reverse playback.
+        """
+        if self.music_path is None:
+            return False
+        key = str(self.music_path)
+        if key in self._credit_seek_unsupported:
+            return False
+        cue = self._cue(self.music_cue) or {}
+        duration = float((cue.get("durations") or {}).get(self.fidelity, 0))
+        position = max(0.0, position)
+        try:
+            if self._theme_channel is not None:
+                self._stop_theme_channel()
+                pygame.mixer.music.stop()
+                pygame.mixer.music.load(key)
+                self._credit_cast_stream = True
+                self._need_roll_preload = self._roll_preloaded = False
+            if duration and position >= duration:
+                pygame.mixer.music.stop()  # preserve the roll's silent tail
+            elif self._music_fading or not pygame.mixer.music.get_busy():
+                pygame.mixer.music.play(loops=0, start=position, fade_ms=12)
+            else:
+                pygame.mixer.music.set_pos(position)
+            # get_pos counts time since play(), not time since set_pos().
+            self.music_start_offset = position - max(0.0, pygame.mixer.music.get_pos() / 1000)
+            self._music_fading = False
+            self._apply_music_volume()
+            return True
+        except (pygame.error, NotImplementedError, TypeError, OSError) as exc:
+            self.error = str(exc)
+            self._credit_seek_unsupported.add(key)
+            return False
+
+    def _sync_credit_scrub(self, position: float | None, direction: int, dt: float) -> None:
+        if position is None:
+            self._credit_scrub_direction = 0
+            self._credit_seek_pending = False
+            self._credit_seek_elapsed = 0.0
+            return
+        changed = direction != self._credit_scrub_direction
+        self._credit_seek_pending |= bool(direction or self._credit_scrub_direction)
+        self._credit_scrub_direction = direction
+        self._credit_seek_elapsed += max(0.0, dt)
+        if not self.available or not self.unlocked or self.music_cue not in {"credits-theme", "credits-roll"}:
+            return
+        if self._credit_seek_pending and (changed or not direction or self._credit_seek_elapsed >= .125):
+            # Eight audible previews per second while holding; a direction
+            # change or release seeks immediately to the precise visual time.
+            self._seek_credit_music(position)
+            self._credit_seek_pending = False
+            self._credit_seek_elapsed = 0.0
+        if self._credit_cast_stream and self.music_cue == "credits-theme":
+            from .credits import CAST_THEME_FADE_SECONDS, title_duration
+            gain = 1.0 if direction else min(1.0, max(0.0, title_duration() - position) / CAST_THEME_FADE_SECONDS)
+            cue = self._cue(self.music_cue) or {}
+            # The stream replacement keeps the original end-of-cast fade,
+            # and rewinding restores its volume without a blocking fadeout.
+            try:
+                pygame.mixer.music.set_volume(self._bus_volume("music") * float(cue.get("gain", 1)) * gain)
+            except pygame.error:
+                self.available = False
 
     def update(
         self,
@@ -429,6 +505,9 @@ class AudioManager:
         settings: Mapping[str, Any],
         cues: list[str] | tuple[str, ...] = (),
         music_fade_ms: int | None = None,
+        credit_position: float | None = None,
+        credit_scrub_direction: int = 0,
+        frame_seconds: float = 1 / 60,
     ) -> None:
         self.apply_settings(settings)
         if self._need_roll_preload and scene == "ending" and self.unlocked:
@@ -442,6 +521,9 @@ class AudioManager:
             and self.available
             and self.unlocked
             and not self._music_fading
+            and not credit_scrub_direction
+            and not self._credit_scrub_direction
+            and not self._credit_cast_stream
         ):
             self._stop_theme_channel(fade_ms=max(1, int(music_fade_ms)))
             self._music_fading = True
@@ -464,6 +546,7 @@ class AudioManager:
                 self._deferred_music = ""
             else:
                 self._deferred_music = ""
+        self._sync_credit_scrub(credit_position, credit_scrub_direction, frame_seconds)
         for cue_id in cues:
             self.play(str(cue_id))
         if scene in {"installer", "prologue", "stage-map", "level-intro", "pause", "audio-settings"}:

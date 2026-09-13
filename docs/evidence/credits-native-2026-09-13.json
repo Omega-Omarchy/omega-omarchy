@@ -1,0 +1,197 @@
+{
+  "platform": "linux",
+  "framesCompared": 2754,
+  "allPixelsEqual": true,
+  "fontAlignmentAppliedToBoth": true,
+  "results": [
+    {
+      "fidelity": "sixteen-bit",
+      "case": "crew",
+      "beforeMedianMs": 0.0957,
+      "afterMedianMs": 0.0928,
+      "improvementPercent": 3.0
+    },
+    {
+      "fidelity": "sixteen-bit",
+      "case": "names",
+      "beforeMedianMs": 0.0956,
+      "afterMedianMs": 0.0979,
+      "improvementPercent": -2.4
+    },
+    {
+      "fidelity": "sixteen-bit",
+      "case": "patrons",
+      "beforeMedianMs": 0.6415,
+      "afterMedianMs": 0.1358,
+      "improvementPercent": 78.8
+    },
+    {
+      "fidelity": "sixteen-bit",
+      "case": "patrons-end",
+      "beforeMedianMs": 0.6653,
+      "afterMedianMs": 0.1227,
+      "improvementPercent": 81.6
+    },
+    {
+      "fidelity": "sixteen-bit",
+      "case": "seals",
+      "beforeMedianMs": 0.0455,
+      "afterMedianMs": 0.0465,
+      "improvementPercent": -2.2
+    },
+    {
+      "fidelity": "sixteen-bit",
+      "case": "reduced",
+      "beforeMedianMs": 0.0834,
+      "afterMedianMs": 0.0555,
+      "improvementPercent": 33.5
+    },
+    {
+      "fidelity": "sixteen-bit",
+      "case": "cast-player",
+      "beforeMedianMs": 0.1048,
+      "afterMedianMs": 0.0907,
+      "improvementPercent": 13.5
+    },
+    {
+      "fidelity": "sixteen-bit",
+      "case": "cast-boss",
+      "beforeMedianMs": 0.1908,
+      "afterMedianMs": 0.0639,
+      "improvementPercent": 66.5
+    },
+    {
+      "fidelity": "sixteen-bit",
+      "case": "cast-robots",
+      "beforeMedianMs": 0.0951,
+      "afterMedianMs": 0.0964,
+      "improvementPercent": -1.3
+    },
+    {
+      "fidelity": "high",
+      "case": "crew",
+      "beforeMedianMs": 0.1855,
+      "afterMedianMs": 0.1638,
+      "improvementPercent": 11.7
+    },
+    {
+      "fidelity": "high",
+      "case": "names",
+      "beforeMedianMs": 0.1921,
+      "afterMedianMs": 0.1654,
+      "improvementPercent": 13.9
+    },
+    {
+      "fidelity": "high",
+      "case": "patrons",
+      "beforeMedianMs": 0.7816,
+      "afterMedianMs": 0.214,
+      "improvementPercent": 72.6
+    },
+    {
+      "fidelity": "high",
+      "case": "patrons-end",
+      "beforeMedianMs": 0.7974,
+      "afterMedianMs": 0.2084,
+      "improvementPercent": 73.9
+    },
+    {
+      "fidelity": "high",
+      "case": "seals",
+      "beforeMedianMs": 0.1151,
+      "afterMedianMs": 0.1166,
+      "improvementPercent": -1.3
+    },
+    {
+      "fidelity": "high",
+      "case": "reduced",
+      "beforeMedianMs": 0.1567,
+      "afterMedianMs": 0.1133,
+      "improvementPercent": 27.7
+    },
+    {
+      "fidelity": "high",
+      "case": "cast-player",
+      "beforeMedianMs": 0.3781,
+      "afterMedianMs": 0.3613,
+      "improvementPercent": 4.4
+    },
+    {
+      "fidelity": "high",
+      "case": "cast-boss",
+      "beforeMedianMs": 0.3262,
+      "afterMedianMs": 0.19,
+      "improvementPercent": 41.7
+    },
+    {
+      "fidelity": "high",
+      "case": "cast-robots",
+      "beforeMedianMs": 0.2272,
+      "afterMedianMs": 0.2285,
+      "improvementPercent": -0.6
+    },
+    {
+      "fidelity": "ultra",
+      "case": "crew",
+      "beforeMedianMs": 0.3145,
+      "afterMedianMs": 0.2355,
+      "improvementPercent": 25.1
+    },
+    {
+      "fidelity": "ultra",
+      "case": "names",
+      "beforeMedianMs": 0.3314,
+      "afterMedianMs": 0.2494,
+      "improvementPercent": 24.7
+    },
+    {
+      "fidelity": "ultra",
+      "case": "patrons",
+      "beforeMedianMs": 1.1238,
+      "afterMedianMs": 0.4032,
+      "improvementPercent": 64.1
+    },
+    {
+      "fidelity": "ultra",
+      "case": "patrons-end",
+      "beforeMedianMs": 1.0543,
+      "afterMedianMs": 0.3423,
+      "improvementPercent": 67.5
+    },
+    {
+      "fidelity": "ultra",
+      "case": "seals",
+      "beforeMedianMs": 0.3099,
+      "afterMedianMs": 0.3018,
+      "improvementPercent": 2.6
+    },
+    {
+      "fidelity": "ultra",
+      "case": "reduced",
+      "beforeMedianMs": 0.3155,
+      "afterMedianMs": 0.2074,
+      "improvementPercent": 34.3
+    },
+    {
+      "fidelity": "ultra",
+      "case": "cast-player",
+      "beforeMedianMs": 0.7636,
+      "afterMedianMs": 0.736,
+      "improvementPercent": 3.6
+    },
+    {
+      "fidelity": "ultra",
+      "case": "cast-boss",
+      "beforeMedianMs": 0.6241,
+      "afterMedianMs": 0.4796,
+      "improvementPercent": 23.2
+    },
+    {
+      "fidelity": "ultra",
+      "case": "cast-robots",
+      "beforeMedianMs": 0.4634,
+      "afterMedianMs": 0.4753,
+      "improvementPercent": -2.6
+    }
+  ]
+}

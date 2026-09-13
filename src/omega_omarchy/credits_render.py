@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect_right
+from collections import OrderedDict
 import pygame
 
 from .credits import FPS, PATRON_FONT_SIZES, ROLL_TARGET_SPEED, cast_card, credit_manifest, roll_offset
@@ -18,6 +20,11 @@ class CreditsRenderer:
         self.glyphs = {}
         self.logos = {}
         self.seal_bakes = {}
+        self.wraps = OrderedDict()
+        self.pages = {}
+        self.scrub_status = None
+        self.roll_glyphs = {}
+        self._roll_text = False
 
     def font(self, size, scale):
         key = (size, scale)
@@ -64,17 +71,28 @@ class CreditsRenderer:
     def _render_text(self, text, size, scale, color):
         if self._fully_covered(text, size, scale):
             return self.font(size, scale).render(text, True, color)
-        glyphs = [self._char_font(ch, size, scale).render(ch, True, color) for ch in text]
-        width = max(1, sum(g.get_width() for g in glyphs))
-        height = max((g.get_height() for g in glyphs), default=1)
+        primary = self.font(size, scale)
+        glyphs = []
+        for ch in text:
+            font = self._char_font(ch, size, scale)
+            # Font surfaces have different ascents. Align their baselines,
+            # retaining enough space for accents and descenders after shifting.
+            offset = max(0, primary.get_ascent() - font.get_ascent())
+            glyphs.append((font.render(ch, True, color), offset))
+        width = max(1, sum(g.get_width() for g, _ in glyphs))
+        height = max((g.get_height() + offset for g, offset in glyphs), default=1)
         combined = pygame.Surface((width, height), pygame.SRCALPHA)
         cursor = 0
-        for glyph in glyphs:
-            combined.blit(glyph, (cursor, 0))
+        for glyph, offset in glyphs:
+            combined.blit(glyph, (cursor, offset))
             cursor += glyph.get_width()
         return combined
 
     def wrap(self, text, width, size=8):
+        key = (text, width, size)
+        if key in self.wraps:
+            self.wraps.move_to_end(key)
+            return self.wraps[key]
         scale = 4
         lines, line = [], ""
         for word in text.split():
@@ -90,7 +108,11 @@ class CreditsRenderer:
                 line += char
             line += " "
         if line.strip(): lines.append(line.strip())
-        return lines or [""]
+        result = lines or [""]
+        self.wraps[key] = result
+        if len(self.wraps) > 512:
+            self.wraps.popitem(last=False)
+        return result
 
     def text(self, surf, text, x, y, size=8, align="center", color=WHITE):
         scale = self.r._vs
@@ -101,6 +123,23 @@ class CreditsRenderer:
         rect = image.get_rect()
         rect.top = round(y * scale)
         setattr(rect, {"left": "left", "right": "right", "center": "centerx"}[align], round(x * scale))
+        if self._roll_text:
+            if key not in self.roll_glyphs:
+                bounds = image.get_bounding_rect()
+                # Accepted roll text sits on black. Crop to actual ink so
+                # opaque padding cannot wipe out a neighboring line. Unusual
+                # tall custom glyphs retain alpha if their ink exceeds the
+                # normal line spacing; cast cards always retain alpha too.
+                pitch = (16 if size > 8 else 11 * size / 8) * scale
+                baked = None
+                if bounds.width and bounds.height <= pitch:
+                    baked = pygame.Surface(bounds.size).convert()
+                    baked.blit(image, (0, 0), bounds)
+                self.roll_glyphs[key] = (baked, bounds.topleft)
+            baked, offset = self.roll_glyphs[key]
+            if baked is not None:
+                surf.blit(baked, (rect.x + offset[0], rect.y + offset[1]))
+                return
         surf.blit(image, rect)
 
     def block(self, surf, text, x, y, width, size=8, align="center", color=WHITE):
@@ -191,6 +230,11 @@ class CreditsRenderer:
             row["columnCount"] = cols
             row["grid"] = wrapped
             row["gridLineCounts"] = [max((len(w) for w in grid_row), default=1) for grid_row in wrapped]
+            offsets, offset = [], 0.0
+            for count in row["gridLineCounts"]:
+                offsets.append(offset)
+                offset += count * row["lineHeight"]
+            row["gridOffsets"] = offsets
             total_lines = sum(row["gridLineCounts"]) or 1
             height = max(row["height"] * ratio, total_lines * row["lineHeight"] + 2 * ratio)
         elif kind in {"heading", "text"}:
@@ -214,13 +258,21 @@ class CreditsRenderer:
         elif kind == "names":
             cols = row["columnCount"]
             col_width = 284 / cols
-            cursor_y = y
-            for grid_row, line_count in zip(row["grid"], row["gridLineCounts"]):
+            # One patron group can span many screens. Visit only its
+            # visible rows, including font-height spill across the top edge.
+            font_height = max(self.font(row["fontSize"], self.r._vs).get_height(),
+                              self.fallback_font(row["fontSize"], self.r._vs).get_height()) / self.r._vs
+            start = max(0, bisect_right(row["gridOffsets"], -y - font_height) - 1)
+            viewport = surf.get_height() / self.r._vs
+            for index in range(start, len(row["grid"])):
+                cursor_y = y + row["gridOffsets"][index]
+                if cursor_y >= viewport:
+                    break
+                grid_row = row["grid"][index]
                 for col, lines in enumerate(grid_row):
                     x = 18 + col_width * (col + 0.5)
                     for i, line in enumerate(lines):
                         self.text(surf, line, x, cursor_y + i * row["lineHeight"], row["fontSize"])
-                cursor_y += line_count * row["lineHeight"]
         elif kind in {"heading", "text"}:
             size, gap, inset = (11, 16, 12) if kind == "heading" else (8, 11, 0)
             for i, line in enumerate(row["lines"]): self.text(surf, line, 160, y + inset + i * gap, size)
@@ -260,7 +312,11 @@ class CreditsRenderer:
                 self.title(surf, sim, seconds, reduced)
                 self.layout(sim.character_name)
             else:
-                self._draw_roll(surf, sim, seconds, reduced)
+                self._roll_text = True
+                try:
+                    self._draw_roll(surf, sim, seconds, reduced)
+                finally:
+                    self._roll_text = False
         except pygame.error:
             return
         # Instructions disappear once the sequence has had time to establish.
@@ -268,8 +324,20 @@ class CreditsRenderer:
             action = sim.prompt_binding("jump", compact=True)
             try:
                 self.text(surf, f"{action} / Esc  {'skip to credits' if sim.scene == 'ending' else 'return'}", 310, 168, 6, "right", (150, 150, 150))
+                up, down = sim.prompt_binding("up", compact=True), sim.prompt_binding("down", compact=True)
+                self.text(surf, f"{up}/{down} scrub (hold to accelerate)", 10, 168, 6, "left", (150, 150, 150))
             except pygame.error:
                 return
+        if sim.credits_scrub_direction:
+            label = "REWIND" if sim.credits_scrub_direction < 0 else "FORWARD"
+            # Draw only during scrubbing, leaving normal playback untouched.
+            pygame.draw.rect(surf, (0, 0, 0), self.r._lr(0, 164, 320, 16))
+            key = (label, int(seconds), self.r._vs)
+            if self.scrub_status is None or self.scrub_status[0] != key:
+                status = f"{label}   {int(seconds) // 60}:{int(seconds) % 60:02d}"
+                self.scrub_status = (key, self._render_text(status, 7, self.r._vs, (190, 190, 190)))
+            image = self.scrub_status[1]
+            surf.blit(image, image.get_rect(midtop=self.r._lp(160, 168)))
 
     def _draw_roll(self, surf, sim, seconds, reduced):
         duration = credit_manifest()["music"]["duration"]
@@ -278,15 +346,18 @@ class CreditsRenderer:
         entries, height = self.layout(sim.character_name)
         if reduced:
             # Static pages, broken only between complete credit entries.
-            pages, page, used = [], [], 0
-            for _, size, row in entries:
-                if page and used + size > 150:
+            if sim.character_name not in self.pages:
+                pages, page, used = [], [], 0
+                for _, size, row in entries:
+                    if page and used + size > 150:
+                        pages.append(page)
+                        page, used = [], 0
+                    page.append((used, row))
+                    used += size
+                if page:
                     pages.append(page)
-                    page, used = [], 0
-                page.append((used, row))
-                used += size
-            if page:
-                pages.append(page)
+                self.pages[sim.character_name] = pages
+            pages = self.pages[sim.character_name]
             page = pages[min(len(pages) - 1, int(seconds / duration * len(pages)))]
             for y, row in page:
                 self.draw_row(surf, row, y + 12)

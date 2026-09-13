@@ -15,6 +15,13 @@ ROLL_TARGET_SPEED = 18.0
 PATRON_FONT_SIZES = (8, 7.75, 7.5, 7.25, 7, 6.75, 6.5)
 
 
+def scrub_distance(held_seconds: float) -> float:
+    """Integrated hold travel: pause for precision, then ramp from 4x to 32x."""
+    t = max(0.0, held_seconds - 0.25)
+    ramp = min(t, 3.0)
+    return 4 * ramp + (28 / 6) * ramp * ramp + 32 * max(0.0, t - 3)
+
+
 @lru_cache(maxsize=1)
 def credit_manifest() -> dict:
     return json.loads((Path(__file__).parent / "data" / "credits.json").read_text(encoding="utf-8"))

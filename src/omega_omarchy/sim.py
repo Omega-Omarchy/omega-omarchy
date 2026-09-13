@@ -351,6 +351,9 @@ class GameSim:
     credits_shortcut_lock: int = 0
     credits_cut_music: bool = False
     credits_elapsed: float = 0.0
+    credits_age: float = 0.0
+    credits_scrub_direction: int = 0
+    credits_scrub_held: float = 0.0
     credits_return_scene: str = "pause"
     tick: int = 0
     settings: dict[str, Any] = field(default_factory=dict)
@@ -394,6 +397,9 @@ class GameSim:
     edit_new_reachable: set[tuple[int, int]] = field(default_factory=set)
     edit_goal_ready: bool = False
     edit_move_cooldown: int = 0
+    edit_move_direction: tuple[int, int] = (0, 0)
+    edit_hold_ticks: int = 0
+    edit_last_move_tick: int = -1
     debug_hitboxes: bool = False
     post_boss_ticks: int = 0
     reroll_confirm_yes: bool = False
@@ -4196,6 +4202,9 @@ class GameSim:
     def start_credits(self, *, cinematic: bool = False, return_scene: str = "pause") -> None:
         self.credits_ticks = 0
         self.credits_elapsed = 0.0
+        self.credits_age = 0.0
+        self.credits_scrub_direction = 0
+        self.credits_scrub_held = 0.0
         self.credits_shortcut_lock = max(self.credits_shortcut_lock, 1)
         self.credits_return_scene = return_scene
         self.credits = not cinematic
@@ -4204,25 +4213,40 @@ class GameSim:
         self.audio_caption = ""
 
     def _step_credits(self, inp: InputState, *, frame_seconds: float = 1 / 60) -> None:
-        from .credits import FPS, roll_duration, title_duration
+        from .credits import FPS, roll_duration, scrub_distance, title_duration
 
         # Wall time in the live app keeps a slow frame from lengthening the
         # roll past its recording. Fixed steps remain deterministic in replays.
-        self.credits_elapsed += max(0.0, frame_seconds)
+        dt = max(0.0, frame_seconds)
+        self.credits_age += dt
+        duration = title_duration() if self.scene == "ending" else roll_duration()
+        direction = int(inp.down or inp.down_pressed) - int(inp.up or inp.up_pressed)
+        if direction:
+            if direction != self.credits_scrub_direction:
+                self.credits_scrub_held = 0.0
+                self.credits_elapsed += direction  # one second per fresh tap
+            before = self.credits_scrub_held
+            self.credits_scrub_held += dt
+            self.credits_elapsed += direction * (scrub_distance(self.credits_scrub_held) - scrub_distance(before))
+            self.credits_elapsed = max(0.0, min(duration, self.credits_elapsed))
+        else:
+            self.credits_scrub_held = 0.0
+            self.credits_elapsed += dt
+        self.credits_scrub_direction = direction
         self.credits_ticks = round(self.credits_elapsed * FPS)
         if self.credits_shortcut_lock > 0:
             self.credits_shortcut_lock = max(
                 0, self.credits_shortcut_lock - max(1, round(max(0.0, frame_seconds) * FPS))
             )
         # The entry button cannot immediately dismiss the next sequence.
-        skip = self.credits_ticks > 30 and (inp.pause or inp.jump_pressed or inp.interact)
-        duration = title_duration() if self.scene == "ending" else roll_duration()
-        if skip or self.credits_ticks >= math.ceil(duration * FPS):
+        skip = self.credits_age > 0.5 and (inp.pause or inp.jump_pressed or inp.interact)
+        if skip or (not direction and self.credits_elapsed >= duration):
             if self.scene == "ending":
                 self.credits_cut_music = True
                 self.start_credits(return_scene=self.credits_return_scene)
             else:
                 self.credits = False
+                self.credits_scrub_direction = 0
                 self.scene = self.credits_return_scene
 
     def _continue_development_chapters(self) -> None:
@@ -4519,6 +4543,9 @@ class GameSim:
         self.edit_ops = []
         self.edit_tile_index = 0
         self.edit_move_cooldown = 0
+        self.edit_move_direction = (0, 0)
+        self.edit_hold_ticks = 0
+        self.edit_last_move_tick = -1
         # Broken crates and other changes made during play belong to this
         # event's baseline too. Cancel must restore exactly what was visible.
         self.original_tiles = list(self.tiles)
@@ -4624,21 +4651,27 @@ class GameSim:
     def _step_edit(self, inp: InputState) -> None:
         cx, cy = self.edit_cursor
         min_x, min_y, max_x, max_y = self._edit_bounds()
-        pressed = inp.left_pressed or inp.right_pressed or inp.up_pressed or inp.down_pressed
-        held = inp.left or inp.right or inp.up or inp.down
-        move_now = bool(pressed or (held and self.edit_move_cooldown <= 0))
-        if self.edit_move_cooldown > 0:
+        direction = (int(inp.right or inp.right_pressed) - int(inp.left or inp.left_pressed),
+                     int(inp.down or inp.down_pressed) - int(inp.up or inp.up_pressed))
+        move_now = False
+        if direction == (0, 0):
+            self.edit_hold_ticks = self.edit_move_cooldown = 0
+        elif direction != self.edit_move_direction or self.edit_last_move_tick != self.tick - 1:
+            # Each tap or direction change moves exactly one tile. A short
+            # delay separates it from held repeat, independent of OS repeat.
+            move_now = True
+            self.edit_hold_ticks, self.edit_move_cooldown = 0, 18
+        else:
+            self.edit_hold_ticks += 1
             self.edit_move_cooldown -= 1
+            if self.edit_move_cooldown <= 0:
+                move_now = True
+                # Ramp to at most 20 tiles/second after about 2.4 seconds.
+                self.edit_move_cooldown = max(3, 9 - self.edit_hold_ticks // 24)
+        self.edit_move_direction, self.edit_last_move_tick = direction, self.tick
         if move_now:
-            self.edit_move_cooldown = 5
-        if move_now and inp.left:
-            cx = max(min_x, cx - 1)
-        if move_now and inp.right:
-            cx = min(max_x, cx + 1)
-        if move_now and inp.up:
-            cy = max(min_y, cy - 1)
-        if move_now and inp.down:
-            cy = min(max_y, cy + 1)
+            cx = max(min_x, min(max_x, cx + direction[0]))
+            cy = max(min_y, min(max_y, cy + direction[1]))
         self.edit_cursor = (cx, cy)
         palette = ("=", "L", "^")
         if inp.turn_pressed:

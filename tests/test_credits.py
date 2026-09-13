@@ -484,12 +484,12 @@ def test_editor_cursor_and_camera_cover_the_full_playfield_height():
     tiles = ["." * 40] * 38 + ["....S...................................", "#" * 40]
     sim = GameSim(installer=InstallerSession(), scene="edit", editing=True, tiles=tiles, body=spawn_body(tiles), cam_x=32, cam_y=460, edit_cursor=(5, 34))
     left, _, right, _ = sim._edit_bounds()
-    for _ in range(60):
-        sim.step(InputState(up=True, up_pressed=True))
+    for _ in range(240):
+        sim.step(InputState(up=True))
         sim.cam_x, sim.cam_y = sim.camera_target()
     assert sim.edit_cursor[1] == 0 and sim.cam_y == 0
-    for _ in range(60):
-        sim.step(InputState(down=True, down_pressed=True))
+    for _ in range(240):
+        sim.step(InputState(down=True))
         sim.cam_x, sim.cam_y = sim.camera_target()
     assert sim.edit_cursor[1] == 39 and sim.cam_y == 40 * TILE - 180
     assert sim._edit_bounds() == (left, 0, right, 39)
@@ -559,6 +559,54 @@ def test_omega_wordmark_bakes_underline_below_the_lettering(studio):
     assert mark_top > line_top
     assert plate.get_height() > mark_top
     assert plate.get_at((max(0, 4 * scale), line_top))[:3] == (255, 255, 255)
+
+
+def test_fallback_letters_share_the_primary_baseline_without_clipping(studio):
+    from omega_omarchy.credits_render import CreditsRenderer
+    _, renderer = studio
+    credits = CreditsRenderer(renderer)
+    for scale in (1, 2, 3):
+        for size in (6.5, 7, 8, 11):
+            main, fallback = credits.font(size, scale), credits.fallback_font(size, scale)
+            shift = main.get_ascent() - fallback.get_ascent()
+            assert shift >= 0
+            for letter in credits._PRIMARY_FONT_GAPS:
+                image = credits._render_text("A" + letter + "B", size, scale, (255, 255, 255))
+                glyphs = [font.render(ch, True, "white") for font, ch in ((main, "A"), (fallback, letter), (main, "B"))]
+                expected = pygame.Surface(image.get_size())
+                actual = pygame.Surface(image.get_size())
+                actual.blit(image, (0, 0))
+                x = 0
+                for glyph, y in zip(glyphs, (0, shift, 0)):
+                    assert y + glyph.get_height() <= image.get_height()
+                    expected.blit(glyph, (x, y))
+                    x += glyph.get_width()
+                assert pygame.image.tobytes(actual, "RGB") == pygame.image.tobytes(expected, "RGB")
+
+
+@pytest.mark.parametrize("size", [6.5, 7.25, 8])
+def test_patron_culling_matches_unculled_pixels_at_every_detail(studio, size):
+    from omega_omarchy.credits_render import CreditsRenderer
+    _, renderer = studio
+    credits = CreditsRenderer(renderer)
+    source = {"kind": "names", "names": ["EMIR BEGANOVIĆ", "ROMAN FROŁOW", "A LONG NAME THAT WRAPS TWICE"] * 100, "height": 13}
+    row, height = credits.measure_row(source, "David", name_size=size)
+    for scale in (1, 2, 3):
+        renderer._vs = scale
+        for top in (12, -.5, -11.25, -height / 2, -height + 150.5):
+            actual = pygame.Surface((320 * scale, 180 * scale))
+            expected = pygame.Surface(actual.get_size())
+            credits._roll_text = True
+            credits.draw_row(actual, row, top)
+            credits._roll_text = False
+            y = top
+            for grid, count in zip(row["grid"], row["gridLineCounts"]):
+                for col, lines in enumerate(grid):
+                    x = 18 + (284 / row["columnCount"]) * (col + .5)
+                    for i, line in enumerate(lines):
+                        credits.text(expected, line, x, y + i * row["lineHeight"], size)
+                y += count * row["lineHeight"]
+            assert pygame.image.tobytes(actual, "RGB") == pygame.image.tobytes(expected, "RGB")
 
 
 def test_patron_compaction_has_a_legible_floor_and_wraps_long_names(studio, monkeypatch):

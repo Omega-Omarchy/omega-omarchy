@@ -386,6 +386,9 @@ async def run_game_async(
             settings=active_audio_settings,
             cues=tuple(sim.sfx),
             music_fade_ms=music_fade_ms,
+            credit_position=sim.credits_elapsed if sim.scene in {"ending", "credits", "chapter-credits"} else None,
+            credit_scrub_direction=sim.credits_scrub_direction,
+            frame_seconds=clock.get_time() / 1000,
         )
         sim.sfx.clear()
         if sim.scene == "installer":
