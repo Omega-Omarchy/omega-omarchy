@@ -25,6 +25,30 @@ The four closing badges are original fictional guild parodies: I.A.T.S.E.T.,
 SAG / APT-RA, DOLLY STEREO and M.P.A.A.A. They do not use actual union seals.
 Reduced Motion substitutes complete static credit pages and still cast cards.
 
+The badge designs take their visual cues from the spoke-shaped
+[IATSE crest](https://iatse.net/), the reaching figure in
+[SAG-AFTRA's identity](https://www.sagaftra.org/new-sag-aftra-logo),
+[cinema sound-system lockups](https://news.dolby.com/en-WW/assets/categories/1219/),
+and the orbital globe of the [Motion Picture Association](https://www.motionpictures.org/).
+Our versions substitute a terminal medallion, an agent reaching for the Super
+key, paired director's chairs, and a circuit iris. Letterspacing, inset strokes,
+and smaller inscriptions provide the closing-film-credit treatment in white
+on black. All shapes and lettering are drawn by the local generator; none of
+the reference organizations' artwork is bundled.
+
+Rebuild their three prepared detail sizes with:
+
+```sh
+.venv/bin/python tools/build_credit_badges.py
+.venv/bin/python tools/build_credit_badges.py --check
+```
+
+The generator uses Pillow and the pinned credits font, supersamples offline,
+and writes `assets/ui/credits/guild-badges-{1,2,3}x.png`. The game caches one
+opaque image per detail tier and scrolls it with a single blit. The 132-pixel
+row height is unchanged, including on Reduced Motion pages. The credits
+manifest records the accepted badge image hashes alongside the cast assets.
+
 ## Names and attribution
 
 Edit `credits/contributors.toml` to associate a GitHub login with a screen name:
@@ -60,6 +84,8 @@ Every assignment has an audit trail of commit IDs and paths in the manifest.
 These are path-based acknowledgments, not line-by-line ownership estimates.
 The deliberately excessive film crew is a separate authored comedy section,
 initially assigned to Jeremy Dixon through `production.lead`.
+The Roman-numeral copyright notice names the Omega Omarchy contributors
+collectively; it does not single out the production lead.
 
 The Agent collaborators section also credits Codex / Astra, Codex / Sol,
 Grok Build, and Grok Imagine for their assistance.

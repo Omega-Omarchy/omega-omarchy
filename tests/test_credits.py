@@ -95,6 +95,9 @@ def test_manifest_is_reproducible_and_contains_every_pinned_name_and_accepted_ca
     assert first["musicCredits"][0]["artist"] == "Jeremy Dixon"
     assert first["musicCredits"][0]["creditSource"] == "embedded:artist"
     assert not any("Suno" in row.get("text", "") for row in first["rows"])
+    copyright_notice = next(row["text"] for row in first["rows"] if row.get("text", "").startswith("©"))
+    assert copyright_notice.startswith("© MMXXVI Omega Omarchy contributors.")
+    assert "Jeremy Dixon" not in copyright_notice
     text = [row.get("text") for row in first["rows"]]
     assert {"CODEX / ASTRA", "CODEX / SOL", "GROK BUILD", "GROK IMAGINE"} <= set(text)
     assert {person["name"] for person in first["contributors"]} == {"Jeremy Dixon"}
@@ -655,6 +658,37 @@ def test_every_cast_card_and_credit_page_renders_with_pinned_glyphs(studio):
         sim.settings["reducedMotion"] = False
         sim.credits_ticks = math.ceil((roll_duration() - 4) * FPS)
         assert pygame.surfarray.array3d(renderer.frame(sim)).max() == 0
+
+
+def test_prepared_guild_badges_reproduce_and_scroll_without_reloading(studio, monkeypatch):
+    from omega_omarchy.credits_render import CreditsRenderer
+    from tools.build_credit_badges import render_badges
+
+    _, renderer = studio
+    credits = CreditsRenderer(renderer)
+    generated = render_badges()
+    loads = []
+    original_load = pygame.image.load
+
+    def load(path):
+        loads.append(path)
+        return original_load(path)
+
+    monkeypatch.setattr(pygame.image, "load", load)
+    for scale in (1, 2, 3):
+        renderer._vs = scale
+        surface = pygame.Surface((320 * scale, 180 * scale))
+        credits.seals(surface, 20)
+        image = credits.seal_bakes[scale]
+        assert not image.get_flags() & pygame.SRCALPHA
+        assert pygame.image.tobytes(image, "RGB") == generated[scale].tobytes()
+        # The complete closing page and the partially departed scrolling row
+        # use the same art, with no first-use font or shape drawing on screen.
+        assert pygame.image.tobytes(surface.subsurface((0, 20 * scale, 320 * scale, 132 * scale)), "RGB") == generated[scale].tobytes()
+        surface.fill((0, 0, 0))
+        credits.seals(surface, -10)
+        assert pygame.image.tobytes(surface.subsurface((0, 0, 320 * scale, 122 * scale)), "RGB") == pygame.image.tobytes(image.subsurface((0, 10 * scale, 320 * scale, 122 * scale)), "RGB")
+    assert len(loads) == 3
 
 
 def test_packaged_credits_refresh_without_mutating_source_snapshot(tmp_path):

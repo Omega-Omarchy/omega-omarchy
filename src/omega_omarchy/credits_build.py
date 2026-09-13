@@ -225,7 +225,7 @@ def compile_credits(root: Path = ROOT) -> dict:
         "Special thanks does not imply endorsement.",
         "Fictional guilds. Actual gratitude.",
         "Made with open source, stubbornness, and the Super key.",
-        "© MMXXVI Jeremy Dixon and the Omega Omarchy contributors. All rights reserved, to the extent the MIT License reserves any.",
+        "© MMXXVI Omega Omarchy contributors. All rights reserved, to the extent the MIT License reserves any.",
         "Unauthorized duplication, distribution, or exhibition is actually fine. Please see LICENSE.",
     ]:
         line(text)
@@ -244,6 +244,8 @@ def compile_credits(root: Path = ROOT) -> dict:
     sources = {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((root / "credits").glob("*")) if p.suffix in {".json", ".toml"}}
     assets = {str(p.relative_to(root / "assets")): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((root / "assets/fidelity/ultra").rglob("*.png")) if p.parent.name in {"bosses", "enemies", "characters", "ui"}}
     for p in sorted((root / "assets/character-packs").glob("*/manifest.json")):
+        assets[str(p.relative_to(root / "assets"))] = hashlib.sha256(p.read_bytes()).hexdigest()
+    for p in sorted((root / "assets/ui/credits").glob("guild-badges-*.png")):
         assets[str(p.relative_to(root / "assets"))] = hashlib.sha256(p.read_bytes()).hexdigest()
     return {"schemaVersion": 1, "revision": _git(root, "rev-parse", "HEAD").strip(), "contributors": contributors, "history": history, "sources": sources, "acceptedAssets": assets, "foundationSources": foundation["sources"], "foundationRetrieved": foundation["retrieved"], "music": music["roll"], "musicCredits": music_credits, "rows": rows, "castCards": cards}
 

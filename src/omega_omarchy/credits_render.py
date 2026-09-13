@@ -230,62 +230,15 @@ class CreditsRenderer:
         elif kind == "seals":
             self.seals(surf, y)
 
-    # Original badges, deliberately fictional film-industry parodies.
-    _SEAL_BADGES = (
-        ("I.A.T.S.E.T.", "Terminal Set Employees"),
-        ("SAG / APT-RA", "Screen Agents Guild"),
-        ("DOLLY STEREO", "Two channels. One chair."),
-        ("M.P.A.A.A.", "Autonomous Agents Association"),
-    )
-
     def seals(self, surf, y):
+        # Rich vector-style artwork is baked offline at each detail tier. The
+        # row is black-backed, so scrolling needs one opaque blit and no alpha
+        # blending, font rasterization, or geometric drawing.
         scale = self.r._vs
-        baked = self.seal_bakes.get(scale)
-        if baked is None:
-            baked = self._bake_seals(scale)
-            self.seal_bakes[scale] = baked
-        surf.blit(baked, (0, round(y * scale)))
-
-    def _bake_seals(self, scale):
-        """Render the seal badges once, supersampled, and cache the result.
-
-        This row scrolls past every playthrough, so redrawing hand-vectored
-        shapes every frame was both wasted work and visibly jagged. Baking
-        at 3x and downscaling gives anti-aliased edges for free and leaves
-        nothing but a plain blit while the row is on screen.
-        """
-        super_scale = max(1, scale) * 3
-        width, height = 320 * scale, 132 * scale
-        shapes = pygame.Surface((320 * super_scale, 132 * super_scale), pygame.SRCALPHA)
-
-        def lp(x, y_):
-            return (round(x * super_scale), round(y_ * super_scale))
-
-        def lr(x, y_, w, h):
-            return pygame.Rect(round(x * super_scale), round(y_ * super_scale), round(w * super_scale), round(h * super_scale))
-
-        line_w = max(1, super_scale)
-        for i, (acronym, caption) in enumerate(self._SEAL_BADGES):
-            x, top = 85 + (i % 2) * 150, (i // 2) * 62
-            if i in {0, 3}:
-                points = [(x + math.cos(a * math.pi / 12) * (23 if a % 2 else 27), top + 21 + math.sin(a * math.pi / 12) * (18 if a % 2 else 22)) for a in range(24)]
-                poly = [lp(*p) for p in points]
-                pygame.draw.polygon(shapes, (255, 255, 255, 55), poly)
-                pygame.draw.polygon(shapes, WHITE, poly, line_w)
-            else:
-                rect = lr(x - 56, top + 4, 112, 34)
-                pygame.draw.rect(shapes, (255, 255, 255, 45), rect)
-                pygame.draw.rect(shapes, WHITE, rect, line_w)
-                if i == 2:
-                    for n in range(6):
-                        pygame.draw.line(shapes, WHITE, lp(x - 48 + n * 3, top + 12), lp(x - 48 + n * 3, top + 29), line_w)
-
-        baked = pygame.transform.smoothscale(shapes, (max(1, width), max(1, height)))
-        for i, (acronym, caption) in enumerate(self._SEAL_BADGES):
-            x, top = 85 + (i % 2) * 150, (i // 2) * 62
-            self.text(baked, acronym, x + (8 if i == 2 else 0), top + 16, 7)
-            self.text(baked, caption, x, top + 44, 6)
-        return baked
+        if scale not in self.seal_bakes:
+            path = self.r.root / f"ui/credits/guild-badges-{scale}x.png"
+            self.seal_bakes[scale] = pygame.image.load(str(path)).convert()
+        surf.blit(self.seal_bakes[scale], (0, round(y * scale)))
 
     def sprite(self, surf, image, x, feet_y, height, *, width=280, alpha=255):
         bounds = image.get_bounding_rect(min_alpha=8)
