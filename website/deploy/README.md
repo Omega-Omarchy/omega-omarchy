@@ -9,6 +9,18 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Centered credit opening: `/srv/omegaomarchy/releases/20260913T055314Z/`;
+  ships `fb91a2f` (opening code `f9557af`). The wordmark holds by itself at
+  vertical center for three seconds, then eases into all four introductory
+  lines. Movement rejoins the prior linear scroll before STARRING enters.
+  Its first visible pixel remains on frame 432 at 16-bit and 431 at High/Ultra;
+  all 450 compared browser frames after the join match the previous roll.
+  The 56 credits/scrubbing tests and site export checks passed. Scrubbing is
+  deterministic, and Reduced Motion resumes its existing page schedule after
+  the hold. Uploaded files were hash-verified and changed URLs purged.
+  Public bundle SHA-256:
+  `f8cbb5a4b073ac959908a4ea2207d7feec61226f7c4c249f8cc77ef4920ed2d9`.
+  Previous release `20260913T053335Z` remains available for rollback.
 - Credits smoothness and controls: `/srv/omegaomarchy/releases/20260913T053335Z/`;
   ships `78cb91f` (rendering/controls `627c327`, credit snapshot `6fab651`,
   readable movement hints `78cb91f`). Fallback glyphs now align by baseline.
