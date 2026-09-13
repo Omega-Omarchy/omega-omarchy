@@ -335,6 +335,7 @@
         "6457b72ddc641aa897ab7b3a0cca3724bf6f07ef",
         "64a00b224d35077ac7f81941a5be43cc64940ac3",
         "65af3bdae4cc29bd98e23902511547ac0ad33ff9",
+        "6bbafb7496dbe98dc7a563b1cdb098b12d609777",
         "6c2c2236c7f62b32b0238ab5e0d538b0248de787",
         "6cbc1208c343d46d9bfa09b781bdbe414343fec0",
         "6d312f86694df2239147ad5a6e549ba96f9be720",
@@ -353,7 +354,9 @@
         "a3a17180847a345cd8cd5c81bcbf44a178ebd99a",
         "a7e6042305b3a134eacbd5f8c507649655593f42",
         "b12bde595c2eeb5b20c10059342eb271998c21c4",
+        "b4986d5e7d406675181139ad8ac22a57c9ec3801",
         "bcd2cb8ef31ecfcdb2d2070aa0f1d7edf896c7b2",
+        "bd29dfda73516104cd0456fc955f9a0ed29ce869",
         "c8e7dae829ff1d5d0c871c6a997757e242b34c3a",
         "d3ec3554c8ef6411f43fa2dc93ae0b81a2aef4f2",
         "dcd88ef4cc1f2e65409610eea3a71e442a6705d0",
@@ -1803,6 +1806,7 @@
         "docs/evidence/install-quality.png",
         "docs/evidence/installer-greeter.png",
         "docs/evidence/installer-play-now.png",
+        "docs/evidence/interaction-profile-2026-09-12.json",
         "docs/evidence/ladder-eight-bit-clean.png",
         "docs/evidence/ladder-eight-bit-crt.png",
         "docs/evidence/ladder-high-clean.png",
@@ -1818,9 +1822,11 @@
         "docs/evidence/pause-high.png",
         "docs/evidence/perf.txt",
         "docs/evidence/render-browser-2026-09-12.json",
+        "docs/evidence/render-browser-effects-2026-09-12.json",
         "docs/evidence/render-browser-second-pass-2026-09-12.json",
         "docs/evidence/render-browser-story-2026-09-12.json",
         "docs/evidence/render-native-2026-09-12.json",
+        "docs/evidence/render-native-effects-2026-09-12.json",
         "docs/evidence/render-native-second-pass-2026-09-12.json",
         "docs/evidence/render-native-story-2026-09-12.json",
         "docs/evidence/sixteen-block.png",
@@ -3540,6 +3546,24 @@
       ]
     },
     {
+      "commit": "6bbafb7496dbe98dc7a563b1cdb098b12d609777",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "docs/evidence/interaction-profile-2026-09-12.json",
+        "docs/evidence/render-browser-effects-2026-09-12.json",
+        "docs/evidence/render-native-effects-2026-09-12.json",
+        "docs/performance.md",
+        "src/omega_omarchy/audio.py",
+        "src/omega_omarchy/render.py",
+        "tests/test_audio.py",
+        "tests/test_render_performance.py",
+        "tools/benchmark_render.py",
+        "tools/build_render_benchmark.py"
+      ]
+    },
+    {
       "commit": "6c2c2236c7f62b32b0238ab5e0d538b0248de787",
       "contributors": [
         "jeremydixon22"
@@ -4252,6 +4276,15 @@
       ]
     },
     {
+      "commit": "b4986d5e7d406675181139ad8ac22a57c9ec3801",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
       "commit": "bcd2cb8ef31ecfcdb2d2070aa0f1d7edf896c7b2",
       "contributors": [
         "jeremydixon22"
@@ -4259,6 +4292,15 @@
       "paths": [
         "src/omega_omarchy/credits_render.py",
         "src/omega_omarchy/data/credits.json"
+      ]
+    },
+    {
+      "commit": "bd29dfda73516104cd0456fc955f9a0ed29ce869",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
       ]
     },
     {
@@ -4598,7 +4640,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "3ee10b7ac512246ccf931a3983f24efda44ef1f3",
+  "revision": "6bbafb7496dbe98dc7a563b1cdb098b12d609777",
   "rows": [
     {
       "height": 90,
