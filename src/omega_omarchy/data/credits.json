@@ -129,7 +129,10 @@
     "fidelity/ultra/ui/prologue-campus.png": "de14896ae16907a421dda9e31cda4fff8884c37649e7d4b7213193d14ffa3cb8",
     "fidelity/ultra/ui/prologue-rift.png": "0c48151a255fd02502194cbd0854c581dfa356b4e84789d48056bea9849a244d",
     "fidelity/ultra/ui/prologue-transfer.png": "ea28995a535719df908a9365ada080a135115034b80f52d94887322ca1624bb8",
-    "fidelity/ultra/ui/stage-world-map.png": "773f940cdfc35482a2a30a2abf5ffd6daff54818a2ddca3b73d1e3fd21c7ef5f"
+    "fidelity/ultra/ui/stage-world-map.png": "773f940cdfc35482a2a30a2abf5ffd6daff54818a2ddca3b73d1e3fd21c7ef5f",
+    "ui/credits/guild-badges-1x.png": "8b2a70eb247ea85671c91b7f651e3a276205372bbcdacc501a87bddc35f459ff",
+    "ui/credits/guild-badges-2x.png": "f482bdb4f44b7841c398d7594d83ec35fa97c8aaddea7bb2accdd3ae453235c2",
+    "ui/credits/guild-badges-3x.png": "f6792aa612e547f977c9b2055563dab463c1b4a7e8842e96960fdfab92e413b5"
   },
   "castCards": [
     {
@@ -317,6 +320,7 @@
         "212d3c253faa07f9784a33e33b8eacee6a379544",
         "21c956d74e75bca6e1c8bd88c75c94d1e37598f2",
         "29f2dceec4638b99dd3f14528a1099158df2f2be",
+        "2fde504ebbadbcf46c20d1cdbe9461a97211c4d5",
         "30a198c9939f97ed643ea77c9b6bdf35ad0246cc",
         "324ae8f49668bf1f4b4c934f0eb80812de6d1a2f",
         "37258d8e1ea81057742829d6ba2f19c702d0b8ca",
@@ -327,6 +331,7 @@
         "3cf5caeac6802434be58b75cac6f99c2e8f4860c",
         "3ee10b7ac512246ccf931a3983f24efda44ef1f3",
         "434fca8ab977650ed47ce3cb63f907ea2497ebc2",
+        "4a7e1eb42bbb0d11cf8c05bb3c9facdf9fdc4b4b",
         "4e1f41487619f9e50c7fc3e00ed2901f618f2e21",
         "5b50a59e7c592d77fdaefd1ffb4e03488c95e259",
         "5e90c6139987c876d5be4ddeb6d173f5e16494f4",
@@ -359,6 +364,7 @@
         "bd29dfda73516104cd0456fc955f9a0ed29ce869",
         "c8e7dae829ff1d5d0c871c6a997757e242b34c3a",
         "d3ec3554c8ef6411f43fa2dc93ae0b81a2aef4f2",
+        "dbf66779de3229658f19e58632b07081807f9218",
         "dcd88ef4cc1f2e65409610eea3a71e442a6705d0",
         "dfce69a10d9c25d973f9b181fb65e42cc4f60399",
         "e00340c1786492ad2aaf23728294ba7746bb92a7",
@@ -1743,6 +1749,9 @@
         "assets/ui/credits/NOTO-SANS-FALLBACK-LICENSE.txt",
         "assets/ui/credits/credits-sans-fallback.ttf",
         "assets/ui/credits/credits-sans.otf",
+        "assets/ui/credits/guild-badges-1x.png",
+        "assets/ui/credits/guild-badges-2x.png",
+        "assets/ui/credits/guild-badges-3x.png",
         "assets/ui/oligarchy-logo-hud.png",
         "assets/ui/oligarchy.png",
         "assets/ui/omarchy-font.ttf",
@@ -1985,6 +1994,7 @@
         "tools/__init__.py",
         "tools/audit_release.py",
         "tools/benchmark_render.py",
+        "tools/build_credit_badges.py",
         "tools/build_native.py",
         "tools/build_render_benchmark.py",
         "tools/level-editor/editor.css",
@@ -2147,6 +2157,22 @@
       ]
     },
     {
+      "commit": "2fde504ebbadbcf46c20d1cdbe9461a97211c4d5",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "assets/ui/credits/guild-badges-1x.png",
+        "assets/ui/credits/guild-badges-2x.png",
+        "assets/ui/credits/guild-badges-3x.png",
+        "docs/credits.md",
+        "src/omega_omarchy/credits_build.py",
+        "src/omega_omarchy/credits_render.py",
+        "tests/test_credits.py",
+        "tools/build_credit_badges.py"
+      ]
+    },
+    {
       "commit": "30a198c9939f97ed643ea77c9b6bdf35ad0246cc",
       "contributors": [
         "jeremydixon22"
@@ -2288,6 +2314,15 @@
         "tests/test_installer.py",
         "tests/test_omega_milestone.py",
         "tests/test_sim_events.py"
+      ]
+    },
+    {
+      "commit": "4a7e1eb42bbb0d11cf8c05bb3c9facdf9fdc4b4b",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "src/omega_omarchy/data/credits.json"
       ]
     },
     {
@@ -4400,6 +4435,15 @@
       ]
     },
     {
+      "commit": "dbf66779de3229658f19e58632b07081807f9218",
+      "contributors": [
+        "jeremydixon22"
+      ],
+      "paths": [
+        "website/deploy/README.md"
+      ]
+    },
+    {
       "commit": "dcd88ef4cc1f2e65409610eea3a71e442a6705d0",
       "contributors": [
         "jeremydixon22"
@@ -4640,7 +4684,7 @@
       "title": "Boot Up Your New Digital World"
     }
   ],
-  "revision": "6bbafb7496dbe98dc7a563b1cdb098b12d609777",
+  "revision": "2fde504ebbadbcf46c20d1cdbe9461a97211c4d5",
   "rows": [
     {
       "height": 90,
@@ -6468,7 +6512,7 @@
     {
       "height": 14,
       "kind": "text",
-      "text": "© MMXXVI Jeremy Dixon and the Omega Omarchy contributors. All rights reserved, to the extent the MIT License reserves any."
+      "text": "© MMXXVI Omega Omarchy contributors. All rights reserved, to the extent the MIT License reserves any."
     },
     {
       "height": 14,
