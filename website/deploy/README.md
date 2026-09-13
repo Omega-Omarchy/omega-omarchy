@@ -9,6 +9,21 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Credits smoothness and controls: `/srv/omegaomarchy/releases/20260913T053335Z/`;
+  ships `78cb91f` (rendering/controls `627c327`, credit snapshot `6fab651`,
+  readable movement hints `78cb91f`). Fallback glyphs now align by baseline.
+  Prepared roll text and visible patron-row rendering cut measured Ultra
+  patron render time by 84–85%, with 2,754 browser and 2,754 native pixel pairs
+  matching after applying the font correction to both sides. Up/Down scrubs
+  both sequences and backing tracks, with accelerating holds and audible seek
+  previews. Editor taps move one tile and holds accelerate to a capped rate.
+  The 164 focused tests passed; all 40 credits tests passed again after the hint
+  correction. The browser audio integration check covered holds, reversals,
+  release, silence, and the cast fade/roll transition. Site export checks passed.
+  Uploaded files matched the local build before promotion, and changed URLs
+  were purged from Cloudflare. Public bundle SHA-256:
+  `f2125ca2371fffcb98fc9448a216fe2b778685d4883ac616144d0230ca78ac85`.
+  Previous release `20260913T043402Z` remains available for rollback.
 - Automatic landing announcement: `/srv/omegaomarchy/releases/20260913T043402Z/`;
   ships `e5ee4dd`. The landing link now mirrors the newest News headline,
   UTC date, and permalink at build time, with a wrapping headline and date
