@@ -9,6 +9,15 @@ separately; deployment does not commit or push it.
 - SSH profile: `ocd-web-core` (OCD's shared Nginx host).
 - Web root: `/srv/omegaomarchy/current`, a symlink into `releases/`.
 - Initial release: `/srv/omegaomarchy/releases/20260911T121249Z/`.
+- Prologue, route-map, and title-card optimization: `/srv/omegaomarchy/releases/20260913T001018Z/`;
+  ships code `3ee10b7` and credits/build revision `b4986d5`. All 42 browser
+  cases improved median and p95 render time; all 3,024 browser frame pairs
+  matched the preceding renderer exactly. The 158 focused tests passed, as
+  did native comparisons and an interactive installation/prologue/map-to-play
+  check with The Omarch King. Every uploaded file matched the local website
+  build before the atomic switch; changed URLs were purged from Cloudflare.
+  Public bundle SHA-256: `b7d10447b783d521caa67c68b40537888e5a8ba96fc290b5d0bcbf141845ca91`.
+  Previous release `20260912T223706Z` remains available for rollback.
 - Opaque-background, panel, and cannon optimization: `/srv/omegaomarchy/releases/20260912T223706Z/`;
   ships code `3cf5cae` and credits/build revision `5eb5838`. All 24 isolated
   browser cases improved median render time by a further 21.7–44.9% relative
