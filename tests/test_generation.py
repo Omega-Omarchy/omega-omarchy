@@ -1,5 +1,7 @@
 from omega_omarchy.campaign import CAMPAIGN_ROSTER
-from omega_omarchy.generation import generate_world
+from omega_omarchy.content import load_content
+from omega_omarchy.generation import _install_ground_relief, _vary_exposed_surfaces, assemble_chapter, generate_world
+from omega_omarchy.rng import Streams
 from omega_omarchy.reachability import (
     ladder_endpoint_issues,
     normalize_ladder_tiles,
@@ -101,7 +103,8 @@ def test_macro_levels_include_sparse_steps_and_low_ground_without_touching_ancho
             x0 = int(entry["x"])
             span = int(entry["width"])
             if entry["kind"] == "step":
-                assert all(tiles[floor - 1][x] == "#" for x in range(x0, x0 + span))
+                assert all(tiles[floor - 1][x] in {"#", "="} for x in range(x0, x0 + span))
+                assert all(tiles[row][x] == "." for row in (floor - 3, floor - 2) for x in range(x0, x0 + span))
             else:
                 assert all(tiles[floor][x] == "." for x in range(x0, x0 + span))
 
@@ -207,3 +210,58 @@ def test_procedural_levels_include_many_safe_floating_omarchy_blocks():
         assert chapter["floatingBlockCount"] >= 8
         assert len(floating) >= 8
         assert all(y + 1 >= len(tiles) or tiles[y + 1][x] not in {"L", "+"} for x, y in blocks)
+
+
+def test_ground_relief_will_not_step_under_a_low_ceiling():
+    canvas = [["." for _ in range(80)] for _ in range(24)]
+    floor = 18
+    for y in range(floor, 24):
+        for x in range(80):
+            canvas[y][x] = "#"
+    for x in range(30, 42):
+        canvas[floor - 3][x] = "="
+    relief = _install_ground_relief(canvas, floor, Streams("relief-ceiling")["layout"])
+    covered = set(range(30, 42))
+    for entry in relief:
+        span = set(range(int(entry["x"]), int(entry["x"]) + int(entry["width"])))
+        assert not span & covered
+    assert all(canvas[floor - 1][x] == "." for x in covered)
+
+
+def test_exposed_raised_ground_mixes_earth_and_deck_faces():
+    tiles = [
+        ".......",
+        ".......",
+        ".###...",
+        "#######",
+        "#######",
+    ]
+    mixed = _vary_exposed_surfaces(tiles, floor=3, seams=set())
+    assert mixed[3] == "#######"
+    assert mixed[2].count("=") >= 1
+    assert mixed[2].count("#") >= 1
+
+
+def test_standard_chapter_one_is_wider_and_spires_can_host_a_hoist():
+    found = False
+    for seed in range(6):
+        chapter = assemble_chapter(
+            load_content(),
+            "corrupted-install",
+            Streams(f"wider-hoist-{seed}"),
+            difficulty="standard",
+            include_optional=True,
+            force_logo=True,
+        )
+        assert chapter["width"] >= 384
+        report = validate_level(chapter["tiles"], require_all_logos=True)
+        assert report["ok"], report["errors"]
+        for spec in chapter["movingPlatforms"]:
+            if spec.get("motion") != "hoist":
+                continue
+            found = True
+            assert spec["axis"] == "vertical"
+            assert int(spec["restY"]) > int(spec["crownY"])
+            assert int(spec["y"]) - int(spec["range"]) == int(spec["crownY"])
+            assert int(spec["y"]) + int(spec["range"]) == int(spec["restY"])
+    assert found, "wider chapters should place a rider hoist on at least one spire"

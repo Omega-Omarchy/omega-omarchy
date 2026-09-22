@@ -16,6 +16,45 @@ def _pick_fresh(options: tuple[str, ...], history: list[str], stream: Stream) ->
     return str(stream.choice([item for item in candidates if history.count(item) == least]))
 
 
+SPIRE_TREAD = 3
+SPIRE_MAX_STEPS = 4
+
+
+def spire_layout(section: dict[str, Any], floor: int) -> dict[str, Any]:
+    """Stairs, hoist column, and optional shelf for one spire section.
+
+    Stairs always rise toward the exit. The hoist stands beside the crown,
+    clear of the walking line, and the shelf is a hop from the top of the ride.
+    """
+
+    x0, width = int(section["x"]), int(section["width"])
+    steps = min(SPIRE_MAX_STEPS, max(2, int(section["rise"])))
+    stairs = []
+    for step in range(steps):
+        left = x0 + 3 + step * SPIRE_TREAD
+        stairs.append((left, left + SPIRE_TREAD, step + 1))
+    limit = x0 + width - 2
+    hoist = None
+    hoist_x = stairs[-1][1] + 2
+    span = 3
+    rest, crown = floor - 5, floor - 11
+    if hoist_x + span <= limit and crown >= 3:
+        hoist = {"x": hoist_x, "span": span, "rest": rest, "crown": crown}
+    shelf = None
+    if hoist is not None:
+        shelf_left = hoist_x + span
+        shelf_right = shelf_left + 5
+        shelf_y = floor - 12
+        if shelf_right < x0 + width - 1 and shelf_y >= 3:
+            shelf = {
+                "left": shelf_left,
+                "right": shelf_right,
+                "y": shelf_y,
+                "ladder": shelf_right - 1,
+            }
+    return {"stairs": stairs, "hoist": hoist, "shelf": shelf}
+
+
 def plan_chapter_one(
     width: int,
     sector_width: int,
@@ -56,10 +95,10 @@ def plan_chapter_one(
     routes = {
         "arrival": ("terraces",),
         "discovery": ("overpass", "ridge"),
-        "traversal": ("stepping-stones", "ridge", "overpass"),
+        "traversal": ("stepping-stones", "ridge", "overpass", "spire"),
         "encounter": ("courtyard",),
         "breather": ("cache-garden",),
-        "climax": ("stepping-stones", "overpass"),
+        "climax": ("stepping-stones", "overpass", "spire"),
     }
     route_history: list[str] = []
     recipe_history: list[str] = []
@@ -91,7 +130,7 @@ def plan_chapter_one(
             "branchRecipe": branch,
             "motif": motif,
             "mirrored": stream.chance(0.5) if beat != "arrival" else False,
-            "rise": 1 if beat == "arrival" else stream.randint(2, 3),
+            "rise": 1 if beat == "arrival" else stream.randint(2, 4),
         })
         x += size
     return sections
@@ -169,8 +208,10 @@ def paint_chapter_one_section(
     elif route == "overpass":
         gap(center - 1, 2 if difficulty == "casual" else 3)
         deck(4, width - 4, floor - 4)
-        ladder(5, floor - 5, floor - 1)
-        ladder(width - 6, floor - 5, floor - 1)
+        # The ladder top is the deck itself. Starting one row higher makes
+        # repair invent a lip, and a branch deck above that lip seals it shut.
+        ladder(5, floor - 4, floor - 1)
+        ladder(width - 6, floor - 4, floor - 1)
         reward(width - 9, floor - 5, "C")
     elif route == "courtyard":
         mound(center - 1, center + 2, 1)
@@ -183,12 +224,35 @@ def paint_chapter_one_section(
         deck(4, 11, floor - 3)
         reward(7, floor - 4, "P")
         reward(width - 7, floor - 1, "C")
+    elif route == "spire":
+        # One-tile steps stay on the ordinary path and always face the exit.
+        # Mirroring the other routes must not turn the crown into a wall.
+        layout = spire_layout(section, floor)
+        for left, right, height in layout["stairs"]:
+            for x in range(left, right):
+                for y in range(floor - height, floor):
+                    if 0 < y < len(canvas) and 0 <= x < len(canvas[0]):
+                        canvas[y][x] = "#"
+        shelf = layout["shelf"] if include_optional else None
+        if shelf is not None:
+            for x in range(int(shelf["left"]), int(shelf["right"])):
+                if 0 <= x < len(canvas[0]):
+                    canvas[int(shelf["y"])][x] = "="
+            ladder_x = int(shelf["ladder"])
+            for y in range(int(shelf["y"]) - 1, floor):
+                if 0 <= ladder_x < len(canvas[0]) and 0 < y < len(canvas):
+                    canvas[y][ladder_x] = "L"
+            reward_x = int(shelf["left"]) + 2
+            reward_y = int(shelf["y"]) - 1
+            if 0 <= reward_x < len(canvas[0]) and 0 < reward_y < len(canvas):
+                canvas[reward_y][reward_x] = "C"
+                rewards.append((reward_x, reward_y))
 
     recipe = section["branchRecipe"]
     if recipe:
         # Keep early discoveries in view; reserve the tall silhouette for the
         # late remix. Three distinct shapes replace a tower in every sector.
-        high = 16 if section["beat"] == "climax" else 9
+        high = 22 if section["beat"] == "climax" else 14
         high = min(high, floor - 4)
         if recipe in {"sky-well", "twin-towers"}:
             top = floor - high
@@ -213,6 +277,11 @@ def paint_chapter_one_section(
             if recipe == "bumper-gallery":
                 put(9, floor - 1, "^")
             reward(width - 4, floor - 10, "O")
+        if section["beat"] == "climax" and floor >= 10:
+            for x in range(center - 1, center + 2):
+                wx = world_x(x)
+                if canvas[floor - 8][wx] == "." and canvas[floor - 7][wx] == ".":
+                    put(x, floor - 8, "D")
 
     # The remix introduces one opponent only after the final landing. No
     # enemies or breakable obstacles are scattered into gap takeoff zones.

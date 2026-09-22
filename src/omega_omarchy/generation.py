@@ -8,7 +8,7 @@ from typing import Any
 from .campaign import CAMPAIGN_ROSTER
 from .canonical import sha256_json
 from .character import DEFAULT_CHARACTER_NAME
-from .chapter_design import paint_chapter_one_section, plan_chapter_one
+from .chapter_design import paint_chapter_one_section, plan_chapter_one, spire_layout
 from .content import ContentIndex, load_content
 from .identity import GENERATOR_VERSION, SCHEMA_VERSION, WorldIdentity
 from .reachability import find_spawn, normalize_ladder_tiles, reachable_from, validate_level
@@ -112,6 +112,10 @@ def _install_ground_relief(
 
     width = len(canvas[0])
     relief: list[dict[str, Any]] = []
+    # A deck three rows up stops an 18px body 14px into a jump, short of a
+    # one-tile lip. Open rows through floor-3 keep that lip traversable.
+    if floor < 4:
+        return []
     reserved: set[int] = set(reserved_columns or ())
     kinds = ["step", "low"]
     if stream.chance(0.38):
@@ -120,17 +124,27 @@ def _install_ground_relief(
         spans = list(range(4, 8))
         span = spans[stream.randint(0, len(spans) - 1)]
         candidates: list[int] = []
-        for x0 in range(22, width - span - 24):
-            check = range(x0 - 2, x0 + span + 2)
-            if any(x in reserved for x in check):
-                continue
-            if not all(canvas[floor - 2][x] == "." and canvas[floor - 1][x] == "." for x in check):
-                continue
-            if not all(canvas[y][x] == "#" for y in range(floor, len(canvas)) for x in check):
-                continue
-            candidates.append(x0)
+        fit = span
+        while fit >= 4 and not candidates:
+            candidates = []
+            for x0 in range(22, width - fit - 24):
+                check = range(x0 - 2, x0 + fit + 2)
+                if any(x in reserved for x in check):
+                    continue
+                if not all(
+                    canvas[row][x] == "."
+                    for row in (floor - 3, floor - 2, floor - 1)
+                    for x in check
+                ):
+                    continue
+                if not all(canvas[y][x] == "#" for y in range(floor, len(canvas)) for x in check):
+                    continue
+                candidates.append(x0)
+            if not candidates:
+                fit -= 1
         if not candidates:
             continue
+        span = fit
         x0 = candidates[stream.randint(0, len(candidates) - 1)]
         for x in range(x0, x0 + span):
             canvas[floor - 1 if kind == "step" else floor][x] = "#" if kind == "step" else "."
@@ -343,6 +357,94 @@ def _ensure_penguin_routes(tiles: list[str]) -> list[str]:
         canvas[y][x] = "."
         canvas[ny][nx] = glyph
     return _render(canvas)
+
+
+def _vary_exposed_surfaces(
+    tiles: list[str], floor: int, seams: set[int],
+) -> list[str]:
+    """Swap some exposed raised earth for deck faces.
+
+    The floor seal and section seams stay earth. Deck faces use the same
+    collision as earth, so the swap changes the silhouette without the route.
+    """
+
+    canvas = [list(row) for row in tiles]
+    if not canvas or floor < 2:
+        return tiles
+    height, width = len(canvas), len(canvas[0])
+    solid = {"#", "=", "+", "B", "D", "G"}
+    for y in range(1, min(floor, height - 1)):
+        for x in range(1, width - 1):
+            if x in seams or canvas[y][x] != "#":
+                continue
+            if canvas[y - 1][x] != "." or canvas[y + 1][x] not in solid:
+                continue
+            if any(
+                canvas[yy][xx] in {"L", "+", "S", "X", "O", "N", "G", "C", "P", "H"}
+                for yy in (y - 1, y, y + 1)
+                for xx in (x - 1, x, x + 1)
+            ):
+                continue
+            if (x * 3 + y) % 5 not in {0, 2}:
+                continue
+            canvas[y][x] = "="
+    return _render(canvas)
+
+
+def _install_service_hoists(
+    tiles: list[str],
+    floor: int,
+    sections: list[dict[str, Any]],
+    occupied: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Rider-triggered lifts beside spires, encoded like other vertical lifts.
+
+    ``y`` is the midpoint and ``range`` the half-travel so the existing
+    headroom check covers the shaft. The cab rests at ``restY`` and rises to
+    ``crownY`` only while someone is standing on it.
+    """
+
+    blocked = [
+        (int(spec["x"]) - 1, int(spec["x"]) + int(spec.get("width") or 1) + 1)
+        for spec in occupied
+    ]
+    hoists: list[dict[str, Any]] = []
+    for index, section in enumerate(sections):
+        if section.get("route") != "spire":
+            continue
+        column = spire_layout(section, floor).get("hoist")
+        if column is None:
+            continue
+        hx, span = int(column["x"]), int(column["span"])
+        if any(not (hx + span <= left or hx >= right) for left, right in blocked):
+            continue
+        rest, crown = int(column["rest"]), int(column["crown"])
+        if (rest + crown) % 2:
+            crown -= 1
+        if crown < 2 or rest - crown < 2:
+            continue
+        mid = (rest + crown) // 2
+        travel = rest - mid
+        y0, y1 = mid - travel - 2, mid + travel + 2
+        if y0 < 0 or y1 > len(tiles):
+            continue
+        if any(tiles[y][x] != "." for y in range(y0, y1) for x in range(hx, hx + span)):
+            continue
+        hoists.append(
+            {
+                "id": f"hoist-{index + 1}",
+                "x": hx,
+                "y": mid,
+                "width": span,
+                "axis": "vertical",
+                "range": travel,
+                "phase": 0.0,
+                "motion": "hoist",
+                "restY": rest,
+                "crownY": crown,
+            }
+        )
+    return hoists
 
 
 def _traversal_features(
@@ -624,7 +726,7 @@ def _paint_macro_level(
     cosmetics = streams["cosmetics"]
     rare = streams["rare"]
     generation = dict((profile or {}).get("generation") or {})
-    width_bases = generation.get("widthBase") or {"casual": 256, "standard": 288, "precise": 320}
+    width_bases = generation.get("widthBase") or {"casual": 352, "standard": 384, "precise": 416}
     width_base = int(width_bases[difficulty])
     width = width_base + chapter_index * 24 + layout.randint(0, 4) * 8
     # Taller than the legacy strip by design: every chapter can stage several
@@ -802,7 +904,16 @@ def _paint_macro_level(
     )
     normalized = _ensure_penguin_routes(normalized)
     normalized = _ensure_workshop_routes(normalized)
+    normalized = _vary_exposed_surfaces(normalized, floor, seams)
     features = _traversal_features(normalized, floor, streams["layout"], sections=route_plan)
+    features["movingPlatforms"].extend(
+        _install_service_hoists(
+            normalized,
+            floor,
+            route_plan,
+            [*features["movingPlatforms"], *features["tiltingPlatforms"]],
+        )
+    )
     runtime_maps = _split_runtime_maps(normalized, network_links, features)
     normalized, upper = add_skyway(normalized, streams.seed, chapter_id)
     if chapter_id == "walled-garden":
@@ -810,6 +921,9 @@ def _paint_macro_level(
     for specs in features.values():
         for feature in specs:
             feature["y"] += SKYWAY_HEIGHT
+            if "restY" in feature:
+                feature["restY"] = int(feature["restY"]) + SKYWAY_HEIGHT
+                feature["crownY"] = int(feature["crownY"]) + SKYWAY_HEIGHT
     for link in network_links:
         link["y"] += SKYWAY_HEIGHT
     for map_index, spec in enumerate(runtime_maps):
@@ -824,6 +938,9 @@ def _paint_macro_level(
         for key in (*features, "portals"):
             for feature in spec.get(key, []):
                 feature["y"] += SKYWAY_HEIGHT
+                if "restY" in feature:
+                    feature["restY"] = int(feature["restY"]) + SKYWAY_HEIGHT
+                    feature["crownY"] = int(feature["crownY"]) + SKYWAY_HEIGHT
     height += SKYWAY_HEIGHT
     edit_pickups = sum(row.count("O") for row in normalized)
     return {

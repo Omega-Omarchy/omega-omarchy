@@ -759,6 +759,46 @@ def test_item_pickups_fill_a_capped_strength_meter_and_scale_effectiveness():
     assert sim.item_effectiveness == 1.25
 
 
+def test_service_hoist_rises_only_while_ridden():
+    sim = _flat_action_sim()
+    assert sim.body is not None
+    hoist = Entity(
+        "moving-platform",
+        1,
+        8,
+        extra={
+            "width": 3,
+            "axis": "vertical",
+            "range": 3,
+            "motion": "hoist",
+            "restY": 8,
+            "crownY": 2,
+            "y": 5,
+            "base_x": 1.0,
+            "base_y": 8.0,
+            "prev_x": 1.0,
+            "prev_y": 8.0,
+        },
+    )
+    sim.entities = [hoist]
+    sim.body = replace(sim.body, x=30 * TILE, y=4 * TILE, vx=0, vy=0, on_ground=True)
+    for _ in range(20):
+        sim._tick_traversal_features()
+    assert hoist.y == 8
+
+    sim.body = replace(sim.body, x=TILE + 4, y=8 * TILE - 18, vx=0, vy=0, on_ground=True)
+    for _ in range(40):
+        sim._tick_traversal_features()
+    assert hoist.y < 7
+    assert sim.body.y < 8 * TILE - 18
+    risen = hoist.y
+    sim.body = replace(sim.body, x=30 * TILE, y=4 * TILE, vx=0, vy=0, on_ground=True)
+    for _ in range(220):
+        sim._tick_traversal_features()
+    assert hoist.y > risen
+    assert abs(hoist.y - 8) < 0.001
+
+
 def test_tilting_lifts_and_updrafts_have_real_player_physics():
     sim = _flat_action_sim()
     assert sim.body is not None

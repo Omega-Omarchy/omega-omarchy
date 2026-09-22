@@ -1572,8 +1572,14 @@ class GameSim:
             entities.append(Entity("tilt-platform", float(spec["x"]), float(spec["y"]), extra=dict(spec)))
         for spec in map_spec.get("movingPlatforms", chapter.get("movingPlatforms") or ()):
             extra = dict(spec)
-            extra.update({"base_x": float(spec["x"]), "base_y": float(spec["y"]), "prev_x": float(spec["x"]), "prev_y": float(spec["y"])})
-            entities.append(Entity("moving-platform", float(spec["x"]), float(spec["y"]), extra=extra))
+            start_y = float(spec["restY"]) if spec.get("motion") == "hoist" else float(spec["y"])
+            extra.update({
+                "base_x": float(spec["x"]),
+                "base_y": start_y,
+                "prev_x": float(spec["x"]),
+                "prev_y": start_y,
+            })
+            entities.append(Entity("moving-platform", float(spec["x"]), start_y, extra=extra))
         for spec in map_spec.get("windColumns", chapter.get("windColumns") or ()):
             entities.append(Entity("wind-column", float(spec["x"]), float(spec["y"]), extra=dict(spec)))
         return entities
@@ -3022,16 +3028,38 @@ class GameSim:
             if entity.kind == "moving-platform":
                 old_x, old_y = entity.x, entity.y
                 entity.extra["prev_x"], entity.extra["prev_y"] = old_x, old_y
-                phase = float(entity.extra.get("phase") or 0.0)
-                travel = float(entity.extra.get("range") or 3.0)
-                offset = math.sin(self.tick * 0.035 + phase) * travel
-                base_x = float(entity.extra.get("base_x", old_x))
-                base_y = float(entity.extra.get("base_y", old_y))
-                if entity.extra.get("axis") == "horizontal":
-                    entity.x, entity.y = base_x + offset, base_y
+                if entity.extra.get("motion") == "hoist":
+                    rest = float(entity.extra.get("restY", old_y))
+                    crown = float(entity.extra.get("crownY", rest))
+                    entity.x = float(entity.extra.get("base_x", old_x))
+                    # A short hold lets a rider step off at the crown before
+                    # the cab starts back down.
+                    width = float(entity.extra.get("width") or 3.0) * TILE
+                    ridden = (
+                        not self.body.on_ladder
+                        and entity.x * TILE - 2 <= feet_x <= entity.x * TILE + width + 2
+                        and abs(feet_y - old_y * TILE) <= 3.5
+                    )
+                    if ridden:
+                        entity.extra["hoist_hold"] = 10
+                    else:
+                        entity.extra["hoist_hold"] = max(0, int(entity.extra.get("hoist_hold") or 0) - 1)
+                    step = 0.05
+                    if int(entity.extra.get("hoist_hold") or 0) > 0:
+                        entity.y = max(crown, old_y - step)
+                    else:
+                        entity.y = min(rest, old_y + step)
                 else:
-                    entity.x, entity.y = base_x, base_y + offset
-                width = float(entity.extra.get("width") or 4.0) * TILE
+                    phase = float(entity.extra.get("phase") or 0.0)
+                    travel = float(entity.extra.get("range") or 3.0)
+                    offset = math.sin(self.tick * 0.035 + phase) * travel
+                    base_x = float(entity.extra.get("base_x", old_x))
+                    base_y = float(entity.extra.get("base_y", old_y))
+                    if entity.extra.get("axis") == "horizontal":
+                        entity.x, entity.y = base_x + offset, base_y
+                    else:
+                        entity.x, entity.y = base_x, base_y + offset
+                    width = float(entity.extra.get("width") or 4.0) * TILE
                 standing = (
                     not self.body.on_ladder
                     and old_x * TILE - 2 <= feet_x <= old_x * TILE + width + 2

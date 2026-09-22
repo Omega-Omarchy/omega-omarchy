@@ -2233,6 +2233,14 @@ class Renderer:
             if entity.kind == "tilt-platform":
                 plank = pygame.transform.rotate(plank, angle)
             surf.blit(plank, (center_x - plank.get_width() // 2, center_y - plank.get_height() // 2))
+            if entity.extra.get("motion") == "hoist":
+                # A chevron marks the cab that waits for a rider, distinct from
+                # the lifts that cycle on their own.
+                nose_x = center_x
+                nose_y = center_y - plank.get_height() // 2 - 7 * vs
+                arm = 5 * vs
+                pygame.draw.line(surf, LIME_MARK, (nose_x - arm, nose_y + arm), (nose_x, nose_y), max(1, vs))
+                pygame.draw.line(surf, LIME_MARK, (nose_x + arm, nose_y + arm), (nose_x, nose_y), max(1, vs))
             if entity.kind == "tilt-platform":
                 pygame.draw.circle(surf, PALETTE["yellow"], (center_x, center_y), 3 * vs)
                 pygame.draw.circle(surf, PALETTE["dark"], (center_x, center_y), max(1, vs))

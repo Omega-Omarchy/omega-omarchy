@@ -4,7 +4,7 @@ from copy import deepcopy
 
 import pytest
 
-from omega_omarchy.chapter_design import plan_chapter_one
+from omega_omarchy.chapter_design import plan_chapter_one, spire_layout
 from omega_omarchy.content import load_content
 from omega_omarchy.generation import _paint_macro_level, assemble_chapter
 from omega_omarchy.reachability import find_spawn, reachable_from, validate_level
@@ -82,6 +82,20 @@ def test_moving_platforms_have_clear_travel_and_headroom(chapter):
         for y in range(feature["y"] - dy - 2, feature["y"] + dy + 2):
             for x in range(feature["x"] - dx, feature["x"] + feature["width"] + dx):
                 assert chapter["tiles"][y][x] == ".", (feature, x, y)
+
+
+def test_spire_stairs_climb_toward_the_exit_and_leave_room_for_a_hoist():
+    section = {"x": 40, "width": 36, "route": "spire", "rise": 4, "beat": "traversal"}
+    layout = spire_layout(section, 58)
+    heights = [height for _left, _right, height in layout["stairs"]]
+    assert heights == [1, 2, 3, 4]
+    assert layout["stairs"][0][0] < layout["stairs"][-1][0]
+    hoist = layout["hoist"]
+    assert hoist["x"] >= layout["stairs"][-1][1]
+    assert hoist["rest"] > hoist["crown"]
+    shelf = layout["shelf"]
+    assert shelf["left"] >= hoist["x"] + hoist["span"]
+    assert shelf["y"] < hoist["crown"]
 
 
 def test_seed_changes_route_order_and_spacing_not_only_decoration():

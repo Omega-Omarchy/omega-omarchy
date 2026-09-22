@@ -11,9 +11,9 @@
   },
   "generation": {
     "widthBase": {
-      "casual": 256,
-      "standard": 288,
-      "precise": 320
+      "casual": 352,
+      "standard": 384,
+      "precise": 416
     },
     "heightBase": 60,
     "sectorWidth": 32,

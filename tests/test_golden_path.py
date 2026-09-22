@@ -85,7 +85,7 @@ def test_ordinary_keys_from_greeter_to_chapter_one_completion(seed):
     sim.step(InputState(interact=True))
     assert sim.scene == "action"
 
-    for tick in range(20000):
+    for tick in range(36000):
         if sim.scene == "chapter-complete" or sim.chapter_index > 0:
             break
         if sim.scene == "flight":
